@@ -1,0 +1,8 @@
+syntax = "proto3";
+package POGOProtos.Networking.Requests.Messages;
+
+import "POGOProtos/Settings/ContactSettings.proto";
+
+message SetContactSettingsMessage {
+	.POGOProtos.Settings.ContactSettings contact_settings = 1;
+}
