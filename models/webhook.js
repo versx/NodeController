@@ -1,11 +1,10 @@
 "use strict"
 
-const S2      = require('s2-geometry').S2;
 const POGOProtos      = require('../pogo-protos');
 const accountManagerO = require('./account.js');
 const deviceManagerO  = require('./device.js');
 
-//const s2              = require('@radarlabs/s2');
+//const S2              = require('@radarlabs/s2');
 
 const accountManager  = new accountManagerO();
 const deviceManager   = new deviceManagerO();
@@ -615,10 +614,6 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
         
         cells.forEach(function(cellId) {
             console.log("CellId:", cellId);
-            var key = S2.idToKey(cellId);
-            console.log("CellId Key:", key);
-            //var key = S2.latLngToKey(40.2574448, -111.7089464, 15);   // '4/032212303102210'
-            //var id = S2.keyToId(key);                                 // '9749618446378729472'
             //let s2cell = S2Cell(cellId: S2CellId(uid: cellId))
             //let lat = s2cell.capBound.rectBound.center.lat.degrees
             //let lon = s2cell.capBound.rectBound.center.lng.degrees

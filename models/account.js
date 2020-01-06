@@ -14,6 +14,9 @@ class Account {
     getAccounts() {
         return accounts;
     }
+    getNewAccount(minLevel, maxLevel) {
+        return {};
+    }
     save() {
         if (accounts[this.username] !== undefined) {
             accounts.push({
