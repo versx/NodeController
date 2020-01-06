@@ -1,11 +1,11 @@
 "use strict"
 
+const S2      = require('s2-geometry').S2;
 const POGOProtos      = require('../pogo-protos');
 const accountManagerO = require('./account.js');
 const deviceManagerO  = require('./device.js');
 
 //const s2              = require('@radarlabs/s2');
-//const s2              = require('s2-geometry').S2;
 
 const accountManager  = new accountManagerO();
 const deviceManager   = new deviceManagerO();
@@ -303,6 +303,7 @@ function _handleRawData(req, res) {
     if (targetCoord !== undefined && inArea === false) {
         cells.forEach(function(cell) {
             if (inArea === false) {
+                console.log("Cell:", cell);
                 //let cell = S2Cell(cellId: S2CellId(uid: cell))
                 //let coord = S2LatLng(point: cell.center).coord
                 //if (coord.distance(to: targetCoord!) <= max(targetMaxDistance, 100)) {
@@ -460,7 +461,6 @@ function _handleControllerData(req, res) {
                 };
                 devices[uuid] = newDevice;
                 deviceManager.save();
-                //save(devices, './devices.json');
                 res.send({ 
                     data: { 
                         assigned: false,
@@ -511,7 +511,6 @@ function _handleControllerData(req, res) {
             }
 
             device.accountUsername = account.username;
-            //save(devices, './devices.json');
             deviceManager.save();
             res.send({
                 data: {
@@ -532,7 +531,6 @@ function _handleControllerData(req, res) {
             }
             if (account.level === 0) {
                 account.level = 1;
-                //save(accounts, './accounts.json');
                 accountManager.save();
                 res.send('OK');
             }
@@ -548,7 +546,6 @@ function _handleControllerData(req, res) {
             if (account.failedTimestamp === undefined || account.failed === undefined) {
                 account.failedTimestamp = 0; //TODO: Get js timestamp
                 account.failed = "banned";
-                //save(accounts, './accounts.json');
                 accountManager.save();
                 res.send('OK');
             }
@@ -563,7 +560,6 @@ function _handleControllerData(req, res) {
             }
             if (account.firstWarningTimestamp === undefined) {
                 account.firstWarningTimestamp = 0; //TODO: Get js timestamp
-                //save(accounts, './accounts.json');
                 accountManager.save();
                 res.send('OK');
             }
@@ -579,7 +575,6 @@ function _handleControllerData(req, res) {
             if (account.failedTimestamp === undefined || account.failed === undefined) {
                 account.failedTimestamp = 0; //TODO: Get js timestamp
                 account.failed = "invalid_credentials";
-                //save(accounts, './accounts.json');
                 accountManager.save();
                 res.send('OK');
             }
@@ -595,7 +590,6 @@ function _handleControllerData(req, res) {
             if (account.failedTimestamp === undefined || account.failed === undefined) {
                 account.failedTimestamp = 0; //TODO: Get js timestamp
                 account.failed = "error_26";
-                //save(accounts, './accounts.json');
                 accountManager.save();
                 res.send('OK');
             }
@@ -603,7 +597,6 @@ function _handleControllerData(req, res) {
         case "logged_out":
             var device = devices[uuid];
             device.accountUsername = null;
-            //save(devices, './devices.json');
             deviceManager.save();
             res.send('OK');
             break;
@@ -621,6 +614,11 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
         var stopsIdsPerCell = []; //[UInt64: [String]]()
         
         cells.forEach(function(cellId) {
+            console.log("CellId:", cellId);
+            var key = S2.idToKey(cellId);
+            console.log("CellId Key:", key);
+            //var key = S2.latLngToKey(40.2574448, -111.7089464, 15);   // '4/032212303102210'
+            //var id = S2.keyToId(key);                                 // '9749618446378729472'
             //let s2cell = S2Cell(cellId: S2CellId(uid: cellId))
             //let lat = s2cell.capBound.rectBound.center.lat.degrees
             //let lon = s2cell.capBound.rectBound.center.lng.degrees

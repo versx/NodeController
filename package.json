@@ -25,7 +25,6 @@
     "google-protobuf": "^3.11.2",
     "morgan": "^1.9.1",
     "pbkdf2-password": "^1.2.1",
-    "protobufjs": "^6.8.8",
-    "s2-geometry": "^1.2.10"
+    "protobufjs": "^6.8.8"
   }
 }
