@@ -1,7 +1,10 @@
 "use strict"
 
 const accountsPath = '../accounts.json';
-const accounts  = require(accountsPath);
+//const accounts     = require(accountsPath);
+const fs           = require('fs');
+
+//console.log("Dir:", __dirname);
 
 // Constructor
 class Account {
@@ -11,26 +14,36 @@ class Account {
         this.firstWarningTimestamp = firstWarningTimestamp;
         this.level = level;
     }
-    getAccounts() {
-        return accounts;
+    static getAll() {
+        //return accounts;
+        return this.load();
     }
-    getNewAccount(minLevel, maxLevel) {
+    static getNewAccount(minLevel, maxLevel) {
         return {};
     }
     save() {
+        var accounts = Account.getAll();
         if (accounts[this.username] !== undefined) {
             accounts.push({
                 username: this.username,
                 password: this.password,
-                first_warning_timestamp: this.firstWarningTimestamp,
+                firstWarningTimestamp: this.firstWarningTimestamp,
                 level: this.level
             });
             save(accounts, accountsPath);
         }
     }
-    load() {
+    static load() {
         var data = fs.readFileSync(accountsPath);
-        return JSON.parse(data);
+        var obj = JSON.parse(data);
+        var accountList = []
+        for (var key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                var acc = obj[key];
+                accountList.push(new Account(acc.username, acc.password, acc.firstWarningTimestamp, acc.level));
+            }
+        }
+        return accountList;
     }
 }
 

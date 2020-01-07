@@ -1,7 +1,8 @@
 "use strict"
 
 const devicesPath = '../devices.json';
-const devices  = require(devicesPath);
+//const devices     = require(devicesPath);
+const fs          = require('fs');
 
 // Constructor
 class Device {
@@ -14,10 +15,12 @@ class Device {
         this.lastLat = lastLat;
         this.lastLon = lastLon;
     }
-    getDevices() {
-        return devices;
+    static getAll() {
+        //return devices;
+        return this.load();
     }
     save() {
+        var devices = Device.getAll();
         if (devices[this.name] !== undefined) {
             devices.push({
                 uuid: this.name,
@@ -31,9 +34,17 @@ class Device {
             save(devices, devicesPath);
         }
     }
-    load() {
+    static load() {
         var data = fs.readFileSync(devicesPath);
-        return JSON.parse(data);
+        var obj = JSON.parse(data);
+        var deviceList = []
+        for (var key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                var dev = obj[key];
+                deviceList.push(new Device(dev.uuid, dev.instanceName, dev.lastHost, dev.lastSeen, dev.lastLat, dev.lastLon));
+            }
+        };
+        return deviceList;
     }
 }
 

@@ -1,16 +1,15 @@
 "use strict"
 
-const POGOProtos      = require('../pogo-protos');
-const accountManagerO = require('./account.js');
-const deviceManagerO  = require('./device.js');
+const POGOProtos = require('../pogo-protos');
+const Account    = require('./account.js');
+const Device     = require('./device.js');
+const Pokemon    = require('./pokemon.js');
+//const S2         = require('@radarlabs/s2');
 
-//const S2              = require('@radarlabs/s2');
+var accounts = Account.getAll();
+console.log(accounts);
+var devices = Device.getAll();
 
-const accountManager  = new accountManagerO();
-const deviceManager   = new deviceManagerO();
-
-var accounts = accountManager.getAccounts();
-var devices = deviceManager.getDevices();
 var emptyCells = [];//[UInt64: Int]
 var levelCache = {};
 
@@ -52,7 +51,7 @@ function _handleRawData(req, res) {
             var account = accounts[username];
             if (account !== undefined) {
                 account.level = trainerLevel;
-                accountManager.save();
+                account.save();
             }
             levelCache[username] = trainerLevel
         }
@@ -66,10 +65,8 @@ function _handleRawData(req, res) {
     var latTarget = json["lat_target"];
     var lonTarget = json["lon_target"];
     if (uuid !== undefined && latTarget !== undefined && lonTarget !== undefined) {
-        devices[uuid].lastSeen = new Date();
-        devices[uuid].lastLat = latTarget;
-        devices[uuid].lastlon = lonTarget;
-        deviceManager.save();
+        var newDevice = new Device(uuid, null, username, "127.0.0.1", new Date(), latTarget, lonTarget);
+        newDevice.save();
     }
 
     var pokemonEncounterId = json["pokemon_encounter_id"];
@@ -400,7 +397,10 @@ function _handleRawData(req, res) {
         nearbyPokemons, 
         forts,
         fortDetails,
-        gymInfos,quests,encounters
+        gymInfos,
+        quests,
+        encounters,
+        username
     );
 }
 
@@ -449,17 +449,9 @@ function _handleControllerData(req, res) {
             if (device === undefined) {
                 console.log("Registering device");
                 // Register new device
-                var newDevice = {
-                    uuid: uuid,
-                    instanceName: null,
-                    lastHost: null,
-                    lastSeen: 0,
-                    accountUsername: null,
-                    lastLat: 0.0,
-                    lastLon: 0.0
-                };
+                var newDevice = new Device(uuid, null, null, 0, null, 0.0, 0.0);
+                newDevice.save();
                 devices[uuid] = newDevice;
-                deviceManager.save();
                 res.send({ 
                     data: { 
                         assigned: false,
@@ -510,7 +502,7 @@ function _handleControllerData(req, res) {
             }
 
             device.accountUsername = account.username;
-            deviceManager.save();
+            device.save();
             res.send({
                 data: {
                     username: account.username,
@@ -530,7 +522,7 @@ function _handleControllerData(req, res) {
             }
             if (account.level === 0) {
                 account.level = 1;
-                accountManager.save();
+                Account.save();
                 res.send('OK');
             }
             break;
@@ -545,7 +537,7 @@ function _handleControllerData(req, res) {
             if (account.failedTimestamp === undefined || account.failed === undefined) {
                 account.failedTimestamp = 0; //TODO: Get js timestamp
                 account.failed = "banned";
-                accountManager.save();
+                Account.save();
                 res.send('OK');
             }
             break;
@@ -559,7 +551,7 @@ function _handleControllerData(req, res) {
             }
             if (account.firstWarningTimestamp === undefined) {
                 account.firstWarningTimestamp = 0; //TODO: Get js timestamp
-                accountManager.save();
+                Account.save();
                 res.send('OK');
             }
             break;
@@ -574,7 +566,7 @@ function _handleControllerData(req, res) {
             if (account.failedTimestamp === undefined || account.failed === undefined) {
                 account.failedTimestamp = 0; //TODO: Get js timestamp
                 account.failed = "invalid_credentials";
-                accountManager.save();
+                Account.save();
                 res.send('OK');
             }
             break;
@@ -589,14 +581,14 @@ function _handleControllerData(req, res) {
             if (account.failedTimestamp === undefined || account.failed === undefined) {
                 account.failedTimestamp = 0; //TODO: Get js timestamp
                 account.failed = "error_26";
-                accountManager.save();
+                Account.save();
                 res.send('OK');
             }
             break;
         case "logged_out":
             var device = devices[uuid];
             device.accountUsername = null;
-            deviceManager.save();
+            device.save();
             res.send('OK');
             break;
         default:
@@ -605,7 +597,7 @@ function _handleControllerData(req, res) {
     }
 }
 
-function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, forts, fortDetails, gymInfos, quests, encounters) {
+function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, forts, fortDetails, gymInfos, quests, encounters, username) {
     //let queue = Threading.getQueue(name: Foundation.UUID().uuidString, type: .serial)
     //queue.dispatch {
 
@@ -644,18 +636,30 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
     
         var startWildPokemon = process.hrtime();
         wildPokemons.forEach(function(wildPokemon) {
+            var pokemon = new Pokemon({
+                username: username,
+                cellId: wildPokemon.cell,
+                timestampMs: wildPokemon.timestamp_ms,
+                wild: wildPokemon.data
+            });
+            pokemon.save();
             //console.log("Parsed wildPokemon", wildPokemon.data);
             //let pokemon = Pokemon(mysql: mysql, wildPokemon: wildPokemon.data, cellId: wildPokemon.cell, timestampMs: wildPokemon.timestampMs, username: username)
-            //try? pokemon.save(mysql: mysql)
         });
         var endWildPokemon = process.hrtime(startWildPokemon);
         console.log("[WebhookRequestHandler] Pokemon Count:", wildPokemons.length, "parsed in", endWildPokemon + "s");
     
         var startNearbyPokemon = process.hrtime();
         nearbyPokemons.forEach(function(nearbyPokemon) {
+            var pokemon = new Pokemon({
+                username: username,
+                cellId: nearbyPokemon.cell,
+                //timestampMs: nearbyPokemon.timestamp_ms,
+                nearby: nearbyPokemon.data
+            });
+            pokemon.save();
             //console.log("Parsed nearbyPokemon", nearbyPokemon.data);
             //let pokemon = try? Pokemon(mysql: mysql, nearbyPokemon: nearbyPokemon.data, cellId: nearbyPokemon.cell, username: username)
-            //try? pokemon?.save(mysql: mysql)
         });
         var endNearbyPokemon = process.hrtime(startNearbyPokemon);
         console.log("[WebhookRequestHandler] NearbyPokemon Count:", nearbyPokemons.length, "parsed in", endNearbyPokemon + "s");
