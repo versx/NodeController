@@ -9,4 +9,7 @@ class Consumable {
         this.lat = lat;
         this.lon = lon;
     }
+    save() {
+        
+    }
 }

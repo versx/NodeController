@@ -6,10 +6,10 @@ const Device     = require('../models/device.js');
 const Pokemon    = require('../models/pokemon.js');
 const Gym        = require('../models/gym.js');
 const Pokestop   = require('../models/pokestop.js');
-//const S2         = require('@radarlabs/s2');
+const S2Cell     = require('../models/s2cell.js');
+const S2         = require('nodes2ts');
 
 var accounts = Account.getAll();
-console.log(accounts);
 var devices = Device.getAll();
 
 var emptyCells = [];//[UInt64: Int]
@@ -41,7 +41,6 @@ function _handleRawData(req, res) {
         console.log(e);
         return;
     }
-    //console.log("HandleRawData Parsed:", jsonOpt);
     if (jsonOpt === undefined) {
         console.log("Bad data");
         return;
@@ -308,9 +307,9 @@ function _handleRawData(req, res) {
         cells.forEach(function(cell) {
             if (inArea === false) {
                 console.log("Cell:", cell);
-                //let cell = S2Cell(cellId: S2CellId(uid: cell))
-                //let coord = S2LatLng(point: cell.center).coord
-                //if (coord.distance(to: targetCoord!) <= max(targetMaxDistance, 100)) {
+                var cell = new S2Cell(new S2.S2CellId(cell.toString()))
+                //var coord = new S2LatLng(cell.getCenter()).coord
+                //if (coord.getDistance(targetCoord) <= max(targetMaxDistance, 100)) {
                     inArea = true
                 //}
             }
@@ -380,8 +379,8 @@ function _handleRawData(req, res) {
             let distance = 35;//pokemonCoords.distance(to: coords)
             
             // Only Encounter pokemon within 35m of initial pokemon scann
-            /*
             let pokemonId = parseInt(pokemon.data.pokemon_data.pokemon_id);
+            /*
             if (distance <= 35 && controller.scatterPokemon.contains(pokemonId)) {
                 scatterPokemon.push({
                     "lat": pokemon.data.latitude,
@@ -612,13 +611,18 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
         var stopsIdsPerCell = []; //[UInt64: [String]]
         
         cells.forEach(function(cellId) {
-            //console.log("CellId:", cellId.toString());
-            //let s2cell = S2Cell(cellId: S2CellId(uid: cellId))
-            //let lat = s2cell.capBound.rectBound.center.lat.degrees
-            //let lon = s2cell.capBound.rectBound.center.lng.degrees
-            //let level = s2cell.level
-            //let cell = Cell(id: cellId, level: UInt8(level), centerLat: lat, centerLon: lon, updated: undefined)
-            //try? cell.save(update: true)
+            var s2cell = new S2.S2Cell(new S2.S2CellId(cellId.toString()));
+            var lat = s2cell.getCapBound().getRectBound().getCenter().latDegrees;
+            var lon = s2cell.getCapBound().getRectBound().getCenter().lngDegrees;
+            var level = s2cell.level;
+            var cell = new S2Cell({
+                id: cellId.toString(),
+                level: level,
+                lat: lat,
+                lon: lon,
+                updated: new Date()
+            });
+            cell.save();
             
             if (gymIdsPerCell[cellId] === undefined) {
                 gymIdsPerCell[cellId] = [];
@@ -631,11 +635,11 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
         var startClientWeathers = process.hrtime();
         clientWeathers.forEach(function(conditions) {
             //console.log("Parsed weather", conditions.cell);
-            //let ws2cell = S2Cell(cellId: S2CellId(id: conditions.cell))
-            //let wlat = ws2cell.capBound.rectBound.center.lat.degrees
-            //let wlon = ws2cell.capBound.rectBound.center.lng.degrees
-            //let wlevel = ws2cell.level
-            //let weather = Weather(id: ws2cell.cellId.id, level: UInt8(wlevel), latitude: wlat, longitude: wlon, conditions: conditions.data, updated: nil)
+            var ws2cell = new S2.S2Cell(new S2.S2CellId(conditions.cell.toString()));
+            var wlat = ws2cell.getCapBound().getRectBound().getCenter().latDegrees;
+            var wlon = ws2cell.getCapBound().getRectBound().getCenter().lngDegrees;
+            var wlevel = ws2cell.level;
+            //var weather = Weather(ws2cell.cellId.id, wlevel, latitude: wlat, longitude: wlon, conditions: conditions.data, updated: nil)
             //weather.save(update: true)
         });
         var endClientWeathers = process.hrtime(startClientWeathers);
@@ -772,7 +776,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
             encounters.forEach(function(encounter) {
                 var pokemon;
                 try {
-                    pokemon = Pokemon.getById(encounter.wild_pokemon.encounter_id.toString());
+                    pokemon = Pokemon.getById(encounter.wild_pokemon.encounter_id);
                 } catch (err) {
                     pokemon = null;
                 }
@@ -780,24 +784,28 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                     pokemon.addEncounter(encounter, username);
                     pokemon.save();
                 } else {
+                    var centerCoord = new S2.S2Point(encounter.wild_pokemon.latitude, encounter.wild_pokemon.longitude);
+                    var center = S2.S2LatLng.fromPoint(centerCoord);
+                    var centerNormalized = center.normalized();
+                    var centerNormalizedPoint = centerNormalized.toPoint();
+                    //var circle = new S2.S2Cap(centerNormalizedPoint, 0.0);
+                    var circle = new S2.S2Cap(centerCoord, 0.0);
+                    var coverer = new S2.S2RegionCoverer();
+                    coverer.maxCells = 1;
+                    coverer.minLevel = 15;
+                    coverer.maxLevel = 15;
+                    var cellIds = coverer.getCoveringCells(circle);
+                    console.log(cellIds);
+                    //if (cellId)
                     /*
-                    let centerCoord = CLLocationCoordinate2D(latitude: encounter.wildPokemon.latitude, longitude: encounter.wildPokemon.longitude)
-                    let center = S2LatLng(coord: centerCoord)
-                    let centerNormalizedPoint = center.normalized.point
-                    let circle = S2Cap(axis: centerNormalizedPoint, height: 0.0)
-                    let coverer = S2RegionCoverer()
-                    coverer.maxCells = 1
-                    coverer.maxLevel = 15
-                    coverer.minLevel = 15
-                    let cellIDs = coverer.getCovering(region: circle)
                     if (cellID = cellIDs.first) {
-                        let newPokemon = Pokemon(
+                        var newPokemon = Pokemon(
                             encounter.wildPokemon,
                             cellID.uid,
                             UInt64(Date().timeIntervalSince1970 * 1000),
                             username)
                         newPokemon.addEncounter(encounter, username)
-                        newPokemon.save(updateIV: true)
+                        newPokemon.save() // TODO: UpdateIV true
                     }
                     */
                 }

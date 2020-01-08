@@ -17,14 +17,9 @@
   },
   "homepage": "https://github.com/versx/NodeController#readme",
   "dependencies": {
-    "ejs": "^1.0.0",
     "express": "^4.17.1",
-    "express-logger": "0.0.3",
-    "express-session": "^1.17.0",
-    "glob": "^7.1.6",
     "google-protobuf": "^3.11.2",
-    "morgan": "^1.9.1",
-    "pbkdf2-password": "^1.2.1",
+    "nodes2ts": "^2.0.0",
     "protobufjs": "^6.8.8"
   }
 }
