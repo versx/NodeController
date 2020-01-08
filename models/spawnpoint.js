@@ -29,4 +29,14 @@ class Spawnpoint {
     }
 }
 
+/**
+ * Save object as json string to file path.
+ * @param {*} obj 
+ * @param {*} path 
+ */
+function save(obj, path) {
+    fs.writeFileSync(path, JSON.stringify(obj, null, 2), 'utf-8');
+}
+
+// Export the class
 module.exports = Spawnpoint;

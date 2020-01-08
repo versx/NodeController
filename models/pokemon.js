@@ -2,6 +2,7 @@
 
 const pokemonPath = 'pokemon.json';
 const fs          = require('fs');
+const moment      = require('moment');
 
 class Pokemon /*extends Consumable*/ {
     static Pokemon = {};
@@ -28,36 +29,31 @@ class Pokemon /*extends Consumable*/ {
             }
             if (this.expireTimestampVerified === false && spawnId !== undefined) {
                 // Spawnpoint not verified, check if we have the tth.
-                /*
-                let spawnpoint: SpawnPoint
-                do {
-                    spawnpoint = try SpawnPoint.getWithId(id: spawnId!)
-                } catch {
-                    spawnpoint = nil
+                var spawnpoint = {};
+                try {
+                    spawnpoint = Spawnpoint.getById(spawnId);
+                } catch (err) {
+                    spawnpoint = null;
                 }
-                if let spawnpoint = spawnpoint, let despawnSecond = spawnpoint.despawnSecond {
-                    let date = Date(timeIntervalSince1970: Double(timestampMs) / 1000)
+                if (spawnpoint !== null) {
+                    var despawnSecond = spawnpoint.despawn_second;
+                    if (despawnSecond !== undefined && despawnSecond !== null) {
+                        var date = moment().format('mm:ss');
+                        var split = date.split(':');
+                        var minute = parseInt(split[0]);
+                        var second = parseInt(split[1]);
+                        var secondOfHour = second + minute * 60;
                     
-                    let formatter = DateFormatter()
-                    formatter.dateFormat = "mm:ss"
-                    let formattedDate = formatter.string(from: date)
-                    
-                    let split = formattedDate.components(separatedBy: ":")
-                    let minute = Int(split[0])!
-                    let second = Int(split[1])!
-                    let secondOfHour = second + minute * 60
-                    
-                    let depsawnOffset: Int
-                    if despawnSecond < secondOfHour {
-                        depsawnOffset = 3600 + Int(despawnSecond) - secondOfHour
-                    } else {
-                        depsawnOffset = Int(despawnSecond) - secondOfHour
+                        var despawnOffset;
+                        if (despawnSecond < secondOfHour) {
+                            despawnOffset = 3600 + parseInt(despawnSecond) - secondOfHour;
+                        } else {
+                            despawnOffset = parseInt(despawnSecond) - secondOfHour;
+                        }
+                        this.expireTimestamp = parseInt(moment(date, "x")) + despawnOffset;
+                        this.expireTimestampVerified = true;
                     }
-                    
-                    self.expireTimestamp = UInt32(Int(date.timeIntervalSince1970) + depsawnOffset)
-                    self.expireTimestampVerified = true
                 }
-                */
             }
             this.spawnId = spawnId;
             this.cellId = data.cellId.toString();
@@ -152,36 +148,31 @@ class Pokemon /*extends Consumable*/ {
             this.lon = encounter.wild_pokemon.longitude;
 
             if (this.expireTimestampVerified === false && spawnId !== undefined) {
-                /*
-                var spawnpoint;
+                var spawnpoint = {};
                 try {
                     spawnpoint = Spawnpoint.getById(spawnId);
                 } catch (err) {
                     spawnpoint = null;
                 }
-                if (spawnpoint = spawnpoint, despawnSecond = spawnpoint.despawnSecond) {
-                    var date = Date();
+                if (spawnpoint !== null) {
+                    var despawnSecond = spawnpoint.despawn_second;
+                    if (despawnSecond !== undefined && despawnSecond !== null) {
+                        var date = moment().format('mm:ss');
+                        var split = date.split(':');
+                        var minute = parseInt(split[0]);
+                        var second = parseInt(split[1]);
+                        var secondOfHour = second + minute * 60;
                     
-                    var formatter = DateFormatter();
-                    formatter.dateFormat = "mm:ss";
-                    var formattedDate = formatter.string(date);
-                    
-                    var split = formattedDate.split(":");
-                    var minute = parseInt(split[0]);
-                    var second = parseInt(split[1]);
-                    var secondOfHour = second + minute * 60;
-                    
-                    var depsawnOffset;
-                    if (despawnSecond < secondOfHour) {
-                        depsawnOffset = 3600 + parseInt(despawnSecond) - secondOfHour
-                    } else {
-                        depsawnOffset = parseInt(despawnSecond) - secondOfHour
+                        var despawnOffset;
+                        if (despawnSecond < secondOfHour) {
+                            despawnOffset = 3600 + parseInt(despawnSecond) - secondOfHour;
+                        } else {
+                            despawnOffset = parseInt(despawnSecond) - secondOfHour;
+                        }
+                        this.expireTimestamp = parseInt(moment(date, "x")) + despawnOffset;
+                        this.expireTimestampVerified = true;
                     }
-                    
-                    this.expireTimestamp = parseInt(date.timeIntervalSince1970) + depsawnOffset;
-                    this.expireTimestampVerified = true
                 }
-                */
             }            
         }
         
