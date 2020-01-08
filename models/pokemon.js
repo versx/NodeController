@@ -3,7 +3,6 @@
 const pokemonPath = 'pokemon.json';
 const fs          = require('fs');
 
-// Constructor
 class Pokemon /*extends Consumable*/ {
     static Pokemon = {};
     constructor(data) {

@@ -3,7 +3,6 @@
 const gymsPath = 'gyms.json';
 const fs       = require('fs');
 
-// Constructor
 class Gym {
     static Gyms = {};
     constructor(data) {

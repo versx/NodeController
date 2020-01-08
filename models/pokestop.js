@@ -5,7 +5,6 @@ const fs            = require('fs');
 
 const lureTime = 1800;
 
-// Constructor
 class Pokestop {
     static Pokestops = {};
     constructor(data) {

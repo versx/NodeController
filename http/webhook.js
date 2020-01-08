@@ -15,7 +15,6 @@ var devices = Device.getAll();
 var emptyCells = [];//[UInt64: Int]
 var levelCache = {};
 
-// Constructor
 class WebhookRequestHandler {
     constructor() {
     }
