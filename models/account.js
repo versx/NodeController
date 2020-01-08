@@ -1,7 +1,6 @@
 "use strict"
 
-const accountsPath = '../accounts.json';
-//const accounts     = require(accountsPath);
+const accountsPath = 'accounts.json';
 const fs           = require('fs');
 
 //console.log("Dir:", __dirname);
@@ -15,7 +14,6 @@ class Account {
         this.level = level;
     }
     static getAll() {
-        //return accounts;
         return this.load();
     }
     static getNewAccount(minLevel, maxLevel) {
@@ -23,15 +21,10 @@ class Account {
     }
     save() {
         var accounts = Account.getAll();
-        if (accounts[this.username] !== undefined) {
-            accounts.push({
-                username: this.username,
-                password: this.password,
-                firstWarningTimestamp: this.firstWarningTimestamp,
-                level: this.level
-            });
+        //if (accounts[this.username] !== undefined) {
+            accounts[this.username] = this
             save(accounts, accountsPath);
-        }
+        //}
     }
     static load() {
         var data = fs.readFileSync(accountsPath);
