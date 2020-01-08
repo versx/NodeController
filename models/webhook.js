@@ -643,8 +643,6 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                 wild: wildPokemon.data
             });
             pokemon.save();
-            //console.log("Parsed wildPokemon", wildPokemon.data);
-            //let pokemon = Pokemon(mysql: mysql, wildPokemon: wildPokemon.data, cellId: wildPokemon.cell, timestampMs: wildPokemon.timestampMs, username: username)
         });
         var endWildPokemon = process.hrtime(startWildPokemon);
         console.log("[WebhookRequestHandler] Pokemon Count:", wildPokemons.length, "parsed in", endWildPokemon + "s");
@@ -658,8 +656,6 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                 nearby: nearbyPokemon.data
             });
             pokemon.save();
-            //console.log("Parsed nearbyPokemon", nearbyPokemon.data);
-            //let pokemon = try? Pokemon(mysql: mysql, nearbyPokemon: nearbyPokemon.data, cellId: nearbyPokemon.cell, username: username)
         });
         var endNearbyPokemon = process.hrtime(startNearbyPokemon);
         console.log("[WebhookRequestHandler] NearbyPokemon Count:", nearbyPokemons.length, "parsed in", endNearbyPokemon + "s");
@@ -668,16 +664,22 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
         forts.forEach(function(fort) {
             switch (fort.data.type) {
                 case 0: // gym
-                    //var gym = Gym(fortData: fort.data, cellId: fort.cell);
-                    //try? gym.save(mysql: mysql);
+                    var gym = new Gym({
+                        cellId: fort.cell,
+                        fort: fort.data
+                    });
+                    gym.save();
                     if (gymIdsPerCell[fort.cell] === undefined) {
                         gymIdsPerCell[fort.cell] = [];
                     }
                     gymIdsPerCell[fort.cell].push(fort.data.id);
                     break;
                 case 1: // checkpoint
-                    //let pokestop = Pokestop(fortData: fort.data, cellId: fort.cell);
-                    //try? pokestop.save(mysql: mysql);
+                    var pokestop = new Pokestop({
+                        cellId: fort.cell,
+                        fort: fort.data
+                    });
+                    pokestop.save();
                     if (stopsIdsPerCell[fort.cell] === undefined) {
                         stopsIdsPerCell[fort.cell] = [];
                     }
@@ -718,7 +720,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                         break;
                 }
             });
-            var endFortDetails = process.hrtime(endFortDetails);
+            var endFortDetails = process.hrtime(startFortDetails);
             console.log("[WebhookRequestHandler] Forts Detail Count:", fortDetails.length, "parsed in", endFortDetails + "s");
         }
         

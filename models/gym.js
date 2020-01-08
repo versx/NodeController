@@ -1,7 +1,7 @@
 "use strict"
 
 const gymsPath = '../gyms.json';
-const gyms     = require(gymsPath);
+//const gyms     = require(gymsPath);
 const fs       = require('fs');
 
 // Constructor
@@ -74,17 +74,56 @@ class Gym {
         }
     }
     static getAll() {
-        return gyms;
+        //return gyms;
+        return this.load();
     }
     save() {
+        var gyms = Gym.getAll();
         if (gyms[this.id] !== undefined) {
             gyms[this.id] = this;
             save(gyms, gymsPath);
         }
     }
     static load() {
+        //var data = fs.readFileSync(gymsPath);
+        //return JSON.parse(data);
         var data = fs.readFileSync(gymsPath);
-        return JSON.parse(data);
+        var obj = JSON.parse(data);
+        var gymList = []
+        for (var key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                var gym = obj[key];
+                gymList.push(new Gym(
+                    gym.id,
+                    gym.lat, 
+                    gym.lon, 
+                    gym.name,
+                    gym.url,
+                    gym.guardPokemonId,
+                    gym.enabled,
+                    gym.teamId,
+                    gym.raidEndTimestamp,
+                    gym.raidSpawnTimestamp,
+                    gym.raidBattleTimestamp,
+                    gym.raidPokemonId,
+                    gym.raidLevel,
+                    gym.availableSlots,
+                    gym.updated,
+                    gym.exRaidEligible,
+                    gym.inBattle,
+                    gym.raidPokemonMove1,
+                    gym.raidPokemonMove2,
+                    gym.raidPokemonForm,
+                    gym.raidPokemonCp,
+                    gym.raidPokemonGender,
+                    gym.raidIsExclusive,
+                    gym.cellId,
+                    gym.totalCp,
+                    gym.sponsorId
+                ));
+            }
+        }
+        return gymList;
     }
 }
 
