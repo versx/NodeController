@@ -142,15 +142,14 @@ class Pokemon /*extends Consumable*/ {
         */
         
         if (this.spawnId === undefined) {
-            var spawnId = encounter.wild_pokemon.spawn_point_id;//, radix: 16)
-            this.spawnId = spawnId;
+            this.spawnId = encounter.wild_pokemon.spawn_point_id;//, radix: 16)
             this.lat = encounter.wild_pokemon.latitude;
             this.lon = encounter.wild_pokemon.longitude;
 
-            if (this.expireTimestampVerified === false && spawnId !== undefined) {
+            if (this.expireTimestampVerified === false && this.spawnId !== undefined) {
                 var spawnpoint = {};
                 try {
-                    spawnpoint = Spawnpoint.getById(spawnId);
+                    spawnpoint = Spawnpoint.getById(this.spawnId);
                 } catch (err) {
                     spawnpoint = null;
                 }

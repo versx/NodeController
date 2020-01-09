@@ -3,7 +3,6 @@
 const devicesPath = 'devices.json';
 const fs          = require('fs');
 
-// Constructor
 class Device {
     constructor(name, instanceName, accountUsername, lastHost, lastSeen, lastLat, lastLon) {
         this.name = name;

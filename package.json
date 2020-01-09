@@ -21,6 +21,7 @@
     "google-protobuf": "^3.11.2",
     "moment": "^2.24.0",
     "nodes2ts": "^2.0.0",
-    "protobufjs": "^6.8.8"
+    "protobufjs": "^6.8.8",
+    "redis": "^2.8.0"
   }
 }
