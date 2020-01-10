@@ -1,13 +1,16 @@
 "use strict"
 
-const POGOProtos = require('../pogo-protos');
-const Account    = require('../models/account.js');
-const Device     = require('../models/device.js');
-const Pokemon    = require('../models/pokemon.js');
-const Gym        = require('../models/gym.js');
-const Pokestop   = require('../models/pokestop.js');
-const S2Cell     = require('../models/s2cell.js');
-const S2         = require('nodes2ts');
+const POGOProtos  = require('../pogo-protos');
+const Account     = require('../models/account.js');
+const Device      = require('../models/device.js');
+const Pokemon     = require('../models/pokemon.js');
+const Gym         = require('../models/gym.js');
+const Pokestop    = require('../models/pokestop.js');
+const S2Cell      = require('../models/s2cell.js');
+const S2          = require('nodes2ts');
+const RedisClient = require('../redis-client.js');
+
+const client = new RedisClient();
 
 var accounts = Account.getAll();
 var devices = Device.getAll();
@@ -527,7 +530,7 @@ function _handleControllerData(req, res) {
             }
             if (account.level === 0) {
                 account.level = 1;
-                Account.save();
+                account.save();
                 res.send('OK');
             }
             break;
@@ -542,7 +545,7 @@ function _handleControllerData(req, res) {
             if (account.failedTimestamp === undefined || account.failed === undefined) {
                 account.failedTimestamp = 0; //TODO: Get js timestamp
                 account.failed = "banned";
-                Account.save();
+                account.save();
                 res.send('OK');
             }
             break;
@@ -556,7 +559,7 @@ function _handleControllerData(req, res) {
             }
             if (account.firstWarningTimestamp === undefined) {
                 account.firstWarningTimestamp = 0; //TODO: Get js timestamp
-                Account.save();
+                account.save();
                 res.send('OK');
             }
             break;
@@ -571,7 +574,7 @@ function _handleControllerData(req, res) {
             if (account.failedTimestamp === undefined || account.failed === undefined) {
                 account.failedTimestamp = 0; //TODO: Get js timestamp
                 account.failed = "invalid_credentials";
-                Account.save();
+                account.save();
                 res.send('OK');
             }
             break;
@@ -586,7 +589,7 @@ function _handleControllerData(req, res) {
             if (account.failedTimestamp === undefined || account.failed === undefined) {
                 account.failedTimestamp = 0; //TODO: Get js timestamp
                 account.failed = "error_26";
-                Account.save();
+                account.save();
                 res.send('OK');
             }
             break;
@@ -621,7 +624,8 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                 lon: lon,
                 updated: new Date()
             });
-            cell.save();
+            //cell.save();
+            client.addCell(cell);
             
             if (gymIdsPerCell[cellId] === undefined) {
                 gymIdsPerCell[cellId] = [];
@@ -640,6 +644,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
             var wlevel = ws2cell.level;
             //var weather = Weather(ws2cell.cellId.id, wlevel, latitude: wlat, longitude: wlon, conditions: conditions.data, updated: nil)
             //weather.save(update: true)
+            //client.addWeather(weather);
         });
         var endClientWeathers = process.hrtime(startClientWeathers);
         console.log("[WebhookRequestHandler] Weather Detail Count:", clientWeathers.length, "parsed in", endClientWeathers + "s");
@@ -652,7 +657,8 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                 timestampMs: wildPokemon.timestamp_ms,
                 wild: wildPokemon.data
             });
-            pokemon.save();
+            //pokemon.save();
+            client.addPokemon(pokemon);
         });
         var endWildPokemon = process.hrtime(startWildPokemon);
         console.log("[WebhookRequestHandler] Pokemon Count:", wildPokemons.length, "parsed in", endWildPokemon + "s");
@@ -665,7 +671,8 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                 //timestampMs: nearbyPokemon.timestamp_ms,
                 nearby: nearbyPokemon.data
             });
-            pokemon.save();
+            //pokemon.save();
+            client.addPokemon(pokemon);
         });
         var endNearbyPokemon = process.hrtime(startNearbyPokemon);
         console.log("[WebhookRequestHandler] NearbyPokemon Count:", nearbyPokemons.length, "parsed in", endNearbyPokemon + "s");
@@ -678,7 +685,8 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                         cellId: fort.cell,
                         fort: fort.data
                     });
-                    gym.save();
+                    //gym.save();
+                    client.addGym(gym);
                     if (gymIdsPerCell[fort.cell] === undefined) {
                         gymIdsPerCell[fort.cell] = [];
                     }
@@ -689,7 +697,8 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                         cellId: fort.cell,
                         fort: fort.data
                     });
-                    pokestop.save();
+                    //pokestop.save();
+                    client.addPokestop(pokestop);
                     if (stopsIdsPerCell[fort.cell] === undefined) {
                         stopsIdsPerCell[fort.cell] = [];
                     }
@@ -713,7 +722,8 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                         }
                         if (gym !== null) {
                             gym.addDetails(fort);
-                            gym.save();
+                            //gym.save();
+                            client.addGym(gym);
                         }
                         break;
                     case 1: // checkpoint
@@ -725,7 +735,8 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                         }
                         if (pokestop !== null) {
                             pokestop.addDetails(fort);
-                            pokestop.save();
+                            //pokestop.save();
+                            client.addPokestop(pokestop);
                         }
                         break;
                 }
@@ -745,7 +756,8 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                 }
                 if (gym !== null) {
                     gym.addGymInfo(gymInfo);
-                    gym.save();
+                    //gym.save();
+                    client.addGym(gym);
                 }
             });
             var endGymInfos = process.hrtime(startGymInfos);
@@ -763,7 +775,8 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                 }
                 if (pokestop !== null) {
                     pokestop.addQuest(quest);
-                    pokestop.save();
+                    //pokestop.save();
+                    client.addQuest(quest);
                 }
             });
             var endQuests = process.hrtime(startQuests);
@@ -781,7 +794,8 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                 }
                 if (pokemon !== null) {
                     pokemon.addEncounter(encounter, username);
-                    pokemon.save();
+                    //pokemon.save();
+                    client.addPokemon(pokemon);
                 } else {
                     var centerCoord = new S2.S2Point(encounter.wild_pokemon.latitude, encounter.wild_pokemon.longitude);
                     var center = S2.S2LatLng.fromPoint(centerCoord);

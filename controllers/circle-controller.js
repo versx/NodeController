@@ -36,22 +36,23 @@ class CircleInstanceController {
         }
 
         var currentCoord = coords[currentIndex];
-        if (type === "pokemon") {
-            return {
-                action: "scan_pokemon",
-                lat: currentCoord.lat,
-                lon: currentCoord.lon,
-                min_level: this.minLevel,
-                max_level: this.maxLevel
-            };
-        } else if (type === "raid") {
-            return {
-                action: "scan_raid",
-                lat: currentCoord.lat,
-                lon: currentCoord.lon,
-                min_level: this.minLevel,
-                max_level: this.maxLevel
-            };
+        switch (type) {
+            case "pokemon":
+                return {
+                    action: "scan_pokemon",
+                    lat: currentCoord.lat,
+                    lon: currentCoord.lon,
+                    min_level: this.minLevel,
+                    max_level: this.maxLevel
+                };
+            case "raids":
+                return {
+                    action: "scan_raid",
+                    lat: currentCoord.lat,
+                    lon: currentCoord.lon,
+                    min_level: this.minLevel,
+                    max_level: this.maxLevel
+                };
         }
     }
     getStatus() {

@@ -18,11 +18,10 @@ class Pokestop {
             this.enabled = data.fort.enabled;
             var lastModifiedTimestamp = data.fort.last_modified_timestamp_ms / 1000;
             if (data.fort.active_fort_modifier !== undefined && data.fort.active_fort_modifier !== null && data.fort.active_fort_modifier.length > 0) {
-                console.log("Fort Modifier:", data.fort.active_fort_modifier);
-                if (data.fort.active_fort_modifier.contains(501) ||
-                    data.fort.active_fort_modifier.contains(502) ||
-                    data.fort.active_fort_modifier.contains(503) ||
-                    data.fort.active_fort_modifier.contains(504)) {
+                if (data.fort.active_fort_modifier.includes(501) ||
+                    data.fort.active_fort_modifier.includes(502) ||
+                    data.fort.active_fort_modifier.includes(503) ||
+                    data.fort.active_fort_modifier.includes(504)) {
                     this.lureExpireTimestamp = lastModifiedTimestamp + lureTime;
                     this.lureId = data.fort.active_fort_modifier[0].item_id;
                 }
