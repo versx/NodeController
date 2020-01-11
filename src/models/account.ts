@@ -1,7 +1,7 @@
 "use strict"
 
 const accountsPath = './data/accounts.json';
-const fs           = require('fs');
+import fs = require('fs');
 
 //console.log("Dir:", __dirname);
 
@@ -31,7 +31,7 @@ class Account {
     }
     static load() {
         let data = fs.readFileSync(accountsPath);
-        let obj = JSON.parse(data);
+        let obj = JSON.parse(data.toString());
         let accountList = []
         for (var key in obj) {
             if (obj.hasOwnProperty(key)) {
