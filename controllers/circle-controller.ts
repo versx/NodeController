@@ -27,7 +27,7 @@ class CircleInstanceController extends InstanceController {
         this.lastCompletedTime = new Date().getUTCSeconds();
     }
     getTask(uuid: string, username: string) {
-        var currentIndex = this.lastIndex;
+        let currentIndex = this.lastIndex;
         if (this.lastIndex + 1 === this.coords.length) {
             this.lastLastCompletedTime = this.lastCompletedTime;
             this.lastCompletedTime = new Date().getUTCSeconds();
@@ -36,7 +36,7 @@ class CircleInstanceController extends InstanceController {
             this.lastIndex = this.lastIndex + 1;
         }
 
-        var currentCoord = this.coords[currentIndex];
+        let currentCoord = this.coords[currentIndex];
         switch (this.type) {
             case InstanceType.CirclePokemon:
                 return {
@@ -57,10 +57,10 @@ class CircleInstanceController extends InstanceController {
         }
     }
     getStatus() {
-        var lastLast = this.lastLastCompletedTime;
-        var last = this.lastCompletedTime;
+        let lastLast = this.lastLastCompletedTime;
+        let last = this.lastCompletedTime;
         if (lastLast !== undefined && last !== undefined) {
-            var time = parseInt(last.timeIntervalSince(lastLast));
+            let time = parseInt(last.timeIntervalSince(lastLast));
             return { round_time: time };
         }
         return null;

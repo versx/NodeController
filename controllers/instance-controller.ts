@@ -1,4 +1,5 @@
 import { Device } from "./../models/device"
+import { IInstanceController } from "./iinstance-controller"
 import { CircleInstanceController } from "./circle-controller"
 import { CircleSmartRaidInstanceController } from "./smart-circle-controller"
 import { IVInstanceController } from "./iv-controller"
@@ -37,9 +38,6 @@ class Instance implements IInstance {
     maxLevel: number;
     area: [any];
     data: IInstanceData;
-}
-
-interface IInstanceController {
 }
 
 class InstanceController implements IInstanceController {
@@ -134,6 +132,31 @@ class InstanceController implements IInstanceController {
         }
         //instanceController.delegate = AssignmentController.global;
         this.instancesByInstanceName[instance.name] = instanceController;
+    }
+    reloadAllInstances() {
+        let keys = Object.keys(this.instancesByInstanceName);
+        keys.forEach(function(instance) {
+            this.instancesByInstanceName[instance].value.reload();
+            // TODO: Add AssignmentController
+            //AssignmentController.global.setup();
+        });
+    }
+    reloadInstance(newInstance: Instance, oldInstanceName: string) {
+        let oldInstance = this.instancesByInstanceName[oldInstanceName];
+        if (oldInstance != undefined && oldInstance !== null) {
+            let keys = Object.keys(this.devicesByDeviceUUID);
+            keys.forEach(function(deviceUUID) {
+                let row = this.devicesByDeviceUUID[deviceUUID];
+                if (row.value.instanceName === oldInstance.name) {
+                    let device = row.value
+                    device.instanceName = newInstance.name
+                    this.devicesByDeviceUUID[deviceUUID] = device
+                }
+            });
+            this.instancesByInstanceName[oldInstanceName].stop();
+            this.instancesByInstanceName[oldInstanceName] = null;
+        }
+        this.addInstance(newInstance)
     }
 }
 

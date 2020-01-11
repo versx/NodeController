@@ -1,14 +1,15 @@
 "use strict"
 
 const POGOProtos  = require('../pogo-protos');
-const Account     = require('../models/account.js');
-const Device      = require('../models/device.js');
-const Pokemon     = require('../models/pokemon.js');
-const Gym         = require('../models/gym.js');
-const Pokestop    = require('../models/pokestop.js');
-const S2Cell      = require('../models/s2cell.js');
 const S2          = require('nodes2ts');
-const RedisClient = require('../redis-client.js');
+
+import { Account } from '../models/account';
+import { Device } from '../models/device';
+import { Pokemon } from '../models/pokemon';
+import { Gym } from '../models/gym.js';
+import { Pokestop } from '../models/pokestop';
+import { S2Cell } from '../models/s2cell';
+import { RedisClient } from '../redis-client.js';
 
 const client = new RedisClient();
 
@@ -74,7 +75,7 @@ function _handleRawData(req, res) {
     let latTarget = json["lat_target"];
     let lonTarget = json["lon_target"];
     if (uuid !== undefined && latTarget !== undefined && lonTarget !== undefined) {
-        var newDevice = new Device(uuid, null, username, "127.0.0.1", new Date(), latTarget, lonTarget);
+        var newDevice = new Device(uuid, null, username, "127.0.0.1", new Date().getUTCSeconds(), latTarget, lonTarget);
         newDevice.save();
     }
 
@@ -309,8 +310,8 @@ function _handleRawData(req, res) {
         cells.forEach(function(cell) {
             if (inArea === false) {
                 console.log("Cell:", cell);
-                var cell = new S2Cell(new S2.S2CellId(cell.toString()))
-                //var coord = new S2LatLng(cell.getCenter()).coord
+                let s2cell = new S2Cell(new S2.S2CellId(cell.toString()))
+                //let coord = new S2LatLng(s2cell.getCenter()).coord
                 //if (coord.getDistance(targetCoord) <= max(targetMaxDistance, 100)) {
                     inArea = true
                 //}
@@ -369,7 +370,7 @@ function _handleRawData(req, res) {
             }
             
             try {
-                let oldPokemon = Pokemon.getWithId(pokemon.data.encounter_id);
+                let oldPokemon = Pokemon.getById(pokemon.data.encounter_id);
                 if (oldPokemon !== undefined && oldPokemon.atkIv !== undefined) {
                     //Skip going to mons already with IVs.
                     continue
@@ -457,7 +458,7 @@ function _handleControllerData(req, res) {
             if (device === undefined) {
                 console.log("Registering device");
                 // Register new device
-                let newDevice = new Device(uuid, null, null, 0, null, 0.0, 0.0);
+                let newDevice = new Device(uuid, null, null, null, 0, 0.0, 0.0);
                 newDevice.save();
                 devices[uuid] = newDevice;
                 res.send({ 

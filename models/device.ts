@@ -11,7 +11,8 @@ class Device {
     lastSeen: number;
     lastLat: number;
     lastLon: number;
-    constructor(name, instanceName, accountUsername, lastHost, lastSeen, lastLat, lastLon) {
+
+    constructor(name: string, instanceName: string, accountUsername: string, lastHost: string, lastSeen: number, lastLat: number, lastLon: number) {
         this.name = name;
         this.instanceName = instanceName;
         this.accountUsername = accountUsername;
@@ -24,19 +25,19 @@ class Device {
         return this.load();
     }
     save() {
-        var devices = Device.getAll();
+        let devices = Device.getAll();
         //if (devices[this.name] === undefined) {
             devices[this.name] = this;
             save(devices, devicesPath);
         //}
     }
     static load() {
-        var data = fs.readFileSync(devicesPath);
-        var obj = JSON.parse(data);
-        var deviceList = []
+        let data = fs.readFileSync(devicesPath);
+        let obj = JSON.parse(data);
+        let deviceList = []
         for (var key in obj) {
             if (obj.hasOwnProperty(key)) {
-                var dev = obj[key];
+                let dev = obj[key];
                 deviceList.push(new Device(dev.uuid, dev.instanceName, dev.accountUsername, dev.lastHost, dev.lastSeen, dev.lastLat, dev.lastLon));
             }
         };
@@ -49,7 +50,7 @@ class Device {
  * @param {*} obj 
  * @param {*} path 
  */
-function save(obj, path) {
+function save(obj: any, path: string) {
     fs.writeFileSync(path, JSON.stringify(obj, null, 2), 'utf-8');
 }
 

@@ -23,19 +23,19 @@ class Account {
         return {};
     }
     save() {
-        var accounts = Account.getAll();
+        let accounts = Account.getAll();
         //if (accounts[this.username] !== undefined) {
             accounts[this.username] = this
             save(accounts, accountsPath);
         //}
     }
     static load() {
-        var data = fs.readFileSync(accountsPath);
-        var obj = JSON.parse(data);
-        var accountList = []
+        let data = fs.readFileSync(accountsPath);
+        let obj = JSON.parse(data);
+        let accountList = []
         for (var key in obj) {
             if (obj.hasOwnProperty(key)) {
-                var acc = obj[key];
+                let acc = obj[key];
                 accountList.push(new Account(acc.username, acc.password, acc.firstWarningTimestamp, acc.level));
             }
         }
@@ -48,9 +48,9 @@ class Account {
  * @param {*} obj 
  * @param {*} path 
  */
-function save(obj, path) {
+function save(obj: any, path: string) {
     fs.writeFileSync(path, JSON.stringify(obj, null, 2), 'utf-8');
 }
 
 // Export the class
-module.exports = Account;
+export { Account };

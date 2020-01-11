@@ -6,6 +6,34 @@ const moment      = require('moment');
 
 class Pokemon /*extends Consumable*/ {
     static Pokemon = {};
+
+    id: string;
+    lat: number;
+    lon: number;
+    pokemonId: number;
+    form: number;
+    gender: number;
+    costume: number;
+    shiny: boolean;
+    weather: number;
+    level: number;
+    cp: number;
+    move1: number;
+    move2: number;
+    size: number;
+    weight: number;
+    spawnId: string;
+    expireTimestamp: number;
+    expireTimestampVerified: boolean;
+    pokestopId: string;
+    atkIv: number;
+    defIv: number;
+    staIv: number;
+    username: string;
+    updated: number;
+    changed: number;
+    cellId: string;
+
     constructor(data) {
         /*super(id, lat, lon);*/
         if (data.wild !== undefined) {
@@ -13,7 +41,7 @@ class Pokemon /*extends Consumable*/ {
             this.pokemonId = data.wild.pokemon_data.pokemon_id;
             this.lat = data.wild.latitude;
             this.lon = data.wild.longitude;
-            var spawnId = data.wild.spawn_point_id; //radix: 16);
+            let spawnId = data.wild.spawn_point_id; //radix: 16);
             this.gender = data.wild.pokemon_data.pokemon_display.gender;
             this.form = data.wild.pokemon_data.pokemon_display.form;
             if (data.wild.pokemon_data.pokemon_display !== undefined) {
@@ -29,22 +57,22 @@ class Pokemon /*extends Consumable*/ {
             }
             if (this.expireTimestampVerified === false && spawnId !== undefined) {
                 // Spawnpoint not verified, check if we have the tth.
-                var spawnpoint = {};
+                let spawnpoint = {};
                 try {
                     spawnpoint = Spawnpoint.getById(spawnId);
                 } catch (err) {
                     spawnpoint = null;
                 }
                 if (spawnpoint !== null) {
-                    var despawnSecond = spawnpoint.despawn_second;
+                    let despawnSecond = spawnpoint.despawn_second;
                     if (despawnSecond !== undefined && despawnSecond !== null) {
-                        var date = moment().format('mm:ss');
-                        var split = date.split(':');
-                        var minute = parseInt(split[0]);
-                        var second = parseInt(split[1]);
-                        var secondOfHour = second + minute * 60;
+                        let date = moment().format('mm:ss');
+                        let split = date.split(':');
+                        let minute = parseInt(split[0]);
+                        let second = parseInt(split[1]);
+                        let secondOfHour = second + minute * 60;
                     
-                        var despawnOffset;
+                        let despawnOffset;
                         if (despawnSecond < secondOfHour) {
                             despawnOffset = 3600 + parseInt(despawnSecond) - secondOfHour;
                         } else {
@@ -83,7 +111,7 @@ class Pokemon /*extends Consumable*/ {
             this.gender = data.gender;
             this.spawnId = data.spawnId;
             this.cellId = data.cellId.toString();
-            this.expireTimeStamp = data.expireTimestamp;
+            this.expireTimestamp = data.expireTimestamp;
             this.expireTimestampVerified = data.expireTimestampVerified;
             this.cp = data.cp;
             this.move1 = data.move1;
@@ -101,10 +129,10 @@ class Pokemon /*extends Consumable*/ {
     static getAll() {
         return this.load();
     }
-    static getById(encounterId) {
+    static getById(encounterId: string) {
         return this.Pokemon[encounterId.toString()];
     }
-    addEncounter(encounter, username) {
+    addEncounter(encounter: any, username: string) {
         this.pokemonId = encounter.wild_pokemon.pokemon_data.pokemon_id;
         this.cp = encounter.wild_pokemon.pokemon_data.cp;
         this.move1 = encounter.wild_pokemon.pokemon_data.move1;
@@ -147,20 +175,20 @@ class Pokemon /*extends Consumable*/ {
             this.lon = encounter.wild_pokemon.longitude;
 
             if (this.expireTimestampVerified === false && this.spawnId !== undefined) {
-                var spawnpoint = {};
+                let spawnpoint = {};
                 try {
                     spawnpoint = Spawnpoint.getById(this.spawnId);
                 } catch (err) {
                     spawnpoint = null;
                 }
                 if (spawnpoint !== null) {
-                    var despawnSecond = spawnpoint.despawn_second;
+                    let despawnSecond = spawnpoint.despawn_second;
                     if (despawnSecond !== undefined && despawnSecond !== null) {
-                        var date = moment().format('mm:ss');
-                        var split = date.split(':');
-                        var minute = parseInt(split[0]);
-                        var second = parseInt(split[1]);
-                        var secondOfHour = second + minute * 60;
+                        let date = moment().format('mm:ss');
+                        let split = date.split(':');
+                        let minute = parseInt(split[0]);
+                        let second = parseInt(split[1]);
+                        let secondOfHour = second + minute * 60;
                     
                         var despawnOffset;
                         if (despawnSecond < secondOfHour) {
@@ -175,16 +203,16 @@ class Pokemon /*extends Consumable*/ {
             }            
         }
         
-        this.updated = parseInt(new Date());
+        this.updated = new Date().getUTCSeconds();
         this.changed = this.updated;
     }
     save() {
         //TODO: Check if values changed, if not skip.
-        Pokemon.Pokemon[this.id.toString()] = this;
+        Pokemon.Pokemon[this.id] = this;
         save(Pokemon.Pokemon, pokemonPath);
     }
     static load() {
-        var data = fs.readFileSync(pokemonPath);
+        let data = fs.readFileSync(pokemonPath);
         this.Pokemon = JSON.parse(data);
         return this.Pokemon;
     }
@@ -195,7 +223,7 @@ class Pokemon /*extends Consumable*/ {
  * @param {*} obj 
  * @param {*} path 
  */
-function save(obj, path) {
+function save(obj: any, path: string) {
     fs.writeFileSync(path, JSON.stringify(obj, null, 2), 'utf-8');
 }
 

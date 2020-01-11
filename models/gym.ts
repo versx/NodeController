@@ -5,7 +5,36 @@ const fs       = require('fs');
 
 class Gym {
     static Gyms = {};
-    constructor(data) {
+
+    id: string;
+    lat: number;
+    lon: number;
+    name: string;
+    url: string;
+    enabled: boolean;
+    guardPokemonId: number;
+    teamId: number;
+    availableSlots: number;
+    lastModifiedTimestamp: number;
+    exRaidEligible: boolean;
+    inBattle: boolean;
+    sponsorId: number;
+    totalCp: number;
+    raidEndTimestamp: number;
+    raidSpawnTimestamp: number;
+    raidBattleTimestamp: number;
+    raidLevel: number;
+    raidIsExclusive: boolean;
+    raidPokemonId: number;
+    raidPokemonMove1: number;
+    raidPokemonMove2: number;
+    raidPokemonForm: number;
+    raidPokemonCp: number;
+    raidPokemonGender: number;
+    updated: number;
+    cellId: string;
+
+    constructor(data: any) {
         if (data.fort !== undefined) {
             this.id = data.fort.id.toString();
             this.lat = data.fort.latitude;
@@ -77,13 +106,13 @@ class Gym {
     static getAll() {
         return this.load();
     }
-    static getById(gymId) {
-        return this.Gyms[gymId.toString()];
+    static getById(gymId: string) {
+        return this.Gyms[gymId];
     }
-    addDetails(fort) {
+    addDetails(fort: any) {
 
     }
-    addGymInfo(gymInfo) {
+    addGymInfo(gymInfo: any) {
         if (this.name !== gymInfo.name && gymInfo.name !== undefined && gymInfo.name !== null) {
             this.name = gymInfo.name;
         }
@@ -93,11 +122,11 @@ class Gym {
     }
     save() {
         //TODO: Check if values changed, if not skip.
-        Gym.Gyms[this.id.toString()] = this;
+        Gym.Gyms[this.id] = this;
         save(Gym.Gyms, gymsPath);
     }
     static load() {
-        var data = fs.readFileSync(gymsPath);
+        let data = fs.readFileSync(gymsPath);
         this.Gyms = JSON.parse(data);
         return this.Gyms;
     }
@@ -108,7 +137,7 @@ class Gym {
  * @param {*} obj 
  * @param {*} path 
  */
-function save(obj, path) {
+function save(obj: any, path: string) {
     fs.writeFileSync(path, JSON.stringify(obj, null, 2), 'utf-8');
 }
 

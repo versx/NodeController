@@ -73,15 +73,15 @@ class RedisClient {
 
 function distributeConsumables() {
     console.log("[REDIS] Distributing consumables...");
-    var startTime = process.hrtime();
+    let startTime = process.hrtime();
 
-    var pkmnKeys = Object.keys(pokemonList);
+    let pkmnKeys = Object.keys(pokemonList);
     if (pkmnKeys.length > 0) {
         console.log("[REDIS] Pokemon", pkmnKeys.length);
         pkmnKeys.forEach(function(id) {
-            var pokemon = pokemonList[id];
+            let pokemon = pokemonList[id];
             if (pokemon !== undefined && pokemon !== null) {
-                var keys = Object.keys(pokemon);
+                let keys = Object.keys(pokemon);
                 keys.forEach(function(key) {
                     client.hset(pokemon.id, key, pokemon[key]);//, redis.print);
                 });
@@ -89,13 +89,13 @@ function distributeConsumables() {
         });
     }
 
-    var gymKeys = Object.keys(gymList);
+    let gymKeys = Object.keys(gymList);
     if (gymKeys.length > 0) {
         console.log("[REDIS] Gyms", gymKeys.length);
         gymKeys.forEach(function(id) {
-            var gym = gymList[id];
+            let gym = gymList[id];
             if (gym !== undefined && gym !== null) {
-                var keys = Object.keys(gym);
+                let keys = Object.keys(gym);
                 keys.forEach(function(key) {
                     client.hset(gym.id, key, gym[key]);//, redis.print);
                 });
@@ -103,13 +103,13 @@ function distributeConsumables() {
         });
     }
 
-    var raidKeys = Object.keys(raidList);
+    let raidKeys = Object.keys(raidList);
     if (raidKeys.length > 0) {
         console.log("[REDIS] Raids", raidKeys.length);
         raidKeys.forEach(function(id) {
-            var raid = raidKeys[id];
+            let raid = raidKeys[id];
             if (raid !== undefined && raid !== null) {
-                var keys = Object.keys(raid);
+                let keys = Object.keys(raid);
                 keys.forEach(function(key) {
                     client.hset(raid.id, key, raid[key]);//, redis.print);
                 });
@@ -117,13 +117,13 @@ function distributeConsumables() {
         });
     }
 
-    var pokestopKeys = Object.keys(pokestopList);
+    let pokestopKeys = Object.keys(pokestopList);
     if (pokestopKeys.length > 0) {
         console.log("[REDIS] Pokestops", pokestopKeys.length);
         pokestopKeys.forEach(function(id) {
-            var pokestop = pokestopKeys[id];
+            let pokestop = pokestopKeys[id];
             if (pokestop !== undefined && pokestop !== null) {
-                var keys = Object.keys(pokestop);
+                let keys = Object.keys(pokestop);
                 keys.forEach(function(key) {
                     client.hset(pokestop.id, key, pokestop[key]);//, redis.print);
                 });
@@ -131,13 +131,13 @@ function distributeConsumables() {
         });
     }
 
-    var questKeys = Object.keys(questList);
+    let questKeys = Object.keys(questList);
     if (questKeys.length > 0) {
         console.log("[REDIS] Quests", questKeys.length);
         questKeys.forEach(function(id) {
-            var quest = questKeys[id];
+            let quest = questKeys[id];
             if (quest !== undefined && quest !== null) {
-                var keys = Object.keys(quest);
+                let keys = Object.keys(quest);
                 keys.forEach(function(key) {
                     client.hset(quest.id, key, quest[key]);//, redis.print);
                 });
@@ -145,13 +145,13 @@ function distributeConsumables() {
         });
     }
 
-    var spawnpointKeys = Object.keys(spawnpointList);
+    let spawnpointKeys = Object.keys(spawnpointList);
     if (spawnpointKeys.length > 0) {
         console.log("[REDIS] Spawnpoints", spawnpointKeys.length);
         spawnpointKeys.forEach(function(id) {
-            var spawnpoint = spawnpointKeys[id];
+            let spawnpoint = spawnpointKeys[id];
             if (spawnpoint !== undefined && spawnpoint !== null) {
-                var keys = Object.keys(spawnpoint);
+                let keys = Object.keys(spawnpoint);
                 keys.forEach(function(key) {
                     client.hset(spawnpoint.id, key, spawnpoint[key]);//, redis.print);
                 });
@@ -159,13 +159,13 @@ function distributeConsumables() {
         });
     }
 
-    var cellKeys = Object.keys(cellList);
+    let cellKeys = Object.keys(cellList);
     if (cellKeys.length > 0) {
         console.log("[REDIS] Cells", cellKeys.length);
         cellKeys.forEach(function(id) {
-            var cell = cellKeys[id];
+            let cell = cellKeys[id];
             if (cell !== undefined && cell !== null) {
-                var keys = Object.keys(cell);
+                let keys = Object.keys(cell);
                 keys.forEach(function(key) {
                     client.hset(cell.id, key, cell[key]);//, redis.print);
                 });
@@ -173,19 +173,19 @@ function distributeConsumables() {
         });
     }
 
-    var endTime = process.hrtime(startTime);
-    var total = getTotalCount();
+    let endTime = process.hrtime(startTime);
+    let total = getTotalCount();
     console.log("[REDIS] Cached", total, "objects in", endTime + "s");
 }
 
 function getTotalCount() {
-    var pokemon = parseInt(Object.keys(pokemonList).length);
-    var gyms = parseInt(Object.keys(gymList).length);
-    var raids = parseInt(Object.keys(raidList).length);
-    var pokestops = parseInt(Object.keys(pokestopList).length);
-    var quests = parseInt(Object.keys(questList).length);
-    var spawnpoints = parseInt(Object.keys(spawnpointList).length);
-    var cells = parseInt(Object.keys(cellList).length);
+    let pokemon = Object.keys(this.pokemonList).length;
+    let gyms = Object.keys(gymList).length;
+    let raids = Object.keys(raidList).length;
+    let pokestops = Object.keys(pokestopList).length;
+    let quests = Object.keys(questList).length;
+    let spawnpoints = Object.keys(spawnpointList).length;
+    let cells = Object.keys(cellList).length;
     return pokemon + gyms + raids + pokestops + quests + spawnpoints + cells;
 }
 
