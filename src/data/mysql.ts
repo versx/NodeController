@@ -1,6 +1,5 @@
 "use strict"
 
-const config   = require('../config.json');
 const mysql    = require('mysql');
 var pool       = mysql.createPool({
     host       : config.db.host,

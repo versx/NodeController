@@ -366,14 +366,14 @@ function _handleRawData(req, res) {
         wildPokemons.forEach(function(pokemon) {
             //Don't return the main query in the scattershot list
             if (pokemon.data.encounter_id === pokemonEncounterId) {
-                continue
+                return;
             }
             
             try {
                 let oldPokemon = Pokemon.getById(pokemon.data.encounter_id);
                 if (oldPokemon !== undefined && oldPokemon.atkIv !== undefined) {
                     //Skip going to mons already with IVs.
-                    continue
+                    return;
                 }
             } catch {}
             

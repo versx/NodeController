@@ -60,7 +60,8 @@ class CircleInstanceController extends InstanceController {
         let lastLast = this.lastLastCompletedTime;
         let last = this.lastCompletedTime;
         if (lastLast !== undefined && last !== undefined) {
-            let time = parseInt(last.timeIntervalSince(lastLast));
+            // TODO: TimesinceLastInterval.
+            let time = last - lastLast
             return { round_time: time };
         }
         return null;

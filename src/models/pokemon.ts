@@ -50,7 +50,7 @@ class Pokemon /*extends Consumable*/ {
             }
             this.username = data.username;
             if (data.wild.time_till_hidden_ms > 0 && data.wild.time_till_hidden_ms <= 90000) {
-                this.expireTimestamp = parseInt((data.timestamp_ms + data.wild.time_till_hidden_ms) / 1000);
+                this.expireTimestamp = (data.timestamp_ms + data.wild.time_till_hidden_ms) / 1000;
                 this.expireTimestampVerified = true;
             } else {
                 this.expireTimestampVerified = false;
@@ -63,8 +63,8 @@ class Pokemon /*extends Consumable*/ {
                 } catch (err) {
                     spawnpoint = null;
                 }
-                if (spawnpoint !== null) {
-                    let despawnSecond = spawnpoint.despawn_second;
+                if (spawnpoint instanceof Spawnpoint && spawnpoint !== null) {
+                    let despawnSecond = spawnpoint.despawnSecond;
                     if (despawnSecond !== undefined && despawnSecond !== null) {
                         let date = moment().format('mm:ss');
                         let split = date.split(':');
@@ -74,9 +74,9 @@ class Pokemon /*extends Consumable*/ {
                     
                         let despawnOffset;
                         if (despawnSecond < secondOfHour) {
-                            despawnOffset = 3600 + parseInt(despawnSecond) - secondOfHour;
+                            despawnOffset = 3600 + despawnSecond - secondOfHour;
                         } else {
-                            despawnOffset = parseInt(despawnSecond) - secondOfHour;
+                            despawnOffset = despawnSecond - secondOfHour;
                         }
                         this.expireTimestamp = parseInt(moment(date, "x")) + despawnOffset;
                         this.expireTimestampVerified = true;
@@ -181,8 +181,8 @@ class Pokemon /*extends Consumable*/ {
                 } catch (err) {
                     spawnpoint = null;
                 }
-                if (spawnpoint !== null) {
-                    let despawnSecond = spawnpoint.despawn_second;
+                if (spawnpoint instanceof Spawnpoint) {
+                    let despawnSecond = spawnpoint.despawnSecond;
                     if (despawnSecond !== undefined && despawnSecond !== null) {
                         let date = moment().format('mm:ss');
                         let split = date.split(':');
@@ -192,9 +192,9 @@ class Pokemon /*extends Consumable*/ {
                     
                         var despawnOffset;
                         if (despawnSecond < secondOfHour) {
-                            despawnOffset = 3600 + parseInt(despawnSecond) - secondOfHour;
+                            despawnOffset = 3600 + despawnSecond - secondOfHour;
                         } else {
-                            despawnOffset = parseInt(despawnSecond) - secondOfHour;
+                            despawnOffset = despawnSecond - secondOfHour;
                         }
                         this.expireTimestamp = parseInt(moment(date, "x")) + despawnOffset;
                         this.expireTimestampVerified = true;
