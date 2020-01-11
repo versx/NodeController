@@ -1,4 +1,4 @@
-import { Device } from "./../models/device"
+import { Device } from "../models/device"
 import { IInstanceController } from "./iinstance-controller"
 import { CircleInstanceController } from "./circle-controller"
 import { CircleSmartRaidInstanceController } from "./smart-circle-controller"
@@ -38,6 +38,10 @@ class Instance implements IInstance {
     maxLevel: number;
     area: [any];
     data: IInstanceData;
+
+    static getAll() {
+        return [];
+    }
 }
 
 class InstanceController implements IInstanceController {
