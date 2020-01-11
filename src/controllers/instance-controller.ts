@@ -140,7 +140,7 @@ class InstanceController implements IInstanceController {
     reloadAllInstances() {
         let keys = Object.keys(this.instancesByInstanceName);
         keys.forEach(function(instance) {
-            this.instancesByInstanceName[instance].value.reload();
+            this.instancesByInstanceName[instance].reload();
             // TODO: Add AssignmentController
             //AssignmentController.global.setup();
         });
@@ -151,16 +151,16 @@ class InstanceController implements IInstanceController {
             let keys = Object.keys(this.devicesByDeviceUUID);
             keys.forEach(function(deviceUUID) {
                 let row = this.devicesByDeviceUUID[deviceUUID];
-                if (row.value.instanceName === oldInstance.name) {
-                    let device = row.value
-                    device.instanceName = newInstance.name
-                    this.devicesByDeviceUUID[deviceUUID] = device
+                if (row.instanceName === oldInstance.name) {
+                    let device = row;
+                    device.instanceName = newInstance.name;
+                    this.devicesByDeviceUUID[deviceUUID] = device;
                 }
             });
             this.instancesByInstanceName[oldInstanceName].stop();
             this.instancesByInstanceName[oldInstanceName] = null;
         }
-        this.addInstance(newInstance)
+        this.addInstance(newInstance);
     }
 }
 
