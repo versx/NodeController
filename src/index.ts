@@ -6,9 +6,9 @@
 
 const express    = require('express');
 const bodyParser = require('body-parser');
-const config     = require('./config.json');
+import config = require('./config.json');
 const app        = express();
-const Webhook    = require('./src/http/webhook.js');
+const Webhook    = require('./http/webhook.js');
 
 const webhook    = new Webhook();
 

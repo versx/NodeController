@@ -1,6 +1,6 @@
 "use strict"
 
-const accountsPath = 'accounts.json';
+const accountsPath = './data/accounts.json';
 const fs           = require('fs');
 const redis        = require('redis');
 
