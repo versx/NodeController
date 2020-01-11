@@ -189,4 +189,5 @@ function getTotalCount() {
     return pokemon + gyms + raids + pokestops + quests + spawnpoints + cells;
 }
 
-module.exports = RedisClient;
+// Export the class
+export { RedisClient };
