@@ -1,6 +1,7 @@
 {
     "compilerOptions": {
         "module": "commonjs",
+        "resolveJsonModule": true,
         "target": "es6",
         "outDir": "dist",
         "sourceMap": true,
@@ -11,10 +12,14 @@
     "compileOnSave": true,
     "include": [
         "src/**/*",
-        "*.json"
+        "*.json",
+        "pogo_protos",
     ],
     "exclude": [
         "node_modules",
-        "dist"
-    ]
+        "dist",
+        "pogo_protos",
+        "data"
+    ],
+    
 }
