@@ -6,7 +6,11 @@ const fs           = require('fs');
 //console.log("Dir:", __dirname);
 
 class Account {
-    constructor(username, password, firstWarningTimestamp, level) {
+    username: string;
+    password: string;
+    firstWarningTimestamp: number;
+    level: number;
+    constructor(username: string, password: string, firstWarningTimestamp: number, level: number) {
         this.username = username;
         this.password = password;
         this.firstWarningTimestamp = firstWarningTimestamp;

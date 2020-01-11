@@ -1,59 +1,94 @@
-const Device = require('../models/device.js');
+import { Device } from "../models/device"
 
 "use strict"
 
-class InstanceController {
+enum InstanceType {
+    CirclePokemon,
+    CircleRaid,
+    SmartCircleRaid,
+    AutoQuest,
+    PokemonIV
+}
+
+class IInstance {
+    name: string;
+    type: InstanceType;
+    minLevel: number;
+    maxLevel: number;
+}
+
+class Instance extends IInstance {
+    area: [any];
+}
+
+interface IInstanceController {
+    name: string;
+    type: InstanceType;
+    minLevel: number;
+    maxLevel: number;
+    //timeZoneOffset: number;
+    area: [any];
+}
+
+class InstanceController implements IInstanceController {
     static Devices = {};
     static Instances = {};
+
+    name: string;
+    type: InstanceType;
+    minLevel: number = 0;
+    maxLevel: number = 29;
+    //timeZoneOffset = 0;
+    area: [any];
 
     instancesByInstanceName = {};
     devicesByDeviceUUID = {};
 
-    name = "";
-    type = "pokemon";
-    minLevel = 0;
-    maxLevel = 29;
-    timeZoneOffset = 0;
-    area = [];
     constructor() {
-        Devices = Device.getAll();
-
+        let devices = Device.getAll();
+        devices.forEach(function(device: Device) {
+            InstanceController.Devices[device.name] = device;
+        });
+        let instances = Instance.getAll();
+        instances.forEach(function(instance: Instance) {
+            InstanceController.Instances[instance.name] = instance;
+        });
     }
     setup() {
         // TODO: Populate devics
         // TODO: Populate instances
     }
-    addInstance(instance) {
-        var instanceController;
+    addInstance(instance: Instance) {
+        let instanceController;
         switch (instance.type) {
-            case "smart_raid":
-            case "circle_pokemon":
-            case "circle_raid":
-                var coordsArray = [];
-                if (instance.data["area"] !== undefined && instance.data["area"] !== null) {
-                    coordsArray = instance.data["area"];
+            case InstanceType.SmartCircleRaid:
+            case InstanceType.CirclePokemon:
+            case InstanceType.CircleRaid:
+                let coordsArray = [];
+                if (instance.area !== undefined && instance.area !== null) {
+                    coordsArray = instance.area;
                 } else {
-                    var coords = instance.data["area"];
-                    coords.foreach(function(coord) {
+                    let coords = instance.area;
+                    coords.forEach(function(coord) {
                         coordsArray.push({ lat: coord["lat"], lon: coord["lon"] });
                     });
                 }
-                var minLevel = parseInt(instance.data["min_level"]) || 0;
-                var maxLevel = parseInt(instance.data["max_level"]) || 29;
+                let minLevel = instance.minLevel || 0;
+                let maxLevel = instance.maxLevel || 29;
                 switch (instance.type) {
-                    case "circle_pokemon":
-                        instanceController = CircleInstanceController(instance.name, coordsArray, "pokemon", minLevel, maxLevel);
+                    case InstanceType.CirclePokemon:
+                        instanceController = new CircleInstanceController(instance.name, coordsArray, InstanceType.CirclePokemon, minLevel, maxLevel);
                         break;
-                    case "circle_raid":
-                        instanceController = CircleInstanceController(instance.name, coordsArray, "raid", minLevel, maxLevel);
+                    case InstanceType.CircleRaid:
+                        instanceController = new CircleInstanceController(instance.name, coordsArray, InstanceType.CircleRaid, minLevel, maxLevel);
                         break;
                     default:
-                        instanceController = CircleSmartRaidInstanceController(instance.name, coordsArray, minLevel, maxLevel);
+                        instanceController = new CircleSmartRaidInstanceController(instance.name, coordsArray, minLevel, maxLevel);
                         break;
                 }
                 break;
-            case "pokemon_iv":
-            case "auto_quest":
+            case InstanceType.PokemonIV:
+            case InstanceType.AutoQuest:
                 break;
         }
         //instanceController.delegate = AssignmentController.global;

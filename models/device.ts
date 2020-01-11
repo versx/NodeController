@@ -4,6 +4,13 @@ const devicesPath = 'devices.json';
 const fs          = require('fs');
 
 class Device {
+    name: string;
+    instanceName: string;
+    accountUsername: string;
+    lastHost: string;
+    lastSeen: number;
+    lastLat: number;
+    lastLon: number;
     constructor(name, instanceName, accountUsername, lastHost, lastSeen, lastLat, lastLon) {
         this.name = name;
         this.instanceName = instanceName;
@@ -30,7 +37,7 @@ class Device {
         for (var key in obj) {
             if (obj.hasOwnProperty(key)) {
                 var dev = obj[key];
-                deviceList.push(new Device(dev.uuid, dev.instanceName, dev.lastHost, dev.lastSeen, dev.lastLat, dev.lastLon));
+                deviceList.push(new Device(dev.uuid, dev.instanceName, dev.accountUsername, dev.lastHost, dev.lastSeen, dev.lastLat, dev.lastLon));
             }
         };
         return deviceList;

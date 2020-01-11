@@ -1,10 +1,10 @@
 "use strict"
 
 class Consumable {
-    id;
-    lat;
-    lon;
-    constructor(id, lat, lon) {
+    id: string;
+    lat: number;
+    lon: number;
+    constructor(id: string, lat: number, lon: number) {
         this.id = id;
         this.lat = lat;
         this.lon = lon;

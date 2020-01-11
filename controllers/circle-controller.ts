@@ -1,31 +1,22 @@
+import { InstanceController } from "instance-controller"
+
 "use strict"
 
-//enum CircleType {
-//    case pokemon
-//    case raid
-//}
-
-class CircleInstanceController {
+class CircleInstanceController extends InstanceController {
     lastUuidIndex = {};
     lastUuidSeenTime = {};
-    name;
-    minLevel;
-    maxLevel;
-    type;
-    coords;
-    lastIndex;
-    lastLastCompletedTime;
-    lastCompletedTime;
 
-    constructor(name, coords, type, minLevel, maxLevel) {
-        this.name = name;
-        this.coords = coords;
-        this.type = type;
-        this.minLevel = minLevel;
-        this.maxLevel = maxLevel;
+    //coords;
+    lastIndex: number;
+    lastLastCompletedTime: number;
+    lastCompletedTime: number;
+
+    constructor(name: string, type: InstanceType, minLevel: number, maxLevel: number, coords: [any]) {
+        super(name, type, minLevel, maxLevel);
+        coords = coords;
         this.lastCompletedTime = new Date();
     }
-    getTask(uuid, username) {
+    getTask(uuid: string, username: string) {
         var currentIndex = this.lastIndex;
         if (lastIndex + 1 === this.coords.length) {
             this.lastLastCompletedTime = this.lastCompletedTime;
