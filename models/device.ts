@@ -54,4 +54,4 @@ function save(obj, path) {
 }
 
 // Export the class
-module.exports = Device;
+export { Device };

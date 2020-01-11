@@ -35,7 +35,7 @@ class WebhookRequestHandler {
  * @param {*} res 
  */
 function _handleRawData(req, res) {
-    var jsonOpt = {};
+    let jsonOpt = {};
     try {
         jsonOpt = JSON.parse(req.body);
         //console.log("HandleRawData Parsed:", jsonOpt);
@@ -51,13 +51,13 @@ function _handleRawData(req, res) {
         jsonOpt['contents'] = [jsonOpt];
     }
 
-    var json = jsonOpt;
-    var trainerLevel = parseInt(json["trainerlvl"] || json["trainerLevel"]) || 0;
-    var username = json["username"];
+    let json = jsonOpt;
+    let trainerLevel = parseInt(json["trainerlvl"] || json["trainerLevel"]) || 0;
+    let username = json["username"];
     if (username !== false && trainerLevel > 0) {
-        var oldLevel = levelCache[username];
+        let oldLevel = levelCache[username];
         if (oldLevel !== trainerLevel) {
-            var account = accounts[username];
+            let account = accounts[username];
             if (account !== undefined) {
                 account.level = trainerLevel;
                 account.save();
@@ -65,37 +65,37 @@ function _handleRawData(req, res) {
             levelCache[username] = trainerLevel
         }
     }
-    var contents = json["contents"] || json["protos"] || json["gmo"];
+    let contents = json["contents"] || json["protos"] || json["gmo"];
     if (contents === undefined) {
         console.log("Invalid GMO");
         return;
     }
     var uuid = json["uuid"];
-    var latTarget = json["lat_target"];
-    var lonTarget = json["lon_target"];
+    let latTarget = json["lat_target"];
+    let lonTarget = json["lon_target"];
     if (uuid !== undefined && latTarget !== undefined && lonTarget !== undefined) {
         var newDevice = new Device(uuid, null, username, "127.0.0.1", new Date(), latTarget, lonTarget);
         newDevice.save();
     }
 
-    var pokemonEncounterId = json["pokemon_encounter_id"];
-    var pokemonEncounterIdForEncounter = json["pokemon_encounter_id_for_encounter"];
-    var targetMaxDistance = json["target_max_distnace"] || 250;
+    let pokemonEncounterId = json["pokemon_encounter_id"];
+    let pokemonEncounterIdForEncounter = json["pokemon_encounter_id_for_encounter"];
+    let targetMaxDistance = json["target_max_distnace"] || 250;
 
-    var wildPokemons = []; //[{cell: UInt64, data: POGOProtos_Map_Pokemon_WildPokemon, timestampMs: UInt64}]
-    var nearbyPokemons = []; //[{cell: UInt64, data: POGOProtos_Map_Pokemon_NearbyPokemon}]
-    var clientWeathers = []; //[{cell: Int64, data: POGOProtos_Map_Weather_ClientWeather}]
-    var forts = []; //[{cell: UInt64, data: POGOProtos_Map_Fort_FortData}]
-    var fortDetails = []; //[POGOProtos_Networking_Responses_FortDetailsResponse]
-    var gymInfos = []; //[POGOProtos_Networking_Responses_GymGetInfoResponse]
-    var quests = []; //[POGOProtos_Data_Quests_Quest]
-    var encounters = []; //[POGOProtos_Networking_Responses_EncounterResponse]
-    var cells = []; //[UInt64]
+    let wildPokemons = []; //[{cell: UInt64, data: POGOProtos_Map_Pokemon_WildPokemon, timestampMs: UInt64}]
+    let nearbyPokemons = []; //[{cell: UInt64, data: POGOProtos_Map_Pokemon_NearbyPokemon}]
+    let clientWeathers = []; //[{cell: Int64, data: POGOProtos_Map_Weather_ClientWeather}]
+    let forts = []; //[{cell: UInt64, data: POGOProtos_Map_Fort_FortData}]
+    let fortDetails = []; //[POGOProtos_Networking_Responses_FortDetailsResponse]
+    let gymInfos = []; //[POGOProtos_Networking_Responses_GymGetInfoResponse]
+    let quests = []; //[POGOProtos_Data_Quests_Quest]
+    let encounters = []; //[POGOProtos_Networking_Responses_EncounterResponse]
+    let cells = []; //[UInt64]
 
-    var isEmptyGMO = true;
-    var isInvalidGMO = true;
-    var containsGMO = false;
-    var isMadData = false;
+    let isEmptyGMO = true;
+    let isInvalidGMO = true;
+    let containsGMO = false;
+    let isMadData = false;
 
     if (contents === undefined) {
         console.log("Contents is empty");
@@ -104,9 +104,9 @@ function _handleRawData(req, res) {
     }
 
     contents.forEach(function(rawData) {
-        var data;
-        var method;
-        var invalid = false;
+        let data;
+        let method;
+        let invalid = false;
         if (rawData["GetMapObjects"] !== undefined) {
             data = rawData["GetMapObjects"];
             method = 106;
@@ -141,7 +141,7 @@ function _handleRawData(req, res) {
 
         switch (method) {
             case 101: // FortSearchResponse
-                var fsr = POGOProtos.Networking.Responses.FortSearchResponse.decode(base64_decode(data));
+                let fsr = POGOProtos.Networking.Responses.FortSearchResponse.decode(base64_decode(data));
                 if (fsr) {
                     if (fsr.hasChallengeQuest && fsr.challengeQuest.hasQuest) {
                         let quest = fsr.challengeQuest.quest;
@@ -153,7 +153,7 @@ function _handleRawData(req, res) {
                 break;
             case 102: // EncounterResponse
                 if (trainerLevel >= 0 || isMadData !== false) { //TODO: Set trainerLevel >= 30
-                    var er = POGOProtos.Networking.Responses.EncounterResponse.decode(base64_decode(data));
+                    let er = POGOProtos.Networking.Responses.EncounterResponse.decode(base64_decode(data));
                     if (er) {
                         encounters.push(er);
                     } else {
@@ -162,7 +162,7 @@ function _handleRawData(req, res) {
                 }
                 break;
             case 104: // FortDetailsResponse
-                var fdr = POGOProtos.Networking.Responses.FortDetailsResponse.decode(base64_decode(data));
+                let fdr = POGOProtos.Networking.Responses.FortDetailsResponse.decode(base64_decode(data));
                 if (fdr) {
                     fortDetails.push(fdr);
                 } else {
@@ -170,7 +170,7 @@ function _handleRawData(req, res) {
                 }
                 break;
             case 156: // GymGetInfoResponse
-                var ggi = POGOProtos.Networking.Responses.GymGetInfoResponse.decode(base64_decode(data));
+                let ggi = POGOProtos.Networking.Responses.GymGetInfoResponse.decode(base64_decode(data));
                 if (ggi) {
                     gymInfos.push(ggi);
                 } else {
@@ -179,24 +179,24 @@ function _handleRawData(req, res) {
                 break;
             case 106: // GetMapObjectsResponse
                 containsGMO = true;
-                var gmo = POGOProtos.Networking.Responses.GetMapObjectsResponse.decode(base64_decode(data));
+                let gmo = POGOProtos.Networking.Responses.GetMapObjectsResponse.decode(base64_decode(data));
                 if (gmo) {
                     isInvalidGMO = false;
                     
-                    var newWildPokemons = []; //[{cell: UInt64, data: POGOProtos_Map_Pokemon_WildPokemon, timestampMs: UInt64}];
-                    var newNearbyPokemons = []; //[{cell: UInt64, data: POGOProtos_Map_Pokemon_NearbyPokemon}];
-                    var newClientWeathers = []; //[{cell: Int64, data: POGOProtos_Map_Weather_ClientWeather}];
-                    var newForts = []; //[{cell: UInt64, data: POGOProtos_Map_Fort_FortData}];
-                    var newCells = []; //[UInt64];
+                    let newWildPokemons = []; //[{cell: UInt64, data: POGOProtos_Map_Pokemon_WildPokemon, timestampMs: UInt64}];
+                    let newNearbyPokemons = []; //[{cell: UInt64, data: POGOProtos_Map_Pokemon_NearbyPokemon}];
+                    let newClientWeathers = []; //[{cell: Int64, data: POGOProtos_Map_Weather_ClientWeather}];
+                    let newForts = []; //[{cell: UInt64, data: POGOProtos_Map_Fort_FortData}];
+                    let newCells = []; //[UInt64];
 
-                    var mapCellsNew = gmo.map_cells;
+                    let mapCellsNew = gmo.map_cells;
                     if (mapCellsNew.length === 0) {
                         console.log("Map cells is empty");
                         return;
                     }
                     mapCellsNew.forEach(function(mapCell) {
-                        var timestampMs = mapCell.current_timestamp_ms;
-                        var wildNew = mapCell.wild_pokemons;
+                        let timestampMs = mapCell.current_timestamp_ms;
+                        let wildNew = mapCell.wild_pokemons;
                         wildNew.forEach(function(wildPokemon) {
                             wildPokemons.push({
                                 cell: mapCell.s2_cell_id,
@@ -204,14 +204,14 @@ function _handleRawData(req, res) {
                                 timestampMs: timestampMs
                             });
                         });
-                        var nearbyNew = mapCell.nearby_pokemons;
+                        let nearbyNew = mapCell.nearby_pokemons;
                         nearbyNew.forEach(function(nearbyPokemon) {
                             nearbyPokemons.push({
                                 cell: mapCell.s2_cell_id,
                                 data: nearbyPokemon
                             });
                         });
-                        var fortsNew = mapCell.forts;
+                        let fortsNew = mapCell.forts;
                         fortsNew.forEach(function(fort) {
                             forts.push({
                                 cell: mapCell.s2_cell_id,
@@ -221,7 +221,7 @@ function _handleRawData(req, res) {
                         cells.push(mapCell.s2_cell_id);
                     });
     
-                    var weather = gmo.client_weather;
+                    let weather = gmo.client_weather;
                     weather.forEach(function(wmapCell) {
                         clientWeathers.push({
                             cell: wmapCell.s2_cell_id,
@@ -257,22 +257,22 @@ function _handleRawData(req, res) {
         }
     });
 
-    var targetCoord;
-    var inArea = false
+    let targetCoord;
+    let inArea = false
     if (latTarget !== undefined && lonTarget !== undefined) {
         targetCoord = { latitude: latTarget, longitude: lonTarget };
     } else {
         targetCoord = null;
     }
     
-    var pokemonCoords;
+    let pokemonCoords;
     
     if (targetCoord !== null) {
         if (forts !== undefined) {
             forts.forEach(function(fort) {
                 if (inArea === false) {
                     //let coord = CLLocationCoordinate2D(latitude: fort.data.latitude, longitude: fort.data.longitude)
-                    var coord = { latitude: fort.data.latitude, longitude: fort.data.longitude };
+                    let coord = { latitude: fort.data.latitude, longitude: fort.data.longitude };
                     //if (coord.distance(to: targetCoord) <= targetMaxDistance) {
                         inArea = true
                     //}
@@ -285,7 +285,7 @@ function _handleRawData(req, res) {
             if (targetCoord !== undefined) {
                 if (inArea === false) {
                     //let coord = CLLocationCoordinate2D(latitude: pokemon.data.latitude, longitude: pokemon.data.longitude)
-                    var coord = { latitude: pokemon.data.latitude, longitude: pokemon.data.longitude };
+                    let coord = { latitude: pokemon.data.latitude, longitude: pokemon.data.longitude };
                     //if (coord.distance(to: targetCoord) <= targetMaxDistance) {
                         inArea = true
                     //}
@@ -318,7 +318,7 @@ function _handleRawData(req, res) {
         });
     }
 
-    var data = {
+    let data = {
         "nearby": nearbyPokemons.length,
         "wild": wildPokemons.length,
         "forts": forts.length,
@@ -355,12 +355,12 @@ function _handleRawData(req, res) {
     }
 
 
-    var listScatterPokemon = json["list_scatter_pokemon"];
+    let listScatterPokemon = json["list_scatter_pokemon"];
     if (listScatterPokemon && pokemonCoords != undefined && pokemonEncounterId != undefined) {
-        var uuid = json["uuid"];
+        let uuid = json["uuid"];
         //var controller = InstanceController.global.getInstanceController(deviceUUID: uuid) as? IVInstanceController;
        
-        var scatterPokemon = [];
+        let scatterPokemon = [];
         
         wildPokemons.forEach(function(pokemon) {
             //Don't return the main query in the scattershot list
@@ -377,7 +377,7 @@ function _handleRawData(req, res) {
             } catch {}
             
             //let coords = CLLocationCoordinate2D(latitude: pokemon.data.latitude, longitude: pokemon.data.longitude)
-            var coords = { latitude: pokemon.data.latitude, longitude: pokemon.data.longitude };
+            let coords = { latitude: pokemon.data.latitude, longitude: pokemon.data.longitude };
             let distance = 35;//pokemonCoords.distance(to: coords)
             
             // Only Encounter pokemon within 35m of initial pokemon scann
@@ -419,7 +419,7 @@ function _handleRawData(req, res) {
  * @param {*} res 
  */
 function _handleControllerData(req, res) {
-    var jsonO = {};
+    let jsonO = {};
     try {
         jsonO = JSON.parse(req.body);
         //console.log("HandleControllerData Parsed:", jsonO);
@@ -427,17 +427,17 @@ function _handleControllerData(req, res) {
         console.log(e);
         return;
     }
-    var typeO = jsonO["type"];
-    var uuidO = jsonO["uuid"];
+    let typeO = jsonO["type"];
+    let uuidO = jsonO["uuid"];
     if (typeO === undefined || uuidO === undefined) {
         console.log("Failed to parse controller data");
         return;
     }
-    var type = typeO;
+    let type = typeO;
     var uuid = uuidO;
     var username = jsonO["username"];
-    var minLevel = parseInt(jsonO["min_level"] || 0);
-    var maxLevel = parseInt(jsonO["max_level"] || 29);
+    let minLevel = parseInt(jsonO["min_level"] || 0);
+    let maxLevel = parseInt(jsonO["max_level"] || 29);
 
     switch (type) {
         case "init":
@@ -447,7 +447,7 @@ function _handleControllerData(req, res) {
             if (device === undefined || device.accountUsername === undefined) {
                 firstWarningTimestamp = null;
             } else {
-                var account = accounts[device.accountUsername];
+                let account = accounts[device.accountUsername];
                 if (account !== undefined) {
                     firstWarningTimestamp = account.firstWarningTimestamp;
                 } else {
@@ -457,7 +457,7 @@ function _handleControllerData(req, res) {
             if (device === undefined) {
                 console.log("Registering device");
                 // Register new device
-                var newDevice = new Device(uuid, null, null, 0, null, 0.0, 0.0);
+                let newDevice = new Device(uuid, null, null, 0, null, 0.0, 0.0);
                 newDevice.save();
                 devices[uuid] = newDevice;
                 res.send({ 
@@ -495,7 +495,7 @@ function _handleControllerData(req, res) {
                 return;
             }
             if (device.accountUsername !== undefined) {
-                var oldAccount = accounts[device.accountUsername];
+                let oldAccount = accounts[device.accountUsername];
                 if (oldAccount !== undefined && oldAccount.firstWarningTimestamp === undefined && oldAccount.failed === undefined && oldAccount.failedTimestamp === undefined) {
                     res.send({
                         data: {
@@ -609,15 +609,15 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
     //let queue = Threading.getQueue(name: Foundation.UUID().uuidString, type: .serial)
     //queue.dispatch {
 
-        var gymIdsPerCell = []; //[UInt64: [String]]
-        var stopsIdsPerCell = []; //[UInt64: [String]]
+        let gymIdsPerCell = []; //[UInt64: [String]]
+        let stopsIdsPerCell = []; //[UInt64: [String]]
         
         cells.forEach(function(cellId) {
-            var s2cell = new S2.S2Cell(new S2.S2CellId(cellId.toString()));
-            var lat = s2cell.getCapBound().getRectBound().getCenter().latDegrees;
-            var lon = s2cell.getCapBound().getRectBound().getCenter().lngDegrees;
-            var level = s2cell.level;
-            var cell = new S2Cell({
+            let s2cell = new S2.S2Cell(new S2.S2CellId(cellId.toString()));
+            let lat = s2cell.getCapBound().getRectBound().getCenter().latDegrees;
+            let lon = s2cell.getCapBound().getRectBound().getCenter().lngDegrees;
+            let level = s2cell.level;
+            let cell = new S2Cell({
                 id: cellId.toString(),
                 level: level,
                 lat: lat,
@@ -635,23 +635,23 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
             } 
         });
     
-        var startClientWeathers = process.hrtime();
+        let startClientWeathers = process.hrtime();
         clientWeathers.forEach(function(conditions) {
             //console.log("Parsed weather", conditions.cell);
-            var ws2cell = new S2.S2Cell(new S2.S2CellId(conditions.cell.toString()));
-            var wlat = ws2cell.getCapBound().getRectBound().getCenter().latDegrees;
-            var wlon = ws2cell.getCapBound().getRectBound().getCenter().lngDegrees;
-            var wlevel = ws2cell.level;
+            let ws2cell = new S2.S2Cell(new S2.S2CellId(conditions.cell.toString()));
+            let wlat = ws2cell.getCapBound().getRectBound().getCenter().latDegrees;
+            let wlon = ws2cell.getCapBound().getRectBound().getCenter().lngDegrees;
+            let wlevel = ws2cell.level;
             //var weather = Weather(ws2cell.cellId.id, wlevel, latitude: wlat, longitude: wlon, conditions: conditions.data, updated: nil)
             //weather.save(update: true)
             //client.addWeather(weather);
         });
-        var endClientWeathers = process.hrtime(startClientWeathers);
+        let endClientWeathers = process.hrtime(startClientWeathers);
         console.log("[WebhookRequestHandler] Weather Detail Count:", clientWeathers.length, "parsed in", endClientWeathers + "s");
     
-        var startWildPokemon = process.hrtime();
+        let startWildPokemon = process.hrtime();
         wildPokemons.forEach(function(wildPokemon) {
-            var pokemon = new Pokemon({
+            let pokemon = new Pokemon({
                 username: username,
                 cellId: wildPokemon.cell,
                 timestampMs: wildPokemon.timestamp_ms,
@@ -660,12 +660,12 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
             //pokemon.save();
             client.addPokemon(pokemon);
         });
-        var endWildPokemon = process.hrtime(startWildPokemon);
+        let endWildPokemon = process.hrtime(startWildPokemon);
         console.log("[WebhookRequestHandler] Pokemon Count:", wildPokemons.length, "parsed in", endWildPokemon + "s");
     
-        var startNearbyPokemon = process.hrtime();
+        let startNearbyPokemon = process.hrtime();
         nearbyPokemons.forEach(function(nearbyPokemon) {
-            var pokemon = new Pokemon({
+            let pokemon = new Pokemon({
                 username: username,
                 cellId: nearbyPokemon.cell,
                 //timestampMs: nearbyPokemon.timestamp_ms,
@@ -674,14 +674,14 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
             //pokemon.save();
             client.addPokemon(pokemon);
         });
-        var endNearbyPokemon = process.hrtime(startNearbyPokemon);
+        let endNearbyPokemon = process.hrtime(startNearbyPokemon);
         console.log("[WebhookRequestHandler] NearbyPokemon Count:", nearbyPokemons.length, "parsed in", endNearbyPokemon + "s");
     
-        var startForts = process.hrtime();
+        let startForts = process.hrtime();
         forts.forEach(function(fort) {
             switch (fort.data.type) {
                 case 0: // gym
-                    var gym = new Gym({
+                    let gym = new Gym({
                         cellId: fort.cell,
                         fort: fort.data
                     });
@@ -693,7 +693,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                     gymIdsPerCell[fort.cell].push(fort.data.id);
                     break;
                 case 1: // checkpoint
-                    var pokestop = new Pokestop({
+                    let pokestop = new Pokestop({
                         cellId: fort.cell,
                         fort: fort.data
                     });
@@ -706,15 +706,15 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                     break;
             }
         });
-        var endForts = process.hrtime(startForts);
+        let endForts = process.hrtime(startForts);
         console.log("[WebhookRequestHandler] Forts Count:", forts.length, "parsed in", endForts + "s");
     
         if (fortDetails.length > 0) {
-            var startFortDetails = process.hrtime();
+            let startFortDetails = process.hrtime();
             fortDetails.forEach(function(fort) {
                 switch (fort.type) {
                     case 0: // gym
-                        var gym;
+                        let gym;
                         try {
                             gym = Gym.getById(fort.id);
                         } catch (err) {
@@ -727,7 +727,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                         }
                         break;
                     case 1: // checkpoint
-                        var pokestop;
+                        let pokestop;
                         try {
                             pokestop = Pokestop.getById(fort.id);
                         } catch (err) {
@@ -741,14 +741,14 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                         break;
                 }
             });
-            var endFortDetails = process.hrtime(startFortDetails);
+            let endFortDetails = process.hrtime(startFortDetails);
             console.log("[WebhookRequestHandler] Forts Detail Count:", fortDetails.length, "parsed in", endFortDetails + "s");
         }
         
         if (gymInfos.length > 0) {
-            var startGymInfos = process.hrtime();
+            let startGymInfos = process.hrtime();
             gymInfos.forEach(function(gymInfo) {
-                var gym;
+                let gym;
                 try {
                     gym = Gym.getById(gymInfo.gym_status_and_defenders.pokemon_fort_proto.id);
                 } catch (err) {
@@ -760,16 +760,16 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                     client.addGym(gym);
                 }
             });
-            var endGymInfos = process.hrtime(startGymInfos);
+            let endGymInfos = process.hrtime(startGymInfos);
             console.log("[WebhookRequestHandler] Forts Detail Count:", gymInfos.length, "parsed in", endGymInfos + "s");
         }
         
         if (quests.length > 0) {
-            var startQuests = process.hrtime();
+            let startQuests = process.hrtime();
             quests.forEach(function(quest) {
-                var pokestop;
+                let pokestop;
                 try {
-                    pokestop = pokestops.getById(quest.fort_id);
+                    pokestop = Pokestop.getById(quest.fort_id);
                 } catch (err) {
                     pokestop = null;
                 }
@@ -779,14 +779,14 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                     client.addQuest(quest);
                 }
             });
-            var endQuests = process.hrtime(startQuests);
+            let endQuests = process.hrtime(startQuests);
             console.log("[WebhookRequestHandler] Quest Count:", quests.length, "parsed in", endQuests + "s");
         }
         
         if (encounters.length > 0) {
-            var startEncounters = process.hrtime();
+            let startEncounters = process.hrtime();
             encounters.forEach(function(encounter) {
-                var pokemon;
+                let pokemon;
                 try {
                     pokemon = Pokemon.getById(encounter.wild_pokemon.encounter_id);
                 } catch (err) {
@@ -797,17 +797,17 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                     //pokemon.save();
                     client.addPokemon(pokemon);
                 } else {
-                    var centerCoord = new S2.S2Point(encounter.wild_pokemon.latitude, encounter.wild_pokemon.longitude);
-                    var center = S2.S2LatLng.fromPoint(centerCoord);
-                    var centerNormalized = center.normalized();
-                    var centerNormalizedPoint = centerNormalized.toPoint();
+                    let centerCoord = new S2.S2Point(encounter.wild_pokemon.latitude, encounter.wild_pokemon.longitude);
+                    let center = S2.S2LatLng.fromPoint(centerCoord);
+                    let centerNormalized = center.normalized();
+                    let centerNormalizedPoint = centerNormalized.toPoint();
                     //var circle = new S2.S2Cap(centerNormalizedPoint, 0.0);
-                    var circle = new S2.S2Cap(centerCoord, 0.0);
-                    var coverer = new S2.S2RegionCoverer();
+                    let circle = new S2.S2Cap(centerCoord, 0.0);
+                    let coverer = new S2.S2RegionCoverer();
                     coverer.maxCells = 1;
                     coverer.minLevel = 15;
                     coverer.maxLevel = 15;
-                    var cellIds = coverer.getCoveringCells(circle);
+                    let cellIds = coverer.getCoveringCells(circle);
                     console.log(cellIds);
                     //if (cellId)
                     /*
@@ -823,7 +823,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                     */
                 }
             });
-            var endEncounters = process.hrtime(startEncounters);
+            let endEncounters = process.hrtime(startEncounters);
             console.log("[WebhookRequestHandler] Encounter Count:", encounters.length, "parsed in ", endEncounters + "s");
         }
 }
@@ -834,13 +834,13 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
  * @param {*} res 
  */
 function getTask(req, res) {
-    var lats = {
+    let lats = {
         "lat1": 34.096071
     };
-    var lons = {
+    let lons = {
         "lon1": -117.648403
     };
-    var data = {
+    let data = {
         "action": "scan_pokemon",
         "lat": randomValue(lats),
         "lon": randomValue(lons),
@@ -855,7 +855,7 @@ function getTask(req, res) {
  * @param {*} obj 
  */
 function randomValue(obj) {
-    var keys = Object.keys(obj)
+    let keys = Object.keys(obj)
     return obj[keys[ keys.length * Math.random() << 0]];
 }
 

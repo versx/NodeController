@@ -113,4 +113,4 @@ function save(obj, path) {
 }
 
 // Export the class
-module.exports = Gym;
+export { Gym };

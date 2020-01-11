@@ -1,5 +1,8 @@
 import { Device } from "./../models/device"
 import { CircleInstanceController } from "./circle-controller"
+import { CircleSmartRaidInstanceController } from "./smart-circle-controller"
+import { IVInstanceController } from "./iv-controller"
+import { AutoInstanceController } from "./auto-instance-controller"
 
 "use strict"
 
@@ -11,41 +14,43 @@ enum InstanceType {
     PokemonIV
 }
 
-class IInstance {
-    name: string;
-    type: InstanceType;
-    minLevel: number;
-    maxLevel: number;
+interface IInstanceData {
+    timeZoneOffset: number;
+    spinLimit: number;
+
 }
 
-class Instance extends IInstance {
-    area: [any];
-}
-
-interface IInstanceController {
+interface IInstance {
     name: string;
     type: InstanceType;
     minLevel: number;
     maxLevel: number;
     //timeZoneOffset: number;
     area: [any];
+    data: IInstanceData;
+}
+
+class Instance implements IInstance {
+    name: string;
+    type: InstanceType;
+    minLevel: number;
+    maxLevel: number;
+    area: [any];
+    data: IInstanceData;
+}
+
+interface IInstanceController {
 }
 
 class InstanceController implements IInstanceController {
     static Devices = {};
     static Instances = {};
 
-    name: string;
-    type: InstanceType;
-    minLevel: number = 0;
-    maxLevel: number = 29;
-    //timeZoneOffset = 0;
-    area: [any];
-
     instancesByInstanceName = {};
     devicesByDeviceUUID = {};
 
-    constructor() {
+    constructor() { }
+    setup() {
         let devices = Device.getAll();
         devices.forEach(function(device: Device) {
             InstanceController.Devices[device.name] = device;
@@ -55,19 +60,15 @@ class InstanceController implements IInstanceController {
             InstanceController.Instances[instance.name] = instance;
         });
     }
-    setup() {
-        // TODO: Populate devics
-        // TODO: Populate instances
-    }
     addInstance(instance: Instance) {
         let instanceController;
         switch (instance.type) {
             case InstanceType.SmartCircleRaid:
             case InstanceType.CirclePokemon:
             case InstanceType.CircleRaid:
-                let coordsArray = [];
+                let coordsArray = <[any]>{ };
                 if (instance.area !== undefined && instance.area !== null) {
-                    coordsArray = instance.area;
+                    coordsArray.push(instance.area); //TODO: Check
                 } else {
                     let coords = instance.area;
                     coords.forEach(function(coord) {
@@ -78,13 +79,13 @@ class InstanceController implements IInstanceController {
                 let maxLevel = instance.maxLevel || 29;
                 switch (instance.type) {
                     case InstanceType.CirclePokemon:
-                        instanceController = new CircleInstanceController(instance.name, coordsArray, InstanceType.CirclePokemon, minLevel, maxLevel);
+                        instanceController = new CircleInstanceController(instance.name, InstanceType.CirclePokemon, minLevel, maxLevel, coordsArray);
                         break;
                     case InstanceType.CircleRaid:
-                        instanceController = new CircleInstanceController(instance.name, coordsArray, InstanceType.CircleRaid, minLevel, maxLevel);
+                        instanceController = new CircleInstanceController(instance.name, InstanceType.CircleRaid, minLevel, maxLevel, coordsArray);
                         break;
                     default:
-                        instanceController = new CircleSmartRaidInstanceController(instance.name, coordsArray, minLevel, maxLevel);
+                        instanceController = new CircleSmartRaidInstanceController(instance.name, minLevel, maxLevel, coordsArray);
                         break;
                 }
                 break;
@@ -105,8 +106,9 @@ class InstanceController implements IInstanceController {
                         });
                         i++;
                     });
-                    let timeZoneOffset = instance.timeZoneOffset || 0;
-                    let areaArrayEmptyInner = [];
+                    //TODO: Cast instance to AutoQuestController and get timeZoneOffset property
+                    let timeZoneOffset = instance.data.timeZoneOffset || 0;
+                    let areaArrayEmptyInner = <[any]>{ };
                     areaArray.forEach(function(coords: [any]) {
                         let polyCoords = [];
                         coords.forEach(function(coord) {
@@ -121,18 +123,18 @@ class InstanceController implements IInstanceController {
                         let pokemonList = instance.data["pokemon_ids"] || [];
                         let ivQueueLimit = instance.data["iv_queue_limit"] || 100;
                         let scatterList = instance.data["scatter_pokemon_ids"] || [];
-                        instanceController = new IVInstanceController(name: instance.name, multiPolygon: areaArrayEmptyInner, pokemonList: pokemonList, minLevel: minLevel, maxLevel: maxLevel, ivQueueLimit, ivQueueLimit, scatterPokemon: scatterList);
+                        instanceController = new IVInstanceController(instance.name, areaArrayEmptyInner, pokemonList, minLevel, maxLevel, ivQueueLimit, scatterList);
                     } else {
-                        let spinLimit = instance.data["spin_limit"] as? Int ?? 500
-                        instanceController = new AutoInstanceController(name: instance.name, multiPolygon: areaArrayEmptyInner, type: InstanceType.AutoQuest, timezoneOffset: timezoneOffset, minLevel: minLevel, maxLevel: maxLevel, spinLimit: spinLimit);
+                        let spinLimit = instance.data["spin_limit"] || 500
+                        instanceController = new AutoInstanceController(instance.name, areaArrayEmptyInner, timeZoneOffset, minLevel, maxLevel, spinLimit);
                     }
                     
                 }
                 break;
         }
         //instanceController.delegate = AssignmentController.global;
-        instancesByInstanceName[instance.name] = instanceController;
+        this.instancesByInstanceName[instance.name] = instanceController;
     }
 }
 
-module.exports = InstanceController;
+export { InstanceController, InstanceType };
