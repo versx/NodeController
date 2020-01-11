@@ -1,4 +1,5 @@
-import { Device } from "../models/device"
+import { Device } from "./../models/device"
+import { CircleInstanceController } from "./circle-controller"
 
 "use strict"
 
@@ -89,6 +90,44 @@ class InstanceController implements IInstanceController {
                 break;
             case InstanceType.PokemonIV:
             case InstanceType.AutoQuest:
+                let areaArray = [];
+                if (instance.area !== undefined && instance.area !== null) {
+                    areaArray = instance.area;
+                } else {
+                    let areas = instance.area;
+                    let i = 0;
+                    areas.forEach(function(coords: [any]) {
+                        coords.forEach(function(coord: [any]) {
+                            while (areaArray.length != i + 1) {
+                                areaArray.push({});
+                            }
+                            areaArray[i].push({ lat: coord["lat"], lon: coord["lon"] });
+                        });
+                        i++;
+                    });
+                    let timeZoneOffset = instance.timeZoneOffset || 0;
+                    let areaArrayEmptyInner = [];
+                    areaArray.forEach(function(coords: [any]) {
+                        let polyCoords = [];
+                        coords.forEach(function(coord) {
+                            polyCoords.push({ lat: coord["lat"], lon: coord["lon"] });
+                        });
+                        areaArrayEmptyInner.push(polyCoords);
+                    });
+
+                    let minLevel = instance.minLevel || 0;
+                    let maxLevel = instance.maxLevel || 29;
+                    if (instance.type == InstanceType.PokemonIV) {
+                        let pokemonList = instance.data["pokemon_ids"] || [];
+                        let ivQueueLimit = instance.data["iv_queue_limit"] || 100;
+                        let scatterList = instance.data["scatter_pokemon_ids"] || [];
+                        instanceController = new IVInstanceController(name: instance.name, multiPolygon: areaArrayEmptyInner, pokemonList: pokemonList, minLevel: minLevel, maxLevel: maxLevel, ivQueueLimit, ivQueueLimit, scatterPokemon: scatterList);
+                    } else {
+                        let spinLimit = instance.data["spin_limit"] as? Int ?? 500
+                        instanceController = new AutoInstanceController(name: instance.name, multiPolygon: areaArrayEmptyInner, type: InstanceType.AutoQuest, timezoneOffset: timezoneOffset, minLevel: minLevel, maxLevel: maxLevel, spinLimit: spinLimit);
+                    }
+                    
+                }
                 break;
         }
         //instanceController.delegate = AssignmentController.global;
@@ -97,57 +136,3 @@ class InstanceController implements IInstanceController {
 }
 
 module.exports = InstanceController;
-
-/*
-    public func addInstance(instance: Instance) {
-        case .pokemonIV:
-            fallthrough
-        case .autoQuest:
-            var areaArray = [[Coord]]()
-            if instance.data["area"] as? [[Coord]] != nil {
-                areaArray = instance.data["area"] as! [[Coord]]
-            } else {
-                let areas = instance.data["area"] as! [[[String: Double]]]
-                var i = 0
-                for coords in areas {
-                    for coord in coords {
-                        while areaArray.count != i + 1{
-                            areaArray.append([Coord]())
-                        }
-                        areaArray[i].append(Coord(lat: coord["lat"]!, lon: coord["lon"]!))
-                    }
-                    i += 1
-                }
-            }
-            let timezoneOffset = instance.data["timezone_offset"] as? Int ?? 0
-
-            var areaArrayEmptyInner = [[[CLLocationCoordinate2D]]]()
-            for coords in areaArray {
-                var polyCoords = [CLLocationCoordinate2D]()
-                for coord in coords {
-                    polyCoords.append(CLLocationCoordinate2D(latitude: coord.lat, longitude: coord.lon))
-                }
-                areaArrayEmptyInner.append([polyCoords])
-            }
-
-            let minLevel = instance.data["min_level"] as? UInt8 ?? (instance.data["min_level"] as? Int)?.toUInt8() ?? 0
-            let maxLevel = instance.data["max_level"] as? UInt8 ?? (instance.data["max_level"] as? Int)?.toUInt8() ?? 29
-
-            if instance.type == .pokemonIV {
-                let pokemonList = instance.data["pokemon_ids"] as? [UInt16] ?? (instance.data["pokemon_ids"] as? [Int])?.map({ (e) -> UInt16 in
-                    return UInt16(e)
-                }) ?? [UInt16]()
-                let ivQueueLimit = instance.data["iv_queue_limit"] as? Int ?? 100
-                let scatterList = instance.data["scatter_pokemon_ids"] as? [UInt16] ?? (instance.data["scatter_pokemon_ids"] as? [Int])?.map({ (e) -> UInt16 in
-                    return UInt16(e)
-                }) ?? [UInt16]()
-                instanceController = IVInstanceController(name: instance.name, multiPolygon: MultiPolygon(areaArrayEmptyInner), pokemonList: pokemonList, minLevel: minLevel, maxLevel: maxLevel, ivQueueLimit: ivQueueLimit, scatterPokemon: scatterList)
-            } else {
-                let spinLimit = instance.data["spin_limit"] as? Int ?? 500
-                instanceController = AutoInstanceController(name: instance.name, multiPolygon: MultiPolygon(areaArrayEmptyInner), type: .quest, timezoneOffset: timezoneOffset, minLevel: minLevel, maxLevel: maxLevel, spinLimit: spinLimit)
-            }
-        }
-        instanceController.delegate = AssignmentController.global
-        instancesByInstanceName[instance.name] = instanceController
-    }
-*/

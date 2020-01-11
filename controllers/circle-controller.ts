@@ -14,35 +14,35 @@ class CircleInstanceController extends InstanceController {
     constructor(name: string, type: InstanceType, minLevel: number, maxLevel: number, coords: [any]) {
         super(name, type, minLevel, maxLevel);
         coords = coords;
-        this.lastCompletedTime = new Date();
+        this.lastCompletedTime = new Date().;
     }
     getTask(uuid: string, username: string) {
         var currentIndex = this.lastIndex;
-        if (lastIndex + 1 === this.coords.length) {
+        if (this.lastIndex + 1 === super.coords.length) {
             this.lastLastCompletedTime = this.lastCompletedTime;
-            lastCompletedTime = new Date();
-            lastIndex = 0;
+            this.lastCompletedTime = new Date().getUTCSeconds();
+            this.lastIndex = 0;
         } else {
-            lastIndex = lastIndex + 1;
+            this.lastIndex = this.lastIndex + 1;
         }
 
-        var currentCoord = coords[currentIndex];
-        switch (type) {
+        var currentCoord = super.coords[currentIndex];
+        switch (super.type) {
             case "pokemon":
                 return {
                     action: "scan_pokemon",
                     lat: currentCoord.lat,
                     lon: currentCoord.lon,
-                    min_level: this.minLevel,
-                    max_level: this.maxLevel
+                    min_level: super.minLevel,
+                    max_level: super.maxLevel
                 };
             case "raids":
                 return {
                     action: "scan_raid",
                     lat: currentCoord.lat,
                     lon: currentCoord.lon,
-                    min_level: this.minLevel,
-                    max_level: this.maxLevel
+                    min_level: super.minLevel,
+                    max_level: super.maxLevel
                 };
         }
     }
@@ -56,7 +56,7 @@ class CircleInstanceController extends InstanceController {
         return null;
     }
     reload() {
-        lastIndex = 0;
+        this.lastIndex = 0;
     }
     stop() {}
     /*
@@ -74,3 +74,5 @@ class CircleInstanceController extends InstanceController {
     }
     */
 }
+
+module.exports = CircleInstanceController;
