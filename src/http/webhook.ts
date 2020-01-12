@@ -6,7 +6,7 @@ const S2          = require('nodes2ts');
 import { Account } from '../models/account';
 import { Device } from '../models/device';
 import { Pokemon } from '../models/pokemon';
-import { Gym } from '../models/gym.js';
+import { Gym } from '../models/gym';
 import { Pokestop } from '../models/pokestop';
 import { S2Cell } from '../models/s2cell';
 import { RedisClient } from '../redis-client';
@@ -259,7 +259,7 @@ function _handleRawData(req, res) {
         }
     });
 
-    let targetCoord;
+    let targetCoord: { latitude: any; longitude: any; };
     let inArea = false
     if (latTarget !== undefined && lonTarget !== undefined) {
         targetCoord = { latitude: latTarget, longitude: lonTarget };
@@ -267,7 +267,7 @@ function _handleRawData(req, res) {
         targetCoord = null;
     }
     
-    let pokemonCoords;
+    let pokemonCoords: { latitude: any; longitude: any; };
     
     if (targetCoord !== null) {
         if (forts !== undefined) {
@@ -367,14 +367,14 @@ function _handleRawData(req, res) {
         wildPokemons.forEach(function(pokemon) {
             //Don't return the main query in the scattershot list
             if (pokemon.data.encounter_id === pokemonEncounterId) {
-                return res.status(400).end();
+                return;
             }
             
             try {
                 let oldPokemon = Pokemon.getById(pokemon.data.encounter_id);
                 if (oldPokemon !== undefined && oldPokemon.atkIv !== undefined) {
                     //Skip going to mons already with IVs.
-                    return res.status(400).end();
+                    return;
                 }
             } catch {}
             
@@ -507,7 +507,7 @@ function _handleControllerData(req, res) {
                             level: oldAccount.level
                         }
                     });
-                    return res.status(400).end();
+                    return;
                 }
             }
 
