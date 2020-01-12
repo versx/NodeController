@@ -1,6 +1,6 @@
 "use strict"
 
-const s2cellsPath = 's2cells.json';
+const s2cellsPath = './data/s2cells.json';
 const fs          = require('fs');
 
 class S2Cell {
@@ -35,7 +35,11 @@ class S2Cell {
     }
     static load() {
         let data = fs.readFileSync(s2cellsPath);
-        this.S2Cells = JSON.parse(data);
+        let keys = Object.keys(data);
+        keys.forEach(function(key) {
+            this.S2Cells[key] = new S2Cell(data[key]);
+        });
+        //this.S2Cells = JSON.parse(data);
         return this.S2Cells;
     }
 }

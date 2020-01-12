@@ -19,7 +19,7 @@ var devices = Device.getAll();
 var emptyCells = [];//[UInt64: Int]
 var levelCache = {};
 
-class Webhook {
+class WebhookHandler {
     constructor(){
         //setTimeout(distributeConsumables, timerInterval);
     }
@@ -275,7 +275,7 @@ function _handleRawData(req, res) {
                 if (inArea === false) {
                     //let coord = CLLocationCoordinate2D(latitude: fort.data.latitude, longitude: fort.data.longitude)
                     let coord = { latitude: fort.data.latitude, longitude: fort.data.longitude };
-                    //if (coord.distance(to: targetCoord) <= targetMaxDistance) {
+                    // TODO: if (coord.distance(to: targetCoord) <= targetMaxDistance) {
                         inArea = true
                     //}
                 }
@@ -288,7 +288,7 @@ function _handleRawData(req, res) {
                 if (inArea === false) {
                     //let coord = CLLocationCoordinate2D(latitude: pokemon.data.latitude, longitude: pokemon.data.longitude)
                     let coord = { latitude: pokemon.data.latitude, longitude: pokemon.data.longitude };
-                    //if (coord.distance(to: targetCoord) <= targetMaxDistance) {
+                    //TODO: if (coord.distance(to: targetCoord) <= targetMaxDistance) {
                         inArea = true
                     //}
                 } else if (pokemonCoords !== undefined && inArea) {
@@ -360,10 +360,9 @@ function _handleRawData(req, res) {
     let listScatterPokemon = json["list_scatter_pokemon"];
     if (listScatterPokemon && pokemonCoords != undefined && pokemonEncounterId != undefined) {
         let uuid = json["uuid"];
-        //var controller = InstanceController.global.getInstanceController(deviceUUID: uuid) as? IVInstanceController;
-       
+        //let controller = InstanceController.global.getInstanceController(deviceUUID: uuid) as? IVInstanceController;
         let scatterPokemon = [];
-        
+
         wildPokemons.forEach(function(pokemon) {
             //Don't return the main query in the scattershot list
             if (pokemon.data.encounter_id === pokemonEncounterId) {
@@ -378,9 +377,8 @@ function _handleRawData(req, res) {
                 }
             } catch {}
             
-            //let coords = CLLocationCoordinate2D(latitude: pokemon.data.latitude, longitude: pokemon.data.longitude)
             let coords = { latitude: pokemon.data.latitude, longitude: pokemon.data.longitude };
-            let distance = 35;//pokemonCoords.distance(to: coords)
+            //let distance = pokemonCoords.distance(to: coords)
             
             // Only Encounter pokemon within 35m of initial pokemon scann
             let pokemonId = parseInt(pokemon.data.pokemon_data.pokemon_id);
@@ -528,8 +526,8 @@ function _handleControllerData(req, res) {
                 data: {
                     username: account.username,
                     password: account.password,
-                    first_warning_timestamp: account.firstWarningTimestamp//,
-                    //level: account.level
+                    first_warning_timestamp: account.firstWarningTimestamp,
+                    level: account.level
                 }
             });
             break;
@@ -556,7 +554,7 @@ function _handleControllerData(req, res) {
                 return res.status(400).end();
             }
             if (account.failedTimestamp === undefined || account.failed === undefined) {
-                account.failedTimestamp = 0; //TODO: Get js timestamp
+                account.failedTimestamp = new Date().getUTCSeconds();
                 account.failed = "banned";
                 account.save();
                 res.send('OK');
@@ -571,7 +569,7 @@ function _handleControllerData(req, res) {
                 return res.status(400).end();
             }
             if (account.firstWarningTimestamp === undefined) {
-                account.firstWarningTimestamp = 0; //TODO: Get js timestamp
+                account.firstWarningTimestamp = new Date().getUTCSeconds();
                 account.save();
                 res.send('OK');
             }
@@ -585,7 +583,7 @@ function _handleControllerData(req, res) {
                 return res.status(400).end();
             }
             if (account.failedTimestamp === undefined || account.failed === undefined) {
-                account.failedTimestamp = 0; //TODO: Get js timestamp
+                account.failedTimestamp = new Date().getUTCSeconds();
                 account.failed = "invalid_credentials";
                 account.save();
                 res.send('OK');
@@ -600,7 +598,7 @@ function _handleControllerData(req, res) {
                 return res.status(400).end();
             }
             if (account.failedTimestamp === undefined || account.failed === undefined) {
-                account.failedTimestamp = 0; //TODO: Get js timestamp
+                account.failedTimestamp = new Date().getUTCSeconds();
                 account.failed = "error_26";
                 account.save();
                 res.send('OK');
@@ -635,7 +633,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                 level: level,
                 lat: lat,
                 lon: lon,
-                updated: new Date()
+                updated: new Date().getUTCSeconds()
             });
             //cell.save();
             client.addCell(cell);
@@ -727,26 +725,26 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
             fortDetails.forEach(function(fort) {
                 switch (fort.type) {
                     case 0: // gym
-                        let gym;
+                        let gym: Gym;
                         try {
                             gym = Gym.getById(fort.id);
                         } catch (err) {
                             gym = null;
                         }
-                        if (gym !== null) {
+                        if (gym) {
                             gym.addDetails(fort);
                             //gym.save();
                             client.addGym(gym);
                         }
                         break;
                     case 1: // checkpoint
-                        let pokestop;
+                        let pokestop: Pokestop;
                         try {
                             pokestop = Pokestop.getById(fort.id);
                         } catch (err) {
                             pokestop = null;
                         }
-                        if (pokestop !== null) {
+                        if (pokestop) {
                             pokestop.addDetails(fort);
                             //pokestop.save();
                             client.addPokestop(pokestop);
@@ -761,13 +759,13 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
         if (gymInfos.length > 0) {
             let startGymInfos = process.hrtime();
             gymInfos.forEach(function(gymInfo) {
-                let gym;
+                let gym: Gym;
                 try {
                     gym = Gym.getById(gymInfo.gym_status_and_defenders.pokemon_fort_proto.id);
                 } catch (err) {
                     gym = null
                 }
-                if (gym !== null) {
+                if (gym) {
                     gym.addGymInfo(gymInfo);
                     //gym.save();
                     client.addGym(gym);
@@ -780,13 +778,13 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
         if (quests.length > 0) {
             let startQuests = process.hrtime();
             quests.forEach(function(quest) {
-                let pokestop;
+                let pokestop: Pokestop;
                 try {
                     pokestop = Pokestop.getById(quest.fort_id);
                 } catch (err) {
                     pokestop = null;
                 }
-                if (pokestop !== null) {
+                if (pokestop) {
                     pokestop.addQuest(quest);
                     //pokestop.save();
                     client.addQuest(quest);
@@ -799,13 +797,13 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
         if (encounters.length > 0) {
             let startEncounters = process.hrtime();
             encounters.forEach(function(encounter) {
-                let pokemon;
+                let pokemon: Pokemon;
                 try {
                     pokemon = Pokemon.getById(encounter.wild_pokemon.encounter_id);
                 } catch (err) {
                     pokemon = null;
                 }
-                if (pokemon !== null) {
+                if (pokemon) {
                     pokemon.addEncounter(encounter, username);
                     //pokemon.save();
                     client.addPokemon(pokemon);
@@ -814,8 +812,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                     let center = S2.S2LatLng.fromPoint(centerCoord);
                     let centerNormalized = center.normalized();
                     let centerNormalizedPoint = centerNormalized.toPoint();
-                    //var circle = new S2.S2Cap(centerNormalizedPoint, 0.0);
-                    let circle = new S2.S2Cap(centerCoord, 0.0);
+                    var circle = new S2.S2Cap(centerNormalizedPoint, 0.0);
                     let coverer = new S2.S2RegionCoverer();
                     coverer.maxCells = 1;
                     coverer.minLevel = 15;
@@ -881,4 +878,4 @@ function base64_decode(data) {
 }
 
 // Export the class
-export { Webhook };
+export { WebhookHandler };

@@ -72,6 +72,7 @@ class Account {
                     acc.spins, acc.tutorial, acc.ptcToken));
             }
         }
+        console.log("Accounts:", accountList);
         return accountList;
     }
 }

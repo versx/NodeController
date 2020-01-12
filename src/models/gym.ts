@@ -1,6 +1,6 @@
 "use strict"
 
-const gymsPath = 'gyms.json';
+const gymsPath = './data/gyms.json';
 const fs       = require('fs');
 
 class Gym {
@@ -130,7 +130,11 @@ class Gym {
     }
     static load() {
         let data = fs.readFileSync(gymsPath);
-        this.Gyms = JSON.parse(data);
+        let keys = Object.keys(data);
+        keys.forEach(function(key) {
+            this.Gyms[key] = new Gym(data[key]);
+        });
+        //this.Gyms = JSON.parse(data);
         return this.Gyms;
     }
 }

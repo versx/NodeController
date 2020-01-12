@@ -1,6 +1,6 @@
 "use strict"
 
-const pokestopsPath = 'pokestops.json';
+const pokestopsPath = './data/pokestops.json';
 const fs            = require('fs');
 
 const lureTime = 1800;
@@ -117,7 +117,11 @@ class Pokestop {
     }
     static load() {
         let data = fs.readFileSync(pokestopsPath);
-        this.Pokestops = JSON.parse(data);
+        let keys = Object.keys(data);
+        keys.forEach(function(key) {
+            this.Pokestops[key] = new Pokestop(data[key]);
+        });
+        //this.Pokestops = JSON.parse(data);
         return this.Pokestops;
     }
 }

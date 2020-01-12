@@ -15,8 +15,7 @@ class AccountController {
         
         //clearSpinsQueue = Threading.getQueue(name: "AccountController-spin-clearer", type: .serial)
         //clearSpinsQueue.dispatch {
-            while (true) {
-                
+            //while (true) {
                 let date = moment(new Date(), "HH:mm:ss").toString();             
                 let split = date.split(":");
                 let hour = parseInt(split[0]);
@@ -35,13 +34,10 @@ class AccountController {
                             // TODO: Sleep 5 seconds
                         }
                     }
-                    
                 }
-                
-            }
+            //}
         //}
     }
-
 }
 
 export { AccountController };

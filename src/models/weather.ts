@@ -1,6 +1,11 @@
 "use strict"
 
+const weatherPath = './data/weather.json';
+const fs          = require('fs');
+
 class Weather {
+    static Weather = {};
+
     id: number;
     level: number;
     latitude: number;
@@ -38,14 +43,34 @@ class Weather {
         }
     }
     static getAll(minLat: number, maxLat: number, minLon: number, maxLon: number, updated: number) {
-
+        return this.load();
     }
-    static getInIDs(ids: number[]) {
+    static getInIds(ids: number[]) {
 
     }
     save() {
-
+        //TODO: Check if values changed, if not skip.
+        Weather.Weather[this.id] = this;
+        save(Weather.Weather, weatherPath);
     }
+    static load() {
+        let data = fs.readFileSync(weatherPath);
+        let keys = Object.keys(data);
+        keys.forEach(function(key) {
+            this.Weather[key] = new Weather(data[key]);
+        });
+        //this.Weather = JSON.parse(data);
+        return this.Weather;
+    }
+}
+
+/**
+ * Save object as json string to file path.
+ * @param {*} obj 
+ * @param {*} path 
+ */
+function save(obj: any, path: string) {
+    fs.writeFileSync(path, JSON.stringify(obj, null, 2), 'utf-8');
 }
 
 export { Weather };

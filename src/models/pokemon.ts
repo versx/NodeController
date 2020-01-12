@@ -2,7 +2,7 @@
 
 import { Spawnpoint } from "./spawnpoint"
 
-const pokemonPath = 'pokemon.json';
+const pokemonPath = './data/pokemon.json';
 const fs          = require('fs');
 const moment      = require('moment');
 
@@ -37,7 +37,7 @@ class Pokemon /*extends Consumable*/ {
     changed: number;
     cellId: string;
 
-    constructor(data) {
+    constructor(data: any) {
         /*super(id, lat, lon);*/
         if (data.wild !== undefined) {
             this.id = data.wild.encounter_id.toString();
@@ -150,8 +150,8 @@ class Pokemon /*extends Consumable*/ {
         this.username = username;
         this.form = encounter.wild_pokemon.pokemon_data.pokemon_display.form;
         this.gender = encounter.wild_pokemon.pokemon_data.pokemon_display.gender;
-        var cpMultiplier = encounter.wild_pokemon.pokemon_data.cp_multiplier;
-        var level;
+        let cpMultiplier: number = encounter.wild_pokemon.pokemon_data.cp_multiplier;
+        let level: number;
         if (cpMultiplier < 0.734) {
             level = Math.round(58.35178527 * cpMultiplier * cpMultiplier - 2.838007664 * cpMultiplier + 0.8539209906);
         } else {
@@ -178,7 +178,7 @@ class Pokemon /*extends Consumable*/ {
             this.lon = encounter.wild_pokemon.longitude;
 
             if (this.expireTimestampVerified === false && this.spawnId !== undefined) {
-                let spawnpoint = {};
+                let spawnpoint: Spawnpoint;
                 try {
                     spawnpoint = Spawnpoint.getById(this.spawnId);
                 } catch (err) {
@@ -193,7 +193,7 @@ class Pokemon /*extends Consumable*/ {
                         let second = parseInt(split[1]);
                         let secondOfHour = second + minute * 60;
                     
-                        var despawnOffset;
+                        let despawnOffset: number;
                         if (despawnSecond < secondOfHour) {
                             despawnOffset = 3600 + despawnSecond - secondOfHour;
                         } else {
@@ -216,7 +216,11 @@ class Pokemon /*extends Consumable*/ {
     }
     static load() {
         let data = fs.readFileSync(pokemonPath);
-        this.Pokemon = JSON.parse(data);
+        let keys = Object.keys(data);
+        keys.forEach(function(key) {
+            this.Pokemon[key] = new Pokemon(data[key]);
+        });
+        //this.Pokemon = JSON.parse(data);
         return this.Pokemon;
     }
 }

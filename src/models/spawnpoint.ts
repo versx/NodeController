@@ -1,6 +1,6 @@
 "use strict"
 
-const spawnpointsPath = 'spawnpoints.json';
+const spawnpointsPath = './data/spawnpoints.json';
 const fs              = require('fs');
 
 class Spawnpoint {
@@ -33,7 +33,11 @@ class Spawnpoint {
     }
     static load() {
         let data = fs.readFileSync(spawnpointsPath);
-        this.Spawnpoints = JSON.parse(data);
+        let keys = Object.keys(data);
+        keys.forEach(function(key) {
+            this.Spawnpoints[key] = new Spawnpoint(data[key]);
+        });
+        //this.Spawnpoints = JSON.parse(data);
         return this.Spawnpoints;
     }
 }
