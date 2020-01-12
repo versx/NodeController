@@ -19,6 +19,7 @@ class InstanceController implements IInstanceController {
 
     constructor() { }
     static setup() {
+        console.log("[InstanceController] Starting up...");
         let devices = Device.getAll();
         devices.forEach(function(device: Device) {
             InstanceController.Devices[device.uuid] = device;

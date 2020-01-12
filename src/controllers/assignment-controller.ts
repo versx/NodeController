@@ -15,8 +15,41 @@ class AssignmentController extends InstanceController /*InstanceControllerDelega
     constructor() {
         super();
     }
-    setup() {
+    static setup() {
+        console.log("[AssignmentController] Starting up...");
 
+        /*
+        this.assignments = Assignment.getAll();
+        this.timeZone = Localizer.global.timeZone;
+        
+        if (!isSetup) {
+            isSetup = true;
+
+            //queue = Threading.getQueue(name: "AssignmentController-updater", type: .serial)
+            //queue.dispatch {
+                let lastUpdate: number = -2;                
+                while (true) {
+                    let now = this.todaySeconds();
+                    if (lastUpdate == -2) {
+                        // TODO: sleep 5 seconds
+                        lastUpdate = parseInt(now);
+                        continue;
+                    } else if (lastUpdate > now) {
+                        lastUpdate = -1;
+                    }
+                    let assignments = this.assignments;
+                    assignments.forEach(function(assignment) {
+                        if (assignment.enabled && assignment.time !== 0 && now >= assignment.time && lastUpdate < assignment.time) {
+                            this.triggerAssignment(assignment)
+                        }
+                    });
+                    
+                    // TODO: sleep 5 seconds
+                    lastUpdate = parseInt(now);
+                }
+            //}
+        }
+        */
     }
     addAssignment(assignment: Assignment) {
         this.assignments.push(assignment);

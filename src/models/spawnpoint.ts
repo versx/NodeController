@@ -48,4 +48,4 @@ function save(obj: any, path: string) {
 }
 
 // Export the class
-module.exports = Spawnpoint;
+export { Spawnpoint };

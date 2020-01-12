@@ -4,13 +4,22 @@
  * Version: 0.0.4
  */
 
-import express = require('express');
-import bodyParser = require('body-parser');
-import config = require('./config.json');
-const app        = express();
-import { Webhook } from './http/webhook';
+"use strict"
 
+import { AccountController } from './controllers/account-controller.js';
+import { AssignmentController } from './controllers/assignment-controller.js';
+import { InstanceController } from './controllers/instance-controller.js';
+import { Webhook } from './http/webhook';
+import express    = require('express');
+import bodyParser = require('body-parser');
+import config     = require('./config.json');
+const app         = express();
 const webhook    = new Webhook();
+
+// Setup controllers
+AccountController.setup();
+AssignmentController.setup();
+InstanceController.setup();
 
 // Middleware
 app.use(bodyParser.raw({ type: 'application/x-www-form-urlencoded' }));

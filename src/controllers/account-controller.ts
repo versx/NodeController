@@ -5,9 +5,10 @@ const moment = require('moment');
 "use strict"
 
 class AccountController {
-    isSetup: boolean = false;
+    static isSetup: boolean = false;
 
-    setup() {
+    static setup() {
+        console.log("[AccountController] Starting up...");
         if (this.isSetup) {
             return;
         }
