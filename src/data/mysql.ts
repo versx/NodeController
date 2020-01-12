@@ -1,6 +1,8 @@
 "use strict"
 
-const mysql    = require('mysql');
+import mysql = require('mysql');
+import config = require('../config.json');
+
 var pool       = mysql.createPool({
     host       : config.db.host,
     port       : config.db.port,

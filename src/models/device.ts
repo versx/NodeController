@@ -1,6 +1,6 @@
 "use strict"
 
-const devicesPath = 'devices.json';
+const devicesPath = './data/devices.json';
 const fs          = require('fs');
 
 class Device {

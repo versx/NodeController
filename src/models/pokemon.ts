@@ -182,7 +182,7 @@ class Pokemon /*extends Consumable*/ {
                 } catch (err) {
                     spawnpoint = null;
                 }
-                if (spawnpoint instanceof Spawnpoint) {
+                if (spawnpoint instanceof Spawnpoint && spawnpoint !== null) {
                     let despawnSecond = spawnpoint.despawnSecond;
                     if (despawnSecond !== undefined && despawnSecond !== null) {
                         let date = moment().format('mm:ss');

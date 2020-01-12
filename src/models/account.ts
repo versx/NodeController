@@ -1,6 +1,6 @@
 "use strict"
 
-const accountsPath = 'accounts.json';
+const accountsPath = './data/accounts.json';
 const fs           = require('fs');
 const redis        = require('redis');
 
@@ -59,7 +59,7 @@ class Account {
     }
     static load() {
         let data = fs.readFileSync(accountsPath);
-        let obj = JSON.parse(data);
+        let obj = JSON.parse(data.toString());
         let accountList = []
         for (var key in obj) {
             if (obj.hasOwnProperty(key)) {

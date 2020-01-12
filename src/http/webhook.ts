@@ -1,15 +1,15 @@
 "use strict"
 
-const POGOProtos  = require('../pogo-protos');
+const POGOProtos  = require('../../pogo-protos');
 const S2          = require('nodes2ts');
 
 import { Account } from '../models/account';
 import { Device } from '../models/device';
 import { Pokemon } from '../models/pokemon';
-import { Gym } from '../models/gym.js';
+import { Gym } from '../models/gym';
 import { Pokestop } from '../models/pokestop';
 import { S2Cell } from '../models/s2cell';
-import { RedisClient } from '../redis-client.js';
+import { RedisClient } from '../redis-client';
 
 const client = new RedisClient();
 
@@ -19,8 +19,9 @@ var devices = Device.getAll();
 var emptyCells = [];//[UInt64: Int]
 var levelCache = {};
 
-class WebhookRequestHandler {
-    constructor() {
+class Webhook {
+    constructor(){
+        //setTimeout(distributeConsumables, timerInterval);
     }
     handleRawData(req, res) {
         _handleRawData(req, res);
@@ -42,11 +43,11 @@ function _handleRawData(req, res) {
         //console.log("HandleRawData Parsed:", jsonOpt);
     } catch (e) {
         console.log(e);
-        return;
+        return res.status(400).end();
     }
     if (jsonOpt === undefined) {
         console.log("Bad data");
-        return;
+        return res.status(400).end();
     }
     if (jsonOpt['payload'] !== undefined) {
         jsonOpt['contents'] = [jsonOpt];
@@ -69,7 +70,7 @@ function _handleRawData(req, res) {
     let contents = json["contents"] || json["protos"] || json["gmo"];
     if (contents === undefined) {
         console.log("Invalid GMO");
-        return;
+        return res.status(400).end();
     }
     var uuid = json["uuid"];
     let latTarget = json["lat_target"];
@@ -101,7 +102,7 @@ function _handleRawData(req, res) {
     if (contents === undefined) {
         console.log("Contents is empty");
         res.send("Contents is empty");
-        return;
+        return res.status(400).end();
     }
 
     contents.forEach(function(rawData) {
@@ -137,7 +138,7 @@ function _handleRawData(req, res) {
 
         if (invalid !== false) {
             console.log("Invalid data");
-            return;
+            return res.status(400).end();
         }
 
         switch (method) {
@@ -193,7 +194,7 @@ function _handleRawData(req, res) {
                     let mapCellsNew = gmo.map_cells;
                     if (mapCellsNew.length === 0) {
                         console.log("Map cells is empty");
-                        return;
+                        return res.status(400).end();
                     }
                     mapCellsNew.forEach(function(mapCell) {
                         let timestampMs = mapCell.current_timestamp_ms;
@@ -258,7 +259,7 @@ function _handleRawData(req, res) {
         }
     });
 
-    let targetCoord;
+    let targetCoord: { latitude: any; longitude: any; };
     let inArea = false
     if (latTarget !== undefined && lonTarget !== undefined) {
         targetCoord = { latitude: latTarget, longitude: lonTarget };
@@ -266,7 +267,7 @@ function _handleRawData(req, res) {
         targetCoord = null;
     }
     
-    let pokemonCoords;
+    let pokemonCoords: { latitude: any; longitude: any; };
     
     if (targetCoord !== null) {
         if (forts !== undefined) {
@@ -426,13 +427,13 @@ function _handleControllerData(req, res) {
         //console.log("HandleControllerData Parsed:", jsonO);
     } catch (e) {
         console.log(e);
-        return;
+        return res.status(400).end();
     }
     let typeO = jsonO["type"];
     let uuidO = jsonO["uuid"];
     if (typeO === undefined || uuidO === undefined) {
         console.log("Failed to parse controller data");
-        return;
+        return res.status(400).end();
     }
     let type = typeO;
     var uuid = uuidO;
@@ -493,7 +494,7 @@ function _handleControllerData(req, res) {
             console.log("Random Account:", account);
             if (device === undefined || account === undefined) {
                 console.log("Failed to get account, device or account is null.");
-                return;
+                return res.status(400).end();
             }
             if (device.accountUsername !== undefined) {
                 let oldAccount = accounts[device.accountUsername];
@@ -527,7 +528,7 @@ function _handleControllerData(req, res) {
             var account = accounts[username];
             if (device === undefined || account === undefined) {
                 console.log("Failed to get account, device or account is null.");
-                return;
+                return res.status(400).end();
             }
             if (account.level === 0) {
                 account.level = 1;
@@ -541,7 +542,7 @@ function _handleControllerData(req, res) {
             var account = accounts[username];
             if (device === undefined || account === undefined) {
                 console.log("Failed to get account, device or account is null.");
-                return;
+                return res.status(400).end();
             }
             if (account.failedTimestamp === undefined || account.failed === undefined) {
                 account.failedTimestamp = 0; //TODO: Get js timestamp
@@ -556,7 +557,7 @@ function _handleControllerData(req, res) {
             var account = accounts[username];
             if (device === undefined || account === undefined) {
                 console.log("Failed to get account, device or account is null.");
-                return;
+                return res.status(400).end();
             }
             if (account.firstWarningTimestamp === undefined) {
                 account.firstWarningTimestamp = 0; //TODO: Get js timestamp
@@ -570,7 +571,7 @@ function _handleControllerData(req, res) {
             var account = accounts[username];
             if (device === undefined || account === undefined) {
                 console.log("Failed to get account, device or account is null.");
-                return;
+                return res.status(400).end();
             }
             if (account.failedTimestamp === undefined || account.failed === undefined) {
                 account.failedTimestamp = 0; //TODO: Get js timestamp
@@ -585,7 +586,7 @@ function _handleControllerData(req, res) {
             var account = accounts[username];
             if (device === undefined || account === undefined) {
                 console.log("Failed to get account, device or account is null.");
-                return;
+                return res.status(400).end();
             }
             if (account.failedTimestamp === undefined || account.failed === undefined) {
                 account.failedTimestamp = 0; //TODO: Get js timestamp
@@ -869,4 +870,4 @@ function base64_decode(data) {
 }
 
 // Export the class
-module.exports = WebhookRequestHandler;
+export { Webhook };

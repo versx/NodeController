@@ -179,7 +179,7 @@ function distributeConsumables() {
 }
 
 function getTotalCount() {
-    let pokemon = Object.keys(this.pokemonList).length;
+    let pokemon = Object.keys(pokemonList).length;
     let gyms = Object.keys(gymList).length;
     let raids = Object.keys(raidList).length;
     let pokestops = Object.keys(pokestopList).length;
