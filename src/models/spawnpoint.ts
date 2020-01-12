@@ -10,6 +10,7 @@ class Spawnpoint {
     lat: number;
     lon: number;
     despawnSecond: number;
+    spawnSeconds: number;
 
     constructor(data: any) {
         this.id = data.id;
