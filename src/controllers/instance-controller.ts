@@ -8,7 +8,7 @@ import { CircleSmartRaidInstanceController } from "./smart-circle-controller"
 import { IVInstanceController } from "./iv-controller"
 import { AutoInstanceController, AutoInstanceType } from "./auto-instance-controller"
 import { AssignmentController } from "./assignment-controller"
-import { Pokemon } from "src/models/pokemon"
+import { Pokemon } from "../models/pokemon"
 
 class InstanceController implements IInstanceController {
     static Devices = {};

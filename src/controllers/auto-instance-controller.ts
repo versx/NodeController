@@ -1,9 +1,9 @@
 "use strict"
 
 import { InstanceController } from "./instance-controller";
-import { Account } from "src/models/account";
-import { Pokestop } from "src/models/pokestop";
-import { S2Cell } from "src/models/s2cell";
+import { Account } from "../models/account";
+import { Pokestop } from "../models/pokestop";
+import { S2Cell } from "../models/s2cell";
 
 import S2 = require('nodes2ts');
 import moment = require('moment');
@@ -16,7 +16,7 @@ enum AutoInstanceType {
     Quest
 }
 
-class AutoInstanceController extends InstanceController {
+class AutoInstanceController {
     name: string;
     area: [any];
     timeZoneOffset: number;
@@ -34,7 +34,6 @@ class AutoInstanceController extends InstanceController {
     bootstrapTotalCount: number = 0;
 
     constructor(name: string, area: [any], type: AutoInstanceType, timeZoneOffset: number, minLevel: number, maxLevel: number, spinLimit: number) {
-        super();
         this.name = name;
         this.area = area;
         this.type = type;

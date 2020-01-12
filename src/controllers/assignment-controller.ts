@@ -1,18 +1,16 @@
 "use strict"
 
-import { Assignment } from "src/models/assignment";
-import { Device } from "src/models/device";
-import { InstanceController } from "./instance-controller";
+import { Assignment } from "../models/assignment";
+import { Device } from "../models/device";
 import * as moment from 'moment';
 
-class AssignmentController extends InstanceController /*InstanceControllerDelegate?*/ {
+class AssignmentController /*InstanceControllerDelegate?*/ {
     assignments: Assignment[];
     isSetup: boolean = false;
     //queue: ThreadQueue;
     //timeZone: TimeZone;
 
     constructor() {
-        super();
     }
     static setup() {
         console.log("[AssignmentController] Starting up...");

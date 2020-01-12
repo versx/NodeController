@@ -2,7 +2,7 @@
 
 import { InstanceController, InstanceType } from "./instance-controller"
 
-class CircleInstanceController extends InstanceController {
+class CircleInstanceController {
     lastUuidIndex = {};
     lastUuidSeenTime = {};
 
@@ -18,7 +18,6 @@ class CircleInstanceController extends InstanceController {
     lastCompletedTime: number;
 
     constructor(name: string, type: InstanceType, minLevel: number, maxLevel: number, coords: any[]) {
-        super();
         this.name = name;
         this.type = type;
         this.minLevel = minLevel;
