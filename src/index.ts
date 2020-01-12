@@ -4,8 +4,8 @@
  * Version: 0.0.4
  */
 
-const express    = require('express');
-const bodyParser = require('body-parser');
+import express = require('express');
+import bodyParser = require('body-parser');
 import config = require('./config.json');
 const app        = express();
 const Webhook    = require('./http/webhook.js');
