@@ -1,6 +1,6 @@
-import { InstanceController, InstanceType } from "./instance-controller"
-
 "use strict"
+
+import { InstanceController, InstanceType } from "./instance-controller"
 
 class CircleInstanceController extends InstanceController {
     lastUuidIndex = {};

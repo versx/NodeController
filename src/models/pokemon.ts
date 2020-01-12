@@ -1,5 +1,7 @@
 "use strict"
 
+import { Spawnpoint } from "./spawnpoint"
+
 const pokemonPath = 'pokemon.json';
 const fs          = require('fs');
 const moment      = require('moment');

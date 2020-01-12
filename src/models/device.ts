@@ -24,7 +24,22 @@ class Device {
     static getAll() {
         return this.load();
     }
-    save() {
+    static getById(uuid: string) {
+        return new Device(null, null, null, null, null, null, null);
+    }
+    static setLastLocation(uuid: string, lat: number, lon: number) {
+
+    }
+    touch(uuid: string, host: string) {
+        
+    }
+    create() {
+
+    }
+    clearGroup() {
+
+    }
+    save() {//oldUUID?: string) {
         let devices = Device.getAll();
         //if (devices[this.name] === undefined) {
             devices[this.uuid] = this;

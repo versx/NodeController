@@ -484,9 +484,20 @@ function _handleControllerData(req, res) {
             res.send('OK');
             break;
         case "get_job":
-            res.send({
-                data: getTask(req, res)
-            });
+            //let controller = InstanceController.global.getInstanceController(uuid);
+            //if (controller !== null) {
+            //    try {
+                    res.send({
+                        data: /*controller.*/getTask(uuid, username)
+                    });
+            //    } catch (err) {
+            //        res.status(404);
+            //        res.end();
+            //    }
+            //} else {
+            //    res.status(404);
+            //    res.end();
+            //}
             break;
         case "get_account":
             var device = devices[uuid];

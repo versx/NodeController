@@ -1,13 +1,13 @@
-import { Account } from "../models/account";
-
-const moment = require('moment');
-
 "use strict"
 
-class AccountController {
-    isSetup: boolean = false;
+import { Account } from "../models/account";
+import * as moment from 'moment';
 
-    setup() {
+class AccountController {
+    static isSetup: boolean = false;
+
+    static setup() {
+        console.log("[AccountController] Starting up...");
         if (this.isSetup) {
             return;
         }
@@ -17,7 +17,7 @@ class AccountController {
         //clearSpinsQueue.dispatch {
             while (true) {
                 
-                let date = moment(new Date(), 'HH:mm:ss');                
+                let date = moment(new Date(), "HH:mm:ss").toString();             
                 let split = date.split(":");
                 let hour = parseInt(split[0]);
                 let minute = parseInt(split[1]);
