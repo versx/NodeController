@@ -2,19 +2,37 @@
 
 const accountsPath = 'accounts.json';
 const fs           = require('fs');
-
-//console.log("Dir:", __dirname);
+var redis = require('redis');
 
 class Account {
     username: string;
     password: string;
     firstWarningTimestamp: number;
+    failedTimestamp: number;
+    failed: string;
     level: number;
-    constructor(username: string, password: string, firstWarningTimestamp: number, level: number) {
+    lastEncounterLat: number;
+    lastEncounterLon: number;
+    lastEncounterTime: number;
+    spins: number;
+    tutorial: number;
+    ptcToken: string;
+
+    constructor(username: string, password: string, firstWarningTimestamp: number, failedTimestamp: number,
+        failed: string, level: number, lastEncounterLat: number, lastEncounterLon: number, lastEncounterTime: number,
+        spins: number, tutorial: number, ptcToken: string) {
         this.username = username;
         this.password = password;
         this.firstWarningTimestamp = firstWarningTimestamp;
+        this.failedTimestamp = failedTimestamp;
+        this.failed = failed;
         this.level = level;
+        this.lastEncounterLat = lastEncounterLat;
+        this.lastEncounterLon = lastEncounterLon;
+        this.lastEncounterTime = lastEncounterTime;
+        this.spins = spins;
+        this.tutorial = tutorial;
+        this.ptcToken = ptcToken;
     }
     static getAll() {
         return this.load();
@@ -36,7 +54,9 @@ class Account {
         for (var key in obj) {
             if (obj.hasOwnProperty(key)) {
                 let acc = obj[key];
-                accountList.push(new Account(acc.username, acc.password, acc.firstWarningTimestamp, acc.level));
+                accountList.push(new Account(acc.username, acc.password, acc.firstWarningTimestamp, acc.failedTimestamp,
+                    acc.failed, acc.level, acc.lastEncounterLat, acc.lastEncounterLon, acc.lastEncounterTime,
+                    acc.spins, acc.tutorial, acc.ptcToken));
             }
         }
         return accountList;

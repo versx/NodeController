@@ -4,7 +4,7 @@ const devicesPath = 'devices.json';
 const fs          = require('fs');
 
 class Device {
-    name: string;
+    uuid: string;
     instanceName: string;
     accountUsername: string;
     lastHost: string;
@@ -12,8 +12,8 @@ class Device {
     lastLat: number;
     lastLon: number;
 
-    constructor(name: string, instanceName: string, accountUsername: string, lastHost: string, lastSeen: number, lastLat: number, lastLon: number) {
-        this.name = name;
+    constructor(uuid: string, instanceName: string, accountUsername: string, lastHost: string, lastSeen: number, lastLat: number, lastLon: number) {
+        this.uuid = uuid;
         this.instanceName = instanceName;
         this.accountUsername = accountUsername;
         this.lastHost = lastHost;
@@ -27,7 +27,7 @@ class Device {
     save() {
         let devices = Device.getAll();
         //if (devices[this.name] === undefined) {
-            devices[this.name] = this;
+            devices[this.uuid] = this;
             save(devices, devicesPath);
         //}
     }
