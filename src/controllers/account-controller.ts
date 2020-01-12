@@ -17,7 +17,7 @@ class AccountController {
         //clearSpinsQueue.dispatch {
             while (true) {
                 
-                let date = moment(new Date(), 'HH:mm:ss');                
+                let date = moment(new Date(), "HH:mm:ss").toString();             
                 let split = date.split(":");
                 let hour = parseInt(split[0]);
                 let minute = parseInt(split[1]);

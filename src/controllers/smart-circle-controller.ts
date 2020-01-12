@@ -29,21 +29,21 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
 
         coords.forEach(function(point) {
             // Get all cells rouching a 630m (-5m for error) circle at center
-            let coord = { latitude: point.lat, longitude: point.lon };
+            let coord = new S2.S2Point(point.lat, point.lon, 0);
             let radians = 0.00009799064306948; // 625m
-            let centerNormalizedPoint = new S2.S2LatLng(coord).normalized().point;
+            let centerNormalizedPoint = S2.S2LatLng.fromPoint(coord).normalized().toPoint();
             let circle = new S2.S2Cap(centerNormalizedPoint, (radians * radians) / 2);
             let coverer = new S2.S2RegionCoverer();
             coverer.setMaxCells(100);
             coverer.setMinLevel(15);
             coverer.setMaxLevel(15);
-            let cellIds = coverer.getCovering(circle).map(cell => cell.uid);            
+            let cellIds = coverer.getCoveringCells(circle).map(cell => cell.id.toString());            
             let loaded = false;
             while (!loaded) {
                 try {
                     let gyms = Gym.getByCellIds(cellIds);
                     this.smartRaidGymsInPoint[point] = gyms.map(gym => gym.id);
-                    this.smartRaidPointsUpdated[point] = 0;// Date(timeIntervalSince1970: 0)
+                    this.smartRaidPointsUpdated[point] = 0;// TODO: Date(timeIntervalSince1970: 0)
                     gyms.forEach(function(gym) {
                         if (this.smartRaidGyms[gym.id] === null) {
                             this.smartRaidGyms[gym.id] = gym
