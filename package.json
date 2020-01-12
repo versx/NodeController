@@ -4,8 +4,10 @@
   "description": "",
   "main": "dist/src/index.js",
   "scripts": {
-    "compile": "tsc -p tsconfig.json",
-    "start": "node dist/src/index.js"
+    "start": "TS_NODE_FILES=true node --inspect=5858 -r ts-node/register ./src/index.ts",
+    "start:watch": "nodemon",
+    "start:production": "cd dist && node -r ts-node/register src/index.js",
+    "build": "tsc -p tsconfig.json"
   },
   "repository": {
     "type": "git",
@@ -26,5 +28,27 @@
     "protobufjs": "^6.8.8",
     "redis": "^2.8.0",
     "turf": "^3.0.14"
+  },
+  "devDependencies": {
+    "@types/node": "^13.1.6",
+    "eslint": "^6.8.0",
+    "eslint-plugin-import": "^2.20.0",
+    "nodemon": "^2.0.2",
+    "ts-node": "^8.6.1",
+    "typescript": "^3.7.4"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "**/*.test.ts",
+      "**/*.spec.ts",
+      ".git",
+      "node_modules",
+      "pogo_protos"
+    ],
+    "watch": [
+      "src"
+    ],
+    "exec": "npm start",
+    "ext": "ts"
   }
 }

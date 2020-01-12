@@ -20,8 +20,7 @@ logs:
 
 .PHONY: start
 start: start-deps
-	npm run compile
-	npm start
+	npm run start:watch
 
 .PHONY: start-deps
 start-deps:

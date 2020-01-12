@@ -1,6 +1,6 @@
 "use strict"
 
-const POGOProtos  = require('../../../pogo-protos');
+const POGOProtos  = require('../../pogo-protos');
 const S2          = require('nodes2ts');
 
 import { Account } from '../models/account';

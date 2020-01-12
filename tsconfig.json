@@ -13,7 +13,6 @@
     "include": [
         "src/**/*",
         "*.json",
-        "pogo_protos",
     ],
     "exclude": [
         "node_modules",
