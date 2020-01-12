@@ -3,7 +3,7 @@
 import { Assignment } from "src/models/assignment";
 import { InstanceController } from "./instance-controller";
 
-class AssignmentController extends InstanceController {
+class AssignmentController extends InstanceController /*InstanceControllerDelegate?*/ {
     constructor() {
         super();
     }
