@@ -1,4 +1,5 @@
 import { Device } from "../models/device"
+import { Instance, InstanceType } from "../models/instance"
 import { IInstanceController } from "./iinstance-controller"
 import { CircleInstanceController } from "./circle-controller"
 import { CircleSmartRaidInstanceController } from "./smart-circle-controller"
@@ -6,43 +7,6 @@ import { IVInstanceController } from "./iv-controller"
 import { AutoInstanceController, AutoInstanceType } from "./auto-instance-controller"
 
 "use strict"
-
-enum InstanceType {
-    CirclePokemon,
-    CircleRaid,
-    SmartCircleRaid,
-    AutoQuest,
-    PokemonIV
-}
-
-interface IInstanceData {
-    timeZoneOffset: number;
-    spinLimit: number;
-
-}
-
-interface IInstance {
-    name: string;
-    type: InstanceType;
-    minLevel: number;
-    maxLevel: number;
-    //timeZoneOffset: number;
-    area: [any];
-    data: IInstanceData;
-}
-
-class Instance implements IInstance {
-    name: string;
-    type: InstanceType;
-    minLevel: number;
-    maxLevel: number;
-    area: [any];
-    data: IInstanceData;
-
-    static getAll() {
-        return [];
-    }
-}
 
 class InstanceController implements IInstanceController {
     static Devices = {};
@@ -134,15 +98,14 @@ class InstanceController implements IInstanceController {
                 }
                 break;
         }
-        //instanceController.delegate = AssignmentController.global;
+        // TODO: instanceController.delegate = AssignmentController.global;
         this.instancesByInstanceName[instance.name] = instanceController;
     }
     reloadAllInstances() {
         let keys = Object.keys(this.instancesByInstanceName);
         keys.forEach(function(instance) {
             this.instancesByInstanceName[instance].reload();
-            // TODO: Add AssignmentController
-            //AssignmentController.global.setup();
+            // TODO: AssignmentController.global.setup();
         });
     }
     reloadInstance(newInstance: Instance, oldInstanceName: string) {

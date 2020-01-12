@@ -2,7 +2,7 @@
 
 const accountsPath = 'accounts.json';
 const fs           = require('fs');
-var redis = require('redis');
+const redis        = require('redis');
 
 class Account {
     username: string;
@@ -37,7 +37,7 @@ class Account {
     static getAll() {
         return this.load();
     }
-    static getNewAccount(minLevel, maxLevel) {
+    static getNewAccount(minLevel: number, maxLevel: number) {
         return new Account(null, null, null, null, null, null, null, null, null, null, null, null);
     }
     static spin(username: string) {

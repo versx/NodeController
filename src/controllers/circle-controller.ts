@@ -10,14 +10,14 @@ class CircleInstanceController extends InstanceController {
     type: InstanceType;
     minLevel: number;
     maxLevel: number;
-    coords: [any];
+    coords: any[];
 
     //coords;
     lastIndex: number;
     lastLastCompletedTime: number;
     lastCompletedTime: number;
 
-    constructor(name: string, type: InstanceType, minLevel: number, maxLevel: number, coords: [any]) {
+    constructor(name: string, type: InstanceType, minLevel: number, maxLevel: number, coords: any[]) {
         super();
         this.name = name;
         this.type = type;
@@ -70,20 +70,18 @@ class CircleInstanceController extends InstanceController {
         this.lastIndex = 0;
     }
     stop() {}
-    /*
     routeDistance(x, y) {
         if (x < y ) {
             return y - x;
         }
-        return y + (coords.length - x);
+        return y + (this.coords.length - x);
     }
-    queryLiveDevices(uuid, index) {
-        var deadDeviceCutOff = new Date() - TimeInerval(60);
-        var numLiveDevices = 1;
-        var distanceToNext = coords.length;
-        
+    queryLiveDevices(uuid: string, index: number) {
+        let deadDeviceCutOff = new Date().getUTCSeconds() - 60 * 1000;
+        let numLiveDevices = 1;
+        let distanceToNext = this.coords.length;
+        // TODO: finish new routing logic        
     }
-    */
 }
 
 export { CircleInstanceController };

@@ -25,6 +25,7 @@ class Pokemon /*extends Consumable*/ {
     spawnId: string;
     expireTimestamp: number;
     expireTimestampVerified: boolean;
+    firstSeenTimestamp: number;
     pokestopId: string;
     atkIv: number;
     defIv: number;

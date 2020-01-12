@@ -109,6 +109,9 @@ class Gym {
     static getById(gymId: string) {
         return this.Gyms[gymId];
     }
+    static getByCellIds(cellIds: string[]) {
+        return new Gym[0]; // TODO: Implement getByCellIds
+    }
     addDetails(fort: any) {
 
     }

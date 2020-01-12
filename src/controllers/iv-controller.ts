@@ -1,7 +1,5 @@
-//import { CircleInstanceController } from "./circle-controller"
 import { InstanceController } from "./instance-controller";
 import { Pokemon } from "../models/pokemon";
-import { start } from "repl";
 
 "use strict"
 
@@ -74,10 +72,10 @@ class IVInstanceController extends InstanceController {
             return {}; // { string: any }
         }
         let pokemon = this.pokemonQueue.pop();
-        // TODO: check time
-        //if UInt32(Date().timeIntervalSince1970) - (pokemon.firstSeenTimestamp ?? 1) >= 600 {
-        //    return getTask(uuid, username);
-        //}
+        var now = new Date().getUTCSeconds();
+        if (now - (pokemon.firstSeenTimestamp || 1) >= 600) {
+            return this.getTask(uuid, username);
+        }
         this.scannedPokemon.push({ "date": new Date(), "pokemon": pokemon });
 
         return {

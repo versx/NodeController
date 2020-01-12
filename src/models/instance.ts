@@ -1,25 +1,42 @@
 "use strict"
 
-enum instanceType {
-    circlePokemon = 'circle_pokemon',
-    circleRaid = 'circle_raid',
-    circleSmartRaid = 'circle_smart_raid',
-    autoquest = 'auto_quest',
-    pokemonIV = 'pokemon_iv',
-    gatherToken = 'gather_token',
-    leveling = 'leveling'
+enum InstanceType {
+    CirclePokemon = 'circle_pokemon',
+    CircleRaid = 'circle_raid',
+    SmartCircleRaid = 'circle_smart_raid',
+    AutoQuest = 'auto_quest',
+    PokemonIV = 'pokemon_iv',
+    GatherToken = 'gather_token',
+    Leveling = 'leveling'
 }
 
-class Instance {
+interface IInstanceData {
+    timeZoneOffset: number;
+    spinLimit: number;
 
+}
+
+interface IInstance {
     name: string;
-    type: string;
-    data: object;
-
-    constructor(name: string, type: string, data: object) {
-        this.name = name;
-        this.type = type;
-        this.data = data;
-    }
-    
+    type: InstanceType;
+    minLevel: number;
+    maxLevel: number;
+    //timeZoneOffset: number;
+    area: [any];
+    data: IInstanceData;
 }
+
+class Instance implements IInstance {
+    name: string;
+    type: InstanceType;
+    minLevel: number;
+    maxLevel: number;
+    area: [any];
+    data: IInstanceData;
+
+    static getAll() {
+        return [];
+    }
+}
+
+export { InstanceType, Instance };
