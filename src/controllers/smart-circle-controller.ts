@@ -1,9 +1,9 @@
+"use strict"
+
 import { Gym } from "../models/gym";
 import { InstanceType } from "./instance-controller";
 import { CircleInstanceController } from "./circle-controller";
-const S2 = require("nodes2ts");
-
-"use strict"
+import S2 = require("nodes2ts");
 
 class Coord {
     latitude: number;

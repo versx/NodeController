@@ -1,3 +1,5 @@
+"use strict"
+
 import { Device } from "../models/device"
 import { Instance, InstanceType } from "../models/instance"
 import { IInstanceController } from "./iinstance-controller"
@@ -7,8 +9,6 @@ import { IVInstanceController } from "./iv-controller"
 import { AutoInstanceController, AutoInstanceType } from "./auto-instance-controller"
 import { AssignmentController } from "./assignment-controller"
 import { Pokemon } from "src/models/pokemon"
-
-"use strict"
 
 class InstanceController implements IInstanceController {
     static Devices = {};

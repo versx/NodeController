@@ -1,8 +1,7 @@
-import { Account } from "../models/account";
-
-const moment = require('moment');
-
 "use strict"
+
+import { Account } from "../models/account";
+import * as moment from 'moment';
 
 class AccountController {
     static isSetup: boolean = false;

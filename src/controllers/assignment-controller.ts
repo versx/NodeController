@@ -3,8 +3,7 @@
 import { Assignment } from "src/models/assignment";
 import { Device } from "src/models/device";
 import { InstanceController } from "./instance-controller";
-
-const moment = require('moment');
+import * as moment from 'moment';
 
 class AssignmentController extends InstanceController /*InstanceControllerDelegate?*/ {
     assignments: Assignment[];

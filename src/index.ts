@@ -6,9 +6,9 @@
 
 "use strict"
 
-import { AccountController } from './controllers/account-controller.js';
-import { AssignmentController } from './controllers/assignment-controller.js';
-import { InstanceController } from './controllers/instance-controller.js';
+import { AccountController } from './controllers/account-controller';
+import { AssignmentController } from './controllers/assignment-controller';
+import { InstanceController } from './controllers/instance-controller';
 import { Webhook } from './http/webhook';
 import express    = require('express');
 import bodyParser = require('body-parser');
