@@ -108,7 +108,7 @@ class AssignmentController extends InstanceController /*InstanceControllerDelega
 }
 
 function todaySeconds() {
-    let date: string = moment(new Date(), "HH:mm:ss");
+    let date = moment(new Date(), "HH:mm:ss").toString();
     //formatter.timeZone = timeZone
     let split = date.split(":");
     if (split.length >= 3) {
