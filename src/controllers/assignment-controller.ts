@@ -1,9 +1,17 @@
 "use strict"
 
 import { Assignment } from "src/models/assignment";
+import { Device } from "src/models/device";
 import { InstanceController } from "./instance-controller";
 
+const moment = require('moment');
+
 class AssignmentController extends InstanceController /*InstanceControllerDelegate?*/ {
+    assignments: Assignment[];
+    isSetup: boolean = false;
+    //queue: ThreadQueue;
+    //timeZone: TimeZone;
+
     constructor() {
         super();
     }
@@ -11,24 +19,74 @@ class AssignmentController extends InstanceController /*InstanceControllerDelega
 
     }
     addAssignment(assignment: Assignment) {
-
+        this.assignments.push(assignment);
     }
     editAssignment(oldAssignment: Assignment, newAssignment: Assignment) {
+        let index = this.assignments.indexOf(oldAssignment);
+        if (index >= 0) {
+            // TODO: this.assignments.remove(index);
+        }
+        this.assignments.push(newAssignment);
 
     }
     deleteAssignment(assignment: Assignment) {
-
+        let index = this.assignments.indexOf(assignment);
+        if (index >= 0) {
+            // TODO: this.assignments.remove(index);
+        }
     }
     triggerAssignment(assignment: Assignment) {
-
+        let device: Device;
+        let done: boolean = false;
+        while (!done) {
+            try {
+                device = Device.getById(assignment.deviceUUID);
+                done = true;
+            } catch (err) {
+                // TODO: sleep 1 second
+            }
+        }
+        if (device && device.instanceName !== assignment.instanceName) {
+            console.log("[AssignmentController] Assigning", assignment.deviceUUID, "to", assignment.instanceName);
+            // TODO: InstanceController.global.removeDevice(device);
+            device.instanceName = assignment.instanceName;
+            done = false;
+            while (!done) {
+                try {
+                    // TODO: device.save(device.uuid);
+                    done = true;
+                } catch (err) {
+                    // TODO: sleep 1 second
+                }
+            }
+            // TODO: InstanceController.global.addDevice(device);
+        }
     }
     instanceControllerDone(name: string) {
-
+        this.assignments.forEach(function(assignment) {
+            /*
+            let deviceUUIDs = InstanceController.global.getDeviceUUIDsInInstance(name)
+            if (assignment.enabled && assignment.time === 0 && deviceUUIDs.includes(assignment.deviceUUID)) {
+                this.triggerAssignment(assignment);
+                return
+            }
+            */
+        });
     }
 }
 
 function todaySeconds() {
-
+    let date: string = moment(new Date(), "HH:mm:ss");
+    //formatter.timeZone = timeZone
+    let split = date.split(":");
+    if (split.length >= 3) {
+        let hour = parseInt(split[0]) || 0;
+        let minute = parseInt(split[1]) || 0;
+        let second = parseInt(split[2]) || 0;
+        return hour * 3600 + minute * 60 + second;
+    } else {
+        return 0;
+    }
 }
 
 export { AssignmentController };

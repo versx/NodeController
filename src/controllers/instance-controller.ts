@@ -5,6 +5,8 @@ import { CircleInstanceController } from "./circle-controller"
 import { CircleSmartRaidInstanceController } from "./smart-circle-controller"
 import { IVInstanceController } from "./iv-controller"
 import { AutoInstanceController, AutoInstanceType } from "./auto-instance-controller"
+import { AssignmentController } from "./assignment-controller"
+import { Pokemon } from "src/models/pokemon"
 
 "use strict"
 
@@ -16,7 +18,7 @@ class InstanceController implements IInstanceController {
     devicesByDeviceUUID = {};
 
     constructor() { }
-    setup() {
+    static setup() {
         let devices = Device.getAll();
         devices.forEach(function(device: Device) {
             InstanceController.Devices[device.uuid] = device;
@@ -105,7 +107,7 @@ class InstanceController implements IInstanceController {
         let keys = Object.keys(this.instancesByInstanceName);
         keys.forEach(function(instance) {
             this.instancesByInstanceName[instance].reload();
-            // TODO: AssignmentController.global.setup();
+            AssignmentController.setup();
         });
     }
     reloadInstance(newInstance: Instance, oldInstanceName: string) {
@@ -124,6 +126,99 @@ class InstanceController implements IInstanceController {
             this.instancesByInstanceName[oldInstanceName] = null;
         }
         this.addInstance(newInstance);
+    }
+    removeInstance(instance: Instance) {
+        this.instancesByInstanceName[instance.name].stop();
+        this.instancesByInstanceName[instance.name] = null;
+        var keys = Object.keys(this.devicesByDeviceUUID);
+        keys.forEach(function(key) {
+            var device = this.devicesByDeviceUUID[key];
+            if (device.instanceName === instance.name) {
+                this.devicesByDeviceUUID[key] = null;
+            }
+        });
+        AssignmentController.setup();
+
+    }
+    removeInstanceByName(instanceName: string) {
+        this.instancesByInstanceName[instanceName].stop();
+        this.instancesByInstanceName[instanceName] = null;
+        var keys = Object.keys(this.devicesByDeviceUUID);
+        keys.forEach(function(key) {
+            var device = this.devicesByDeviceUUID[key];
+            if (device.instanceName === instanceName) {
+                this.devicesByDeviceUUID[device] = null;
+            }
+        });
+        AssignmentController.setup();
+
+    }
+    addDevice(device: Device) {
+        if (device.instanceName !== null && this.instancesByInstanceName[device.instanceName] !== null) {
+            this.devicesByDeviceUUID[device.uuid] = device;
+        }
+        AssignmentController.setup();
+    }
+    reloadDevice(newDevice: Device, oldDeviceUUID: string) {
+        this.removeDeviceByName(oldDeviceUUID);
+        this.addDevice(newDevice);
+    }
+    removeDevice(device: Device) {
+        this.devicesByDeviceUUID[device.uuid] = null;
+        AssignmentController.setup();
+    }
+    removeDeviceByName(deviceUUID: string) {
+        this.devicesByDeviceUUID[deviceUUID] = null;
+        AssignmentController.setup();
+    }
+    getDeviceUUIDsInInstance(instanceName: String) {
+        let deviceUUIDS: string[];
+        let keys = Object.keys(this.devicesByDeviceUUID);
+        keys.forEach(function(key) {
+            let device = this.devicesByDeviceUUID[key];
+            if (device.instanceName === instanceName) {
+                deviceUUIDS.push(device.uuid);
+            }
+        });
+        return deviceUUIDS;
+    }
+    getInstanceStatus(instance: Instance, formatted: boolean) {
+        /*
+        if let instanceProto = instancesByInstanceName[instance.name] {
+            return instanceProto.getStatus(formatted: formatted)
+        } else {
+            if formatted {
+                return "?"
+            } else {
+                return nil
+            }
+        }
+        */
+    }
+    gotPokemon(pokemon: Pokemon) {
+        let keys = Object.keys(this.instancesByInstanceName);
+        keys.forEach(function(key) {
+            let instance = this.instancesByInstanceName[key];
+            if (instance instanceof IVInstanceController) {
+                instance.addPokemon(pokemon);
+            }
+        });
+    }
+    gotIV(pokemon: Pokemon) {
+        let keys = Object.keys(this.instancesByInstanceName);
+        keys.forEach(function(key) {
+            let instance = this.instancesByInstanceName[key];
+            if (instance instanceof IVInstanceController) {
+                instance.gotIV(pokemon);
+            }
+        });
+    }
+    getIVQueue(name: string) {
+        var instance = this.instancesByInstanceName[name];
+        if (instance instanceof IVInstanceController) {
+            return instance.getQueue();
+        }
+        return new Pokemon[0];
     }
     getTask(uuid: string, username: string) {
     }

@@ -50,6 +50,9 @@ class Account {
     }
     static clearSpins() {
     }
+    static setLevel(username: string, level: number) {
+        
+    }
     save() {
         let accounts = Account.getAll();
         //if (accounts[this.username] !== undefined) {
