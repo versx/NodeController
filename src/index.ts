@@ -8,7 +8,7 @@ import express = require('express');
 import bodyParser = require('body-parser');
 import config = require('./config.json');
 const app        = express();
-const Webhook    = require('./http/webhook.js');
+import { Webhook } from './http/webhook';
 
 const webhook    = new Webhook();
 
