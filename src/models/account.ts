@@ -38,7 +38,15 @@ class Account {
         return this.load();
     }
     static getNewAccount(minLevel, maxLevel) {
-        return {};
+        return new Account(null, null, null, null, null, null, null, null, null, null, null, null);
+    }
+    static spin(username: string) {
+        return new Account(null, null, null, null, null, null, null, null, null, null, null, null);
+    }
+    static getWithUsername(username: string) {
+        return new Account(null, null, null, null, null, null, null, null, null, null, null, null);
+    }
+    static didEncounter(username: string, newLat: number, newLon: number, encounterTime: number) {
     }
     save() {
         let accounts = Account.getAll();

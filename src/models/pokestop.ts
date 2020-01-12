@@ -99,6 +99,11 @@ class Pokestop {
     static getById(pokestopId: string) {
         return this.Pokestops[pokestopId];
     }
+    static getIn(ids: string[]) {
+        return [];
+    }
+    static clearQuests(ids: string[]) {
+    }
     addDetails(fort) {
         
     }

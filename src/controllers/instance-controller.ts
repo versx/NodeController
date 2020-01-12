@@ -3,7 +3,7 @@ import { IInstanceController } from "./iinstance-controller"
 import { CircleInstanceController } from "./circle-controller"
 import { CircleSmartRaidInstanceController } from "./smart-circle-controller"
 import { IVInstanceController } from "./iv-controller"
-import { AutoInstanceController } from "./auto-instance-controller"
+import { AutoInstanceController, AutoInstanceType } from "./auto-instance-controller"
 
 "use strict"
 
@@ -55,7 +55,7 @@ class InstanceController implements IInstanceController {
     setup() {
         let devices = Device.getAll();
         devices.forEach(function(device: Device) {
-            InstanceController.Devices[device.name] = device;
+            InstanceController.Devices[device.uuid] = device;
         });
         let instances = Instance.getAll();
         instances.forEach(function(instance: Instance) {
@@ -128,7 +128,7 @@ class InstanceController implements IInstanceController {
                         instanceController = new IVInstanceController(instance.name, areaArrayEmptyInner, pokemonList, minLevel, maxLevel, ivQueueLimit, scatterList);
                     } else {
                         let spinLimit = instance.data["spin_limit"] || 500
-                        instanceController = new AutoInstanceController(instance.name, areaArrayEmptyInner, timeZoneOffset, minLevel, maxLevel, spinLimit);
+                        instanceController = new AutoInstanceController(instance.name, areaArrayEmptyInner, AutoInstanceType.Quest, timeZoneOffset, minLevel, maxLevel, spinLimit);
                     }
                     
                 }
@@ -161,6 +161,12 @@ class InstanceController implements IInstanceController {
             this.instancesByInstanceName[oldInstanceName] = null;
         }
         this.addInstance(newInstance);
+    }
+    getTask(uuid: string, username: string) {
+    }
+    reload() {
+    }
+    stop() {
     }
 }
 

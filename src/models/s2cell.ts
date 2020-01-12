@@ -25,6 +25,9 @@ class S2Cell {
     static getById(cellId: string) {
         return this.S2Cells[cellId];
     }
+    static getInIds(ids: string[]) {
+        return [];
+    }
     save() {
         //TODO: Check if values changed, if not skip.
         S2Cell.S2Cells[this.id] = this;
