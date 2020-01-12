@@ -48,6 +48,8 @@ class Account {
     }
     static didEncounter(username: string, newLat: number, newLon: number, encounterTime: number) {
     }
+    static clearSpins() {
+    }
     save() {
         let accounts = Account.getAll();
         //if (accounts[this.username] !== undefined) {
