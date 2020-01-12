@@ -3,7 +3,7 @@
 import { InstanceController } from "./instance-controller";
 import { Pokemon } from "../models/pokemon";
 
-class IVInstanceController extends InstanceController {
+class IVInstanceController {
     multiPolygon: [any];
     pokemonQueue: [Pokemon];
     scannedPokemon = []; // { date: "", pokemon: {} }
@@ -19,7 +19,6 @@ class IVInstanceController extends InstanceController {
     ivQueueLimit: number =  100;
     scatterList: [number];
     constructor(name: string, area: [any], pokemonList: [number], minLevel: number, maxLevel: number, ivQueueLimit: number, scatterList: [number]) {
-        super();
         this.name = name;
         this.area = area;
         this.pokemonList = pokemonList;
