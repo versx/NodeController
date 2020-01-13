@@ -102,8 +102,19 @@ class Account {
      * Increment spin for account with username.
      * @param username 
      */
-    static spin(username: string) {
-        // TODO: Account.spin
+    static async spin(username: string) {
+        let sql = `
+        UPDATE account
+        SET spins = spins + 1
+        WHERE username = ?
+        `;
+        let result = await db.query(sql, username)
+            .then(x => x)
+            .catch(x => {
+                console.log("[ACCOUNT] Failed to increment spin count for account with username", username);
+                return null;
+            });
+        console.log("[ACCOUNT] Spin:", result);
     }
     /**
      * Get account with username.
@@ -149,22 +160,55 @@ class Account {
      * @param newLon 
      * @param encounterTime 
      */
-    static didEncounter(username: string, newLat: number, newLon: number, encounterTime: number) {
-        // TODO: Account.didEncounter
+    static async didEncounter(username: string, newLat: number, newLon: number, encounterTime: number) {
+        let sql = `
+        UPDATE account
+        SET last_encounter_lat = ?, last_encounter_lon = ?, last_encounter_time = ?
+        WHERE username = ?
+        `;
+        let args = [newLat, newLon, encounterTime, username];
+        let result = await db.query(sql, args)
+            .then(x => x)
+            .catch(x => {
+                console.log("[ACCOUNT] Failed to set encounter info for account with username", username);
+                return null;
+            });
+        console.log("[ACCOUNT] DidEncounter:", result);
     }
     /**
      * Clear spins for account.
      */
-    static clearSpins() {
-        // TODO: Account.clearSpins
+    static async clearSpins() {
+        let sql = `
+        UPDATE account
+        SET spins = 0
+        `;
+        let result = await db.query(sql)
+            .then(x => x)
+            .catch(x => {
+                console.log("[ACCOUNT] Failed to set clear spins for accounts.");
+                return null;
+            });
+        console.log("[ACCOUNT] ClearSpins:", result);
     }
     /**
      * Set account level.
      * @param username 
      * @param level 
      */
-    static setLevel(username: string, level: number) {
-        // TODO: Account.setLevel
+    static async setLevel(username: string, level: number) {
+        let sql = `
+        UPDATE account
+        SET level = ?
+        WHERE username = ?
+        `;
+        let result = await db.query(sql, username)
+            .then(x => x)
+            .catch(x => { 
+                console.log("[ACCOUNT] Failed to set Account level for username", username);
+                return null;
+            });
+        console.log("[ACCOUNT] Results:", result);
     }
     /**
      * Save account.
