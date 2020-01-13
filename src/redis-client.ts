@@ -7,9 +7,10 @@ import { Pokestop } from './models/pokestop';
 import { Spawnpoint } from './models/spawnpoint';
 import { S2Cell } from './models/s2cell';
 import { Weather } from './models/weather';
-const config = require('config.json');
+const config = require('./config.json');
 const redis  = require('redis');
 const client = redis.createClient({
+
     host: config.redis.host,
     port: config.redis.port,
     password: config.redis.password

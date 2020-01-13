@@ -4,7 +4,7 @@ import { Pokestop } from "src/models/pokestop";
 import { Pokemon } from "src/models/pokemon";
 import { Gym } from "src/models/gym";
 import { Weather } from "src/models/weather";
-import request = require("request");
+import request = require('request');
 import config = require("../config.json");
 
 class WebhookController {
