@@ -106,15 +106,37 @@ class Instance implements IInstance {
      * Delete instance by name.
      * @param instanceName 
      */
-    static delete(instanceName: string) {
-        // TODO: Instance.delete
+    static async delete(instanceName: string) {
+        let sql = `
+        DELETE FROM instance
+        WHERE name = ?
+        `;
+        let result = await db.query(sql, instanceName)
+            .then(x => x)
+            .catch(x => { 
+                console.log("[INSTANCE] Failed to delete instance with name", name);
+                return null;
+            });
+        console.log("[INSTANCE] Delete:", result);
     }
     /**
      * Update instance data.
      * @param oldName 
      */
-    update(oldName: string) {
-        // TODO: Instance.update
+    async update(oldName: string) {
+        let sql = `
+        UPDATE instance
+        SET data = ?, name = ?, type = ?
+        WHERE name = ?
+        `;
+        let args = [this.data, this.name, this.type, oldName];
+        let result = await db.query(sql, args)
+            .then(x => x)
+            .catch(x => { 
+                console.log("[INSTANCE] Failed to update instance with name", name);
+                return null;
+            });
+        console.log("[INSTANCE] Update:", result);
     }
     /**
      * Load all instances.
