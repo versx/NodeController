@@ -1,13 +1,19 @@
 "use strict"
 
+// Imports
 import { Gym } from './models/gym';
 import { Pokemon } from './models/pokemon';
 import { Pokestop } from './models/pokestop';
 import { Spawnpoint } from './models/spawnpoint';
 import { S2Cell } from './models/s2cell';
 import { Weather } from './models/weather';
-const redis = require('redis');
-const client = redis.createClient();
+const config = require('config.json');
+const redis  = require('redis');
+const client = redis.createClient({
+    host: config.redis.host,
+    port: config.redis.port,
+    password: config.redis.password
+});
 const timerInterval = 10 * 1000; // 10 seconds
 
 client.on('connect', function() {
@@ -26,10 +32,20 @@ let spawnpointList = {};
 let cellList = {};
 let weatherList = {};
 
+/**
+ * Redis cache client class.
+ */
 class RedisClient {
+    /**
+     * Initialize a new Redis client object.
+     */
     constructor() {
         setInterval(distributeConsumables, timerInterval);
     }
+    /**
+     * 
+     * @param key 
+     */
     get(key: string) {
         return client.get(key, function(err, result) {
             if (err) throw err;
@@ -44,32 +60,16 @@ class RedisClient {
         gymList[gym.id] = gym;
     }
     addRaid(raid: Gym) {
-        //var keys = Object.keys(raid);
-        //keys.forEach(function(key) {
-        //    client.hset(raid.id, key, raid[key], redis.print);
-            raidList[raid.id] = raid;
-        //});
+        raidList[raid.id] = raid;
     }
     addPokestop(pokestop: Pokestop) {
-        //var keys = Object.keys(pokestop);
-        //keys.forEach(function(key) {
-        //    client.hset(pokestop.id, key, pokestop[key], redis.print);
-            pokestopList[pokestop.id] = pokestop;
-        //});
+        pokestopList[pokestop.id] = pokestop;
     }
     addQuest(quest: Pokestop) {
-        //var keys = Object.keys(quest);
-        //keys.forEach(function(key) {
-        //    client.hset(quest.id, key, quest[key], redis.print);
-            questList[quest.id] = quest;
-        //});
+        questList[quest.id] = quest;
     }
     addSpawnpoint(spawnpoint: Spawnpoint) {
-        //var keys = Object.keys(spawnpoint);
-        //keys.forEach(function(key) {
-        //    client.hset(spawnpoint.id, key, spawnpoint[key], redis.print);
-            spawnpointList[spawnpoint.id] = spawnpoint;
-        //});
+        spawnpointList[spawnpoint.id] = spawnpoint;
     }
     addCell(cell: S2Cell) {
         cellList[cell.id] = cell;
@@ -80,6 +80,7 @@ class RedisClient {
 }
 
 function distributeConsumables() {
+    // TODO: Properly implement caching
     console.log("[REDIS] Distributing consumables...");
     let startTime = process.hrtime();
 

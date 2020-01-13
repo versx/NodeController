@@ -1,5 +1,10 @@
 {
     "port": 3000,
+    "redis": {
+        "host": "127.0.0.1",
+        "port": 6379,
+        "password": ""
+    },
     "db": {
         "host": "127.0.0.1",
         "port": 3306,
@@ -7,5 +12,9 @@
         "password": "pass123",
         "database": "node",
         "connectionLimit": 1000
+    },
+    "webhook": {
+        "urls": ["http://127.0.0.1:4000"],
+        "delay": 5
     }
 }

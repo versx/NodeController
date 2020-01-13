@@ -5,6 +5,7 @@ import { Pokemon } from "src/models/pokemon";
 import { Gym } from "src/models/gym";
 import { Weather } from "src/models/weather";
 import request = require("request");
+import config = require("../config.json");
 
 class WebhookController {
     static instance = new WebhookController();
@@ -76,13 +77,15 @@ class WebhookController {
     start() {
         console.log("[WebhookController] Starting up...");
         // TODO: Background thread or event based?
+        // TODO: Get webhook strings from database.
+        this.webhookURLStrings = config.webhook.urls;
         //if queue == nil {
         //    queue = Threading.getQueue(name: "WebHookControllerQueue", type: .serial)
         //    queue!.dispatch {
                 
         //      while true {
                     if (this.webhookURLStrings.length > 0) {
-                        let events: any[0];
+                        let events: any;
                         let pokemonKeys = Object.keys(this.pokemonEvents);
                         pokemonKeys.forEach(pokemonKey => {
                             let pokemonEvent = this.pokemonEvents[pokemonKey];
@@ -153,13 +156,16 @@ class WebhookController {
                         });
                         this.weatherEvents = {};
                         
-                        if (events.length > 0) {
-                            this.webhookURLStrings.forEach(url => {
-                                this.sendEvents(events, url);
-                            });
-                        } 
+                        if (events) {
+                            let eventKeys = Object.keys(events);
+                            if (events && eventKeys.length > 0) {
+                                this.webhookURLStrings.forEach(url => {
+                                    this.sendEvents(events, url);
+                                });
+                            }
+                        }
                     }
-        //          Threading.sleep(seconds: self.webhookSendDelay)
+        //          // TODO: sleep config.webhook.delay seconds
         //      }
         //   }
         //}
