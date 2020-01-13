@@ -1,11 +1,47 @@
 "use strict"
 
-const gymsPath = 'gyms.json';
+const gymsPath = './data/gyms.json';
 const fs       = require('fs');
 
+/**
+ * Gym model class.
+ */
 class Gym {
     static Gyms = {};
-    constructor(data) {
+
+    id: string;
+    lat: number;
+    lon: number;
+    name: string;
+    url: string;
+    enabled: boolean;
+    guardPokemonId: number;
+    teamId: number;
+    availableSlots: number;
+    lastModifiedTimestamp: number;
+    exRaidEligible: boolean;
+    inBattle: boolean;
+    sponsorId: number;
+    totalCp: number;
+    raidEndTimestamp: number;
+    raidSpawnTimestamp: number;
+    raidBattleTimestamp: number;
+    raidLevel: number;
+    raidIsExclusive: boolean;
+    raidPokemonId: number;
+    raidPokemonMove1: number;
+    raidPokemonMove2: number;
+    raidPokemonForm: number;
+    raidPokemonCp: number;
+    raidPokemonGender: number;
+    updated: number;
+    cellId: string;
+
+    /**
+     * Initialize new Gym object.
+     * @param data 
+     */
+    constructor(data: any) {
         if (data.fort !== undefined) {
             this.id = data.fort.id.toString();
             this.lat = data.fort.latitude;
@@ -74,16 +110,38 @@ class Gym {
             this.sponsorId = data.sponsorId;
         }
     }
+    /**
+     * Get all gyms.
+     */
     static getAll() {
         return this.load();
     }
-    static getById(gymId) {
-        return this.Gyms[gymId.toString()];
+    /**
+     * Get gym by gym id.
+     * @param gymId 
+     */
+    static getById(gymId: string) {
+        return this.Gyms[gymId];
     }
-    addDetails(fort) {
-
+    /**
+     * Get gyms in cell ids.
+     * @param cellIds 
+     */
+    static getByCellIds(cellIds: string[]) {
+        return new Gym[0]; // TODO: Implement getByCellIds
     }
-    addGymInfo(gymInfo) {
+    /**
+     * Add gym details from GetMapObjects response.
+     * @param fort 
+     */
+    addDetails(fort: any) {
+        // TODO: Gym.addDetails
+    }
+    /**
+     * Add gym details from GymGetInfo response.
+     * @param gymInfo 
+     */
+    addGymInfo(gymInfo: any) {
         if (this.name !== gymInfo.name && gymInfo.name !== undefined && gymInfo.name !== null) {
             this.name = gymInfo.name;
         }
@@ -91,14 +149,24 @@ class Gym {
             this.url = gymInfo.url;
         }
     }
+    /**
+     * Save gym.
+     */
     save() {
         //TODO: Check if values changed, if not skip.
-        Gym.Gyms[this.id.toString()] = this;
+        Gym.Gyms[this.id] = this;
         save(Gym.Gyms, gymsPath);
     }
+    /**
+     * Load all gyms.
+     */
     static load() {
-        var data = fs.readFileSync(gymsPath);
-        this.Gyms = JSON.parse(data);
+        let data = fs.readFileSync(gymsPath);
+        let keys = Object.keys(data);
+        keys.forEach(function(key) {
+            this.Gyms[key] = new Gym(data[key]);
+        });
+        //this.Gyms = JSON.parse(data);
         return this.Gyms;
     }
 }
@@ -108,9 +176,9 @@ class Gym {
  * @param {*} obj 
  * @param {*} path 
  */
-function save(obj, path) {
+function save(obj: any, path: string) {
     fs.writeFileSync(path, JSON.stringify(obj, null, 2), 'utf-8');
 }
 
 // Export the class
-module.exports = Gym;
+export { Gym };

@@ -1,13 +1,36 @@
 "use strict"
 
-const pokestopsPath = 'pokestops.json';
+const pokestopsPath = './data/pokestops.json';
 const fs            = require('fs');
 
 const lureTime = 1800;
 
 class Pokestop {
     static Pokestops = {};
-    constructor(data) {
+
+    id: string;
+    lat: number;
+    lon: number;
+    name: string;
+    url: string;
+    enabled: boolean;
+    lastModifiedTimestamp: number;
+    lureId: number;
+    lureExpireTimestamp: number;
+    incidentExpireTimestamp: number;
+    pokestopDisplay: number;
+    gruntType: number;
+    questType: number;
+    questTarget: number;
+    questTimestamp: number;
+    questConditions: any;
+    questRewards: any;
+    questTemplate: string;
+    updated: number;
+    sponsorId: number;
+    cellId: string;
+
+    constructor(data: any) {
         if (data.fort !== undefined) {
             this.id = data.fort.id;
             this.lat = data.fort.latitude;
@@ -73,8 +96,13 @@ class Pokestop {
     static getAll() {
         return this.load();
     }
-    static getById(pokestopId) {
-        return this.Pokestops[pokestopId.toString()];
+    static getById(pokestopId: string) {
+        return this.Pokestops[pokestopId];
+    }
+    static getIn(ids: string[]) {
+        return [];
+    }
+    static clearQuests(ids: string[]) {
     }
     addDetails(fort) {
         
@@ -84,12 +112,16 @@ class Pokestop {
     }
     save() {
         //TODO: Check if values changed, if not skip.
-        Pokestop.Pokestops[this.id.toString()] = this;
+        Pokestop.Pokestops[this.id] = this;
         save(Pokestop.Pokestops, pokestopsPath);
     }
     static load() {
-        var data = fs.readFileSync(pokestopsPath);
-        this.Pokestops = JSON.parse(data);
+        let data = fs.readFileSync(pokestopsPath);
+        let keys = Object.keys(data);
+        keys.forEach(function(key) {
+            this.Pokestops[key] = new Pokestop(data[key]);
+        });
+        //this.Pokestops = JSON.parse(data);
         return this.Pokestops;
     }
 }
@@ -99,9 +131,9 @@ class Pokestop {
  * @param {*} obj 
  * @param {*} path 
  */
-function save(obj, path) {
+function save(obj: any, path: string) {
     fs.writeFileSync(path, JSON.stringify(obj, null, 2), 'utf-8');
 }
 
 // Export the class
-module.exports = Pokestop;
+export { Pokestop };
