@@ -80,16 +80,40 @@ class Device {
      * @param lat 
      * @param lon 
      */
-    static setLastLocation(uuid: string, lat: number, lon: number) {
-        // TODO: Device.setLastLocation
+    static async setLastLocation(uuid: string, lat: number, lon: number) {
+        let sql = `
+        UPDATE device
+        SET last_lat = ?, last_lon = ?, last_seen = UNIX_TIMESTAMP()
+        WHERE uuid = ?
+        `;
+        let args = [lat, lon, uuid];
+        let results = await db.query(sql, args)
+            .then(x => x)
+            .catch(x => {
+                console.log("[DEVICE] Error:", x);
+                return null;
+            });
+        console.log("[DEVICE] SetLastLocation:", results);
     }
     /**
      * Update host information for device.
      * @param uuid 
      * @param host 
      */
-    touch(uuid: string, host: string) {
-        // TODO: Device.touch
+    async touch(uuid: string, host: string) {
+        let sql = `
+        UPDATE device
+        SET last_host = ?
+        WHERE uuid = ?
+        `;
+        let args = [host, uuid];
+        let results = await db.query(sql, args)
+            .then(x => x)
+            .catch(x => {
+                console.log("[DEVICE] Error:", x);
+                return null;
+            });
+        console.log("[DEVICE] Touch:", results);
     }
     /**
      * Create device.
@@ -106,15 +130,25 @@ class Device {
                 console.log("[DEVICE] Error:", x);
                 return null;
             });
-        //let devices: Device[] = [];
-        //let keys = Object.values(results);
         console.log("[DEVICE] Insert:", results);
     }
     /**
      * Clear device group field.
      */
-    clearGroup() {
-        // TODO: Device.clearGroup
+    async clearGroup() {
+        let sql = `
+        UPDATE device 
+        SET device_group = ?
+        WHERE uuid = ?
+        `;
+        let args = ["", this.uuid];
+        let results = await db.query(sql, args)
+            .then(x => x)
+            .catch(x => {
+                console.log("[DEVICE] Error:", x);
+                return null;
+            });
+        console.log("[DEVICE] ClearGroup:", results);
     }
     /**
      * Save device.
@@ -133,8 +167,6 @@ class Device {
                console.log("[DEVICE] Error:", x);
                return null;
            });
-       //let devices: Device[] = [];
-       //let keys = Object.values(results);
        console.log("[DEVICE] Update:", results);
     }
     /**
