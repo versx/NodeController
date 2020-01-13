@@ -1,10 +1,10 @@
 "use strict"
 
-import { Spawnpoint } from "./spawnpoint"
+import { Spawnpoint } from "./spawnpoint";
+import * as moment from 'moment';
 
 const pokemonPath = './data/pokemon.json';
 const fs          = require('fs');
-const moment      = require('moment');
 
 class Pokemon /*extends Consumable*/ {
     static Pokemon = {};
@@ -81,7 +81,7 @@ class Pokemon /*extends Consumable*/ {
                         } else {
                             despawnOffset = despawnSecond - secondOfHour;
                         }
-                        this.expireTimestamp = parseInt(moment(date, "x")) + despawnOffset;
+                        this.expireTimestamp = parseInt(moment(date).format('x')) + despawnOffset;
                         this.expireTimestampVerified = true;
                     }
                 }
@@ -199,7 +199,7 @@ class Pokemon /*extends Consumable*/ {
                         } else {
                             despawnOffset = despawnSecond - secondOfHour;
                         }
-                        this.expireTimestamp = parseInt(moment(date, "x")) + despawnOffset;
+                        this.expireTimestamp = parseInt(moment(date).format('x')) + despawnOffset;
                         this.expireTimestampVerified = true;
                     }
                 }

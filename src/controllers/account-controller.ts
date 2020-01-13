@@ -4,9 +4,10 @@ import { Account } from "../models/account";
 import * as moment from 'moment';
 
 class AccountController {
-    static isSetup: boolean = false;
+    static instance = new AccountController();
+    isSetup: boolean = false;
 
-    static setup() {
+    setup() {
         console.log("[AccountController] Starting up...");
         if (this.isSetup) {
             return;

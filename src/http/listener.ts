@@ -8,8 +8,8 @@ const app = express();
 const webhook     = new WebhookHandler();
 
 class WebhookListener {
-    listener: Server;
-    port: number;
+    private listener: Server;
+    private port: number;
 
     constructor(port: number) {
         this.port = port;

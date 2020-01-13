@@ -4,12 +4,12 @@ import { InstanceController } from "./instance-controller";
 import { Pokemon } from "../models/pokemon";
 
 class IVInstanceController {
-    multiPolygon: [any];
-    pokemonQueue: [Pokemon];
-    scannedPokemon = []; // { date: "", pokemon: {} }
-    startDate: Date;
-    count: number;
-    shouldExit = false;
+    private multiPolygon: [any];
+    private pokemonQueue: [Pokemon];
+    private scannedPokemon = []; // { date: "", pokemon: {} }
+    private startDate: Date;
+    private count: number;
+    private shouldExit = false;
 
     name: string;
     area: [any];
@@ -18,6 +18,7 @@ class IVInstanceController {
     maxLevel: number = 29;
     ivQueueLimit: number =  100;
     scatterList: [number];
+
     constructor(name: string, area: [any], pokemonList: [number], minLevel: number, maxLevel: number, ivQueueLimit: number, scatterList: [number]) {
         this.name = name;
         this.area = area;

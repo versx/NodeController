@@ -26,12 +26,12 @@ class AutoInstanceController {
     type: AutoInstanceType;
     multiPolygon: any;
 
-    allStops: Pokestop[];
-    todayStops: Pokestop[];
-    todayStopsTries: Map<Pokestop, number>; //pokestop:tries
-    shouldExit: boolean;
-    bootstrapCellIds: number[];
-    bootstrapTotalCount: number = 0;
+    private allStops: Pokestop[];
+    private todayStops: Pokestop[];
+    private todayStopsTries: Map<Pokestop, number>; //pokestop:tries
+    private shouldExit: boolean;
+    private bootstrapCellIds: number[];
+    private bootstrapTotalCount: number = 0;
 
     constructor(name: string, area: [any], type: AutoInstanceType, timeZoneOffset: number, minLevel: number, maxLevel: number, spinLimit: number) {
         this.name = name;
@@ -96,7 +96,7 @@ class AutoInstanceController {
         let start = new Date();
         let totalCount = 0;
         let missingCellIds: [S2Cell];
-        this.multiPolygon.polygons.forEach(function(polygon) {
+        this.multiPolygon.polygons.forEach(polygon => {
             // TODO: actual multipolygon
             let cellIds = polygon.getS2CellIds(15, 15, Number.MAX_VALUE);
             totalCount += cellIds.length;
@@ -130,11 +130,11 @@ class AutoInstanceController {
         switch (this.type) {
             case AutoInstanceType.Quest:
                 this.allStops = [];
-                this.multiPolygon.polygons.forEach(function(polygon) {
+                this.multiPolygon.polygons.forEach(polygon => {
                     // TODO: let bounds = new S2.BoundingBox(polygon.outerRing.coordinates);
                     let stops = Pokestop.getAll(); //minLat: bounds.southEast.latitude, maxLat: bounds.northWest.latitude, minLon: bounds.northWest.longitude, maxLon: bounds.southEast.longitude, updated: 0, questsOnly: false, showQuests: true, showLures: true, showInvasions: true) {
                     let keys = Object.keys(stops);
-                    keys.forEach(function(key) {
+                    keys.forEach(key => {
                         let stop = stops[key];
                         let coord = { lat: stop.lat, lon: stop.lon };
                         if (polygon.includes(coord, /*IgnoreBoundary*/ false)) {
@@ -144,7 +144,7 @@ class AutoInstanceController {
                 });
                 this.todayStops = [];
                 this.todayStopsTries = new Map<Pokestop, number>();
-                this.allStops.forEach(function(stop) {
+                this.allStops.forEach(stop => {
                     if (stop.questType === undefined && stop.enabled === true) {
                         this.todayStops.push(stop);
                     }
@@ -155,7 +155,7 @@ class AutoInstanceController {
     encounterCooldown(distanceM: number) {
         let dist = distanceM / 1000;
         let keys = Object.keys(cooldownDataArray);
-        keys.forEach(function(key) {
+        keys.forEach(key => {
             let value = cooldownDataArray[key];
             if (parseInt(key) >= dist) {
                 return parseInt(value) * 60;
@@ -182,11 +182,11 @@ class AutoInstanceController {
                     coverer.setMinLevel(15);
                     coverer.setMaxLevel(15);
                     let cellIds = coverer.getCoveringCells(circle);
-                    cellIds.forEach(function(cellId) {
-                        let index = this.bootstrapCellIds.indexOf(cellId);
-                        if (index !== undefined) {
-                            this.bootstrapCellIds.remove(index); // TODO: redo
-                        }
+                    cellIds.forEach(cellId => {
+                        // TODO: let index = this.bootstrapCellIds.indexOf(cellId);
+                        //if (index !== undefined) {
+                        //    this.bootstrapCellIds.remove(index); // TODO: redo
+                        //}
                     });
                     if (!(this.bootstrapCellIds.length > 0)) {
                         this.bootstrap();
@@ -211,7 +211,7 @@ class AutoInstanceController {
                         return { };
                     }
                     if (!(this.todayStops.length > 0)) {
-                        let ids = this.allStops.map(function(stop) {
+                        let ids = this.allStops.map(stop => {
                             return stop.id;
                         });
                         let newStops: Pokestop[];
@@ -224,7 +224,7 @@ class AutoInstanceController {
                                 // TODO: sleep 1 second
                             }
                         }
-                        newStops.forEach(function(stop) {
+                        newStops.forEach(stop => {
                             let count = this.todayStopsTries.get(stop) || 0;
                             if (stop.questType === undefined && stop.enabled && count <= 5) {
                                 this.todayStops.push(stop);
@@ -242,20 +242,21 @@ class AutoInstanceController {
                     let account: Account;
                     try {
                         if (username !== undefined && username !== null) {
-                            let accountT = Account.getWithUsername(username);
-                            if (accountT) {
-                                account = accountT;
-                                lastLat = accountT.lastEncounterLat;
-                                lastLon = accountT.lastEncounterLon;
-                                lastTime = accountT.lastEncounterTime;
-                            } else {
-                                // TODO: Don't think this is needed anymore
-                                /*
-                                lastLat = Double(try DBController.global.getValueForKey(key: "AIC_\(uuid)_last_lat") ?? "")
-                                lastLon = Double(try DBController.global.getValueForKey(key: "AIC_\(uuid)_last_lon") ?? "")
-                                lastTime = UInt32(try DBController.global.getValueForKey(key: "AIC_\(uuid)_last_time") ?? "")
-                                */
-                            }
+                            let accountT = Account.getWithUsername(username).then(x => {
+                                if (accountT) {
+                                    account = x;
+                                    lastLat = x.lastEncounterLat;
+                                    lastLon = x.lastEncounterLon;
+                                    lastTime = x.lastEncounterTime;
+                                } else {
+                                    // TODO: Don't think this is needed anymore
+                                    /*
+                                    lastLat = Double(try DBController.global.getValueForKey(key: "AIC_\(uuid)_last_lat") ?? "")
+                                    lastLon = Double(try DBController.global.getValueForKey(key: "AIC_\(uuid)_last_lon") ?? "")
+                                    lastTime = UInt32(try DBController.global.getValueForKey(key: "AIC_\(uuid)_last_time") ?? "")
+                                    */
+                                }
+                            });
                         }
                     } catch (err) {
                         console.log("[AutoInstanceController] Failed to get account.");

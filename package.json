@@ -25,6 +25,7 @@
     "moment": "^2.24.0",
     "mysql": "^2.17.1",
     "nodes2ts": "^2.0.0",
+    "promisify": "0.0.3",
     "protobufjs": "^6.8.8",
     "redis": "^2.8.0",
     "turf": "^3.0.14"

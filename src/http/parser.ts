@@ -9,23 +9,41 @@ import { Pokemon } from '../models/pokemon';
 import { Gym } from '../models/gym';
 import { Pokestop } from '../models/pokestop';
 import { S2Cell } from '../models/s2cell';
+import { Weather } from '../models/weather';
 import { RedisClient } from '../redis-client';
+import { InstanceController } from '../controllers/instance-controller';
 
 const client = new RedisClient();
 
-var accounts = Account.getAll();
-var devices = Device.getAll();
+let accounts = Account.getAll();
+let devices = Device.getAll();
 
-var emptyCells = [];//[UInt64: Int]
-var levelCache = {};
+let emptyCells = [];//[UInt64: Int]
+let levelCache = {};
 
+/**
+ * Webhook request handler class.
+ */
 class WebhookHandler {
+    /**
+     * Initialize new WebhookHandler object.
+     */
     constructor(){
         //setTimeout(distributeConsumables, timerInterval);
     }
+    /**
+     * Handle raw API data.
+     * @param req 
+     * @param res 
+     */
     handleRawData(req, res) {
         _handleRawData(req, res);
     }
+    /**
+     * Handle device controller data.
+     * @param req 
+     * @param res 
+     */
     handleControllerData(req, res) {
         _handleControllerData(req, res);
     }
@@ -37,7 +55,7 @@ class WebhookHandler {
  * @param {*} res 
  */
 function _handleRawData(req, res) {
-    let jsonOpt = {};
+    let jsonOpt: any = {};
     try {
         jsonOpt = JSON.parse(req.body);
         //console.log("HandleRawData Parsed:", jsonOpt);
@@ -67,14 +85,14 @@ function _handleRawData(req, res) {
             levelCache[username] = trainerLevel
         }
     }
-    let contents = json["contents"] || json["protos"] || json["gmo"];
+    let contents: any = json["contents"] || json["protos"] || json["gmo"];
     if (contents === undefined) {
         console.log("Invalid GMO");
         return res.status(400).end();
     }
-    var uuid = json["uuid"];
-    let latTarget = json["lat_target"];
-    let lonTarget = json["lon_target"];
+    var uuid: string = json["uuid"];
+    let latTarget: number = json["lat_target"];
+    let lonTarget: number = json["lon_target"];
     if (uuid !== undefined && latTarget !== undefined && lonTarget !== undefined) {
         var newDevice = new Device(uuid, null, username, "127.0.0.1", new Date().getUTCSeconds(), latTarget, lonTarget);
         newDevice.save();
@@ -106,8 +124,8 @@ function _handleRawData(req, res) {
     }
 
     contents.forEach(function(rawData) {
-        let data;
-        let method;
+        let data: any;
+        let method: number;
         let invalid = false;
         if (rawData["GetMapObjects"] !== undefined) {
             data = rawData["GetMapObjects"];
@@ -310,9 +328,9 @@ function _handleRawData(req, res) {
     if (targetCoord !== undefined && inArea === false) {
         cells.forEach(function(cell) {
             if (inArea === false) {
-                console.log("Cell:", cell);
-                let s2cell = new S2Cell(new S2.S2CellId(cell.toString()))
-                //let coord = new S2LatLng(s2cell.getCenter()).coord
+                var s2cellId = new S2.S2CellId(cell.toString());
+                let s2cell = new S2Cell(s2cellId);
+                //let coord = new S2.S2LatLng(s2cell.getCenter()).coord
                 //if (coord.getDistance(targetCoord) <= max(targetMaxDistance, 100)) {
                     inArea = true
                 //}
@@ -359,8 +377,8 @@ function _handleRawData(req, res) {
 
     let listScatterPokemon = json["list_scatter_pokemon"];
     if (listScatterPokemon && pokemonCoords != undefined && pokemonEncounterId != undefined) {
-        let uuid = json["uuid"];
-        //let controller = InstanceController.global.getInstanceController(deviceUUID: uuid) as? IVInstanceController;
+        let uuid: string = json["uuid"];
+        let controller = InstanceController.instance.getInstanceController(uuid); // TODO: Cast to IVInstanceController
         let scatterPokemon = [];
 
         wildPokemons.forEach(function(pokemon) {
@@ -378,19 +396,19 @@ function _handleRawData(req, res) {
             } catch {}
             
             let coords = { latitude: pokemon.data.latitude, longitude: pokemon.data.longitude };
-            //let distance = pokemonCoords.distance(to: coords)
+            let distance = 35; // TODO: pokemonCoords.distance(to: coords)
             
             // Only Encounter pokemon within 35m of initial pokemon scann
-            let pokemonId = parseInt(pokemon.data.pokemon_data.pokemon_id);
-            /*
-            if (distance <= 35 && controller.scatterPokemon.contains(pokemonId)) {
-                scatterPokemon.push({
-                    "lat": pokemon.data.latitude,
-                    "lon": pokemon.data.longitude,
-                    "id": pokemon.data.encounterID.description
-                });
+            let pokemonId: number = parseInt(pokemon.data.pokemon_data.pokemon_id);
+            if (controller) {
+                if (distance <= 35 && controller.scatterPokemon.contains(pokemonId)) {
+                    scatterPokemon.push({
+                        lat: pokemon.data.latitude,
+                        lon: pokemon.data.longitude,
+                        id: pokemon.data.encounterID.description
+                    });
+                }
             }
-            */
         });
 
         data["scatter_pokemon"] = scatterPokemon;
@@ -442,173 +460,196 @@ function _handleControllerData(req, res) {
     switch (type) {
         case "init":
             //TODO: TryCatch
-            var device = devices[uuid];
-            var firstWarningTimestamp = null;
-            if (device === undefined || device.accountUsername === undefined) {
-                firstWarningTimestamp = null;
-            } else {
-                let account = accounts[device.accountUsername];
-                if (account !== undefined) {
-                    firstWarningTimestamp = account.firstWarningTimestamp;
-                } else {
+            devices.then(x => {
+                var device = x.find(x => { return x.uuid === uuid; });
+                var firstWarningTimestamp = null;
+                if (device === undefined || device.accountUsername === undefined) {
                     firstWarningTimestamp = null;
+                } else {
+                    let account = accounts[device.accountUsername];
+                    if (account !== undefined) {
+                        firstWarningTimestamp = account.firstWarningTimestamp;
+                    } else {
+                        firstWarningTimestamp = null;
+                    }
                 }
-            }
-            if (device === undefined) {
-                console.log("Registering device");
-                // Register new device
-                let newDevice = new Device(uuid, null, null, null, 0, 0.0, 0.0);
-                newDevice.save();
-                devices[uuid] = newDevice;
-                res.send({ 
-                    data: { 
-                        assigned: false,
-                        first_warning_timestamp: firstWarningTimestamp
-                    }
-                });
-            } else {
-                // Device is already registered
-                console.log("Device registered");
-                res.send({
-                    data: {
-                        assigned: device.instanceName !== undefined,
-                        first_warning_timestamp: firstWarningTimestamp
-                    }
-                });
-            }
+                if (device instanceof Device) {
+                    // Device is already registered
+                    console.log("Device registered");
+                    res.send({
+                        data: {
+                            assigned: device.instanceName !== undefined,
+                            first_warning_timestamp: firstWarningTimestamp
+                        }
+                    });
+                } else {
+                    // Register new device
+                    console.log("Registering device");
+                    let newDevice = new Device(uuid, null, null, null, 0, 0.0, 0.0);
+                    newDevice.create();
+                    devices[uuid] = newDevice;
+                    res.send({ 
+                        data: { 
+                            assigned: false,
+                            first_warning_timestamp: firstWarningTimestamp
+                        }
+                    });
+                }
+            });
             break;
         case "heartbeat":
             // TODO: heartbeat
             res.send('OK');
             break;
         case "get_job":
-            //let controller = InstanceController.global.getInstanceController(uuid);
-            //if (controller !== null) {
-            //    try {
+            /*
+            let controller = InstanceController.instance.getInstanceController(uuid);
+            if (controller !== null) {
+            */
+                try {
                     res.send({
                         data: /*controller.*/getTask(uuid, username)
                     });
-            //    } catch (err) {
-            //        res.status(404);
-            //        res.end();
-            //    }
-            //} else {
-            //    res.status(404);
-            //    res.end();
-            //}
+                } catch (err) {
+                    res.status(404);
+                    res.end();
+                }
+            /*
+            } else {
+                res.status(404);
+                res.end();
+            }
+            */
             break;
         case "get_account":
-            var device = devices[uuid];
-            var account = randomValue(accounts); // TODO: Get new account from level restrictions
-            console.log("Random Account:", account);
-            if (device === undefined || account === undefined) {
-                console.log("Failed to get account, device or account is null.");
-                return res.status(400).end();
-            }
-            if (device.accountUsername !== undefined) {
-                let oldAccount = accounts[device.accountUsername];
-                if (oldAccount !== undefined && oldAccount.firstWarningTimestamp === undefined && oldAccount.failed === undefined && oldAccount.failedTimestamp === undefined) {
+            devices.then(x => {
+                var device = x.find(x => { return x.uuid === uuid; });
+                var account = Account.getNewAccount(minLevel, maxLevel);// randomValue(accounts); // TODO: Get new account from level restrictions
+                console.log("GetAccount:", account);
+                account.then(x => {
+                    console.log("Random Account:", x);
+                    if (device === undefined || x === undefined) {
+                        console.log("Failed to get account, device or account is null.");
+                        return res.status(400).end();
+                    }
+                    if (device.accountUsername !== undefined) {
+                        let oldAccount = accounts[device.accountUsername];
+                        if (oldAccount instanceof Account && oldAccount.firstWarningTimestamp === undefined && oldAccount.failed === undefined && oldAccount.failedTimestamp === undefined) {
+                            res.send({
+                                data: {
+                                    username: oldAccount.username,
+                                    password: oldAccount.password,
+                                    first_warning_timestamp: oldAccount.firstWarningTimestamp,
+                                    level: oldAccount.level
+                                }
+                            });
+                            return;
+                        }
+                    }
+
+                    device.accountUsername = x.username;
+                    device.save(device.uuid);
                     res.send({
                         data: {
-                            username: oldAccount.username,
-                            password: oldAccount.password,
-                            first_warning_timestamp: oldAccount.first_warning_timestamp,
-                            level: oldAccount.level
+                            username: x.username,
+                            password: x.password,
+                            first_warning_timestamp: x.firstWarningTimestamp,
+                            level: x.level
                         }
                     });
-                    return;
-                }
-            }
-
-            device.accountUsername = account.username;
-            device.save();
-            res.send({
-                data: {
-                    username: account.username,
-                    password: account.password,
-                    first_warning_timestamp: account.firstWarningTimestamp,
-                    level: account.level
-                }
+                });
             });
             break;
         case "tutorial_done":
-            var device = devices[uuid];
-            var username = device.accountUsername;
-            var account = accounts[username];
-            if (device === undefined || account === undefined) {
-                console.log("Failed to get account, device or account is null.");
-                return res.status(400).end();
-            }
-            if (account.level === 0) {
-                account.level = 1;
-                account.save();
-                res.send('OK');
-            }
+            devices.then(x => {
+                var device = x.find(x => { return x.uuid === uuid; });
+                var username = device.accountUsername;
+                var account = accounts[username];
+                if (device === undefined || account === undefined) {
+                    console.log("Failed to get account, device or account is null.");
+                    return res.status(400).end();
+                }
+                if (account.level === 0) {
+                    account.level = 1;
+                    account.save();
+                    res.send('OK');
+                }
+            });
             break;
         case "account_banned":
-            var device = devices[uuid];
-            var username = device.accountUsername;
-            var account = accounts[username];
-            if (device === undefined || account === undefined) {
-                console.log("Failed to get account, device or account is null.");
-                return res.status(400).end();
-            }
-            if (account.failedTimestamp === undefined || account.failed === undefined) {
-                account.failedTimestamp = new Date().getUTCSeconds();
-                account.failed = "banned";
-                account.save();
-                res.send('OK');
-            }
+            devices.then(x => {
+                var device = x.find(x => { return x.uuid === uuid; });
+                var username = device.accountUsername;
+                var account = accounts[username];
+                if (device === undefined || account === undefined) {
+                    console.log("Failed to get account, device or account is null.");
+                    return res.status(400).end();
+                }
+                if (account.failedTimestamp === undefined || account.failed === undefined) {
+                    account.failedTimestamp = new Date().getUTCSeconds();
+                    account.failed = "banned";
+                    account.save();
+                    res.send('OK');
+                }
+            });
             break;
         case "account_warning":
-            var device = devices[uuid];
-            var username = device.accountUsername;
-            var account = accounts[username];
-            if (device === undefined || account === undefined) {
-                console.log("Failed to get account, device or account is null.");
-                return res.status(400).end();
-            }
-            if (account.firstWarningTimestamp === undefined) {
-                account.firstWarningTimestamp = new Date().getUTCSeconds();
-                account.save();
-                res.send('OK');
-            }
+            devices.then(x => {
+                var device = x.find(x => { return x.uuid === uuid; });
+                var username = device.accountUsername;
+                var account = accounts[username];
+                if (device === undefined || account === undefined) {
+                    console.log("Failed to get account, device or account is null.");
+                    return res.status(400).end();
+                }
+                if (account.firstWarningTimestamp === undefined) {
+                    account.firstWarningTimestamp = new Date().getUTCSeconds();
+                    account.save();
+                    res.send('OK');
+                }
+            });
             break;
         case "account_invalid_credentials":
-            var device = devices[uuid];
-            var username = device.accountUsername;
-            var account = accounts[username];
-            if (device === undefined || account === undefined) {
-                console.log("Failed to get account, device or account is null.");
-                return res.status(400).end();
-            }
-            if (account.failedTimestamp === undefined || account.failed === undefined) {
-                account.failedTimestamp = new Date().getUTCSeconds();
-                account.failed = "invalid_credentials";
-                account.save();
-                res.send('OK');
-            }
+            devices.then(x => {
+                var device = x.find(x => { return x.uuid === uuid; });
+                var username = device.accountUsername;
+                var account = accounts[username];
+                if (device === undefined || account === undefined) {
+                    console.log("Failed to get account, device or account is null.");
+                    return res.status(400).end();
+                }
+                if (account.failedTimestamp === undefined || account.failed === undefined) {
+                    account.failedTimestamp = new Date().getUTCSeconds();
+                    account.failed = "invalid_credentials";
+                    account.save();
+                    res.send('OK');
+                }
+            });
             break;
         case "error_26":
-            var device = devices[uuid];
-            var username = device.accountUsername;
-            var account = accounts[username];
-            if (device === undefined || account === undefined) {
-                console.log("Failed to get account, device or account is null.");
-                return res.status(400).end();
-            }
-            if (account.failedTimestamp === undefined || account.failed === undefined) {
-                account.failedTimestamp = new Date().getUTCSeconds();
-                account.failed = "error_26";
-                account.save();
-                res.send('OK');
-            }
+            devices.then(x => {
+                var device = x.find(x => { return x.uuid === uuid; });
+                var username = device.accountUsername;
+                var account = accounts[username];
+                if (device === undefined || account === undefined) {
+                    console.log("Failed to get account, device or account is null.");
+                    return res.status(400).end();
+                }
+                if (account.failedTimestamp === undefined || account.failed === undefined) {
+                    account.failedTimestamp = new Date().getUTCSeconds();
+                    account.failed = "error_26";
+                    account.save();
+                    res.send('OK');
+                }
+            });
             break;
         case "logged_out":
-            var device = devices[uuid];
-            device.accountUsername = null;
-            device.save();
-            res.send('OK');
+            devices.then(x => {
+                var device = x.find(x => { return x.uuid === uuid; });
+                device.accountUsername = null;
+                device.save(device.uuid);
+                res.send('OK');
+            });
             break;
         default:
             console.log("[WebhookRequestHandler] Unhandled Request:", type);
@@ -616,6 +657,19 @@ function _handleControllerData(req, res) {
     }
 }
 
+/**
+ * Handle data consumables.
+ * @param cells 
+ * @param clientWeathers 
+ * @param wildPokemons 
+ * @param nearbyPokemons 
+ * @param forts 
+ * @param fortDetails 
+ * @param gymInfos 
+ * @param quests 
+ * @param encounters 
+ * @param username 
+ */
 function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, forts, fortDetails, gymInfos, quests, encounters, username) {
     //let queue = Threading.getQueue(name: Foundation.UUID().uuidString, type: .serial)
     //queue.dispatch {
@@ -623,7 +677,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
         let gymIdsPerCell = []; //[UInt64: [String]]
         let stopsIdsPerCell = []; //[UInt64: [String]]
         
-        cells.forEach(function(cellId) {
+        cells.forEach(cellId => {
             let s2cell = new S2.S2Cell(new S2.S2CellId(cellId.toString()));
             let lat = s2cell.getCapBound().getRectBound().getCenter().latDegrees;
             let lon = s2cell.getCapBound().getRectBound().getCenter().lngDegrees;
@@ -645,23 +699,30 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                 stopsIdsPerCell[cellId] = [];
             } 
         });
-    
+
         let startClientWeathers = process.hrtime();
-        clientWeathers.forEach(function(conditions) {
-            //console.log("Parsed weather", conditions.cell);
+        clientWeathers.forEach(conditions => {
+            //console.log("Parsed weather", conditions);
             let ws2cell = new S2.S2Cell(new S2.S2CellId(conditions.cell.toString()));
             let wlat = ws2cell.getCapBound().getRectBound().getCenter().latDegrees;
             let wlon = ws2cell.getCapBound().getRectBound().getCenter().lngDegrees;
             let wlevel = ws2cell.level;
-            //var weather = Weather(ws2cell.cellId.id, wlevel, latitude: wlat, longitude: wlon, conditions: conditions.data, updated: nil)
+            var weather = new Weather({
+                id: ws2cell.id, 
+                level: wlevel,
+                lat: wlat,
+                lon: wlon,
+                conditions: conditions.data,
+                updated: null
+            });
             //weather.save(update: true)
-            //client.addWeather(weather);
+            client.addWeather(weather);
         });
         let endClientWeathers = process.hrtime(startClientWeathers);
         console.log("[WebhookRequestHandler] Weather Detail Count:", clientWeathers.length, "parsed in", endClientWeathers + "s");
     
         let startWildPokemon = process.hrtime();
-        wildPokemons.forEach(function(wildPokemon) {
+        wildPokemons.forEach(wildPokemon => {
             let pokemon = new Pokemon({
                 username: username,
                 cellId: wildPokemon.cell,
@@ -675,7 +736,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
         console.log("[WebhookRequestHandler] Pokemon Count:", wildPokemons.length, "parsed in", endWildPokemon + "s");
     
         let startNearbyPokemon = process.hrtime();
-        nearbyPokemons.forEach(function(nearbyPokemon) {
+        nearbyPokemons.forEach(nearbyPokemon => {
             let pokemon = new Pokemon({
                 username: username,
                 cellId: nearbyPokemon.cell,
@@ -689,7 +750,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
         console.log("[WebhookRequestHandler] NearbyPokemon Count:", nearbyPokemons.length, "parsed in", endNearbyPokemon + "s");
     
         let startForts = process.hrtime();
-        forts.forEach(function(fort) {
+        forts.forEach(fort => {
             switch (fort.data.type) {
                 case 0: // gym
                     let gym = new Gym({
@@ -722,7 +783,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
     
         if (fortDetails.length > 0) {
             let startFortDetails = process.hrtime();
-            fortDetails.forEach(function(fort) {
+            fortDetails.forEach(fort => {
                 switch (fort.type) {
                     case 0: // gym
                         let gym: Gym;
@@ -758,7 +819,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
         
         if (gymInfos.length > 0) {
             let startGymInfos = process.hrtime();
-            gymInfos.forEach(function(gymInfo) {
+            gymInfos.forEach(gymInfo => {
                 let gym: Gym;
                 try {
                     gym = Gym.getById(gymInfo.gym_status_and_defenders.pokemon_fort_proto.id);
@@ -777,7 +838,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
         
         if (quests.length > 0) {
             let startQuests = process.hrtime();
-            quests.forEach(function(quest) {
+            quests.forEach(quest => {
                 let pokestop: Pokestop;
                 try {
                     pokestop = Pokestop.getById(quest.fort_id);
@@ -796,7 +857,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
         
         if (encounters.length > 0) {
             let startEncounters = process.hrtime();
-            encounters.forEach(function(encounter) {
+            encounters.forEach(encounter => {
                 let pokemon: Pokemon;
                 try {
                     pokemon = Pokemon.getById(encounter.wild_pokemon.encounter_id);
@@ -819,18 +880,17 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                     coverer.maxLevel = 15;
                     let cellIds = coverer.getCoveringCells(circle);
                     console.log(cellIds);
-                    //if (cellId)
-                    /*
-                    if (cellID = cellIDs.first) {
-                        var newPokemon = Pokemon(
-                            encounter.wildPokemon,
-                            cellID.uid,
-                            UInt64(Date().timeIntervalSince1970 * 1000),
-                            username)
-                        newPokemon.addEncounter(encounter, username)
-                        newPokemon.save() // TODO: UpdateIV true
+                    let cellId = cellIds.pop();
+                    if (cellId) {
+                        let newPokemon = new Pokemon({
+                            wild: encounter.wild_pokemon.data,
+                            username: username,
+                            cellId: cellId,
+                            timestampMs: encounter.wild_pokemon.timestamp_ms
+                        });
+                        newPokemon.addEncounter(encounter, username);
+                        newPokemon.save(); // TODO: UpdateIV true
                     }
-                    */
                 }
             });
             let endEncounters = process.hrtime(startEncounters);

@@ -21,6 +21,7 @@ class Weather {
 	severity: number = 0;
 	warnWeather: boolean = false;
     updated: number;
+
     constructor(data: any) {
         if (data.weather !== undefined) {
            // TODO: Init properties from protos data.weather object

@@ -11,15 +11,16 @@ class Coord {
 }
 
 class CircleSmartRaidInstanceController extends CircleInstanceController {
-    smartRaidGyms: Map<string, Gym>;
-    smartRaidGymsInPoint: Map<Coord, string>;
-    smartRaidPointsUpdated: Map<Coord, Date>;
+    private smartRaidGyms: Map<string, Gym>;
+    private smartRaidGymsInPoint: Map<Coord, string>;
+    private smartRaidPointsUpdated: Map<Coord, Date>;
 
     //raidUpdaterQueue ThreadQueue
 
-    startDate: Date;
-    count: number = 0;
-    shouldExit: boolean = false;
+    private startDate: Date;
+    private count: number = 0;
+    private shouldExit: boolean = false;
+    
     static raidInfoBeforeHatch: number = 120; // 2 minutes
     static ignoreTime: number = 150; // 2.5 minutes
     static noRaidTime: number = 1800; // 30 minutes
@@ -27,7 +28,7 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
     constructor(name: string, minLevel: number, maxLevel: number, coords: [any]) {
         super(name, InstanceType.SmartCircleRaid, minLevel, maxLevel, coords);
 
-        coords.forEach(function(point) {
+        coords.forEach(point => {
             // Get all cells rouching a 630m (-5m for error) circle at center
             let coord = new S2.S2Point(point.lat, point.lon, 0);
             let radians = 0.00009799064306948; // 625m
@@ -44,7 +45,7 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
                     let gyms = Gym.getByCellIds(cellIds);
                     this.smartRaidGymsInPoint[point] = gyms.map(gym => gym.id);
                     this.smartRaidPointsUpdated[point] = 0;// TODO: Date(timeIntervalSince1970: 0)
-                    gyms.forEach(function(gym) {
+                    gyms.forEach(gym => {
                         if (this.smartRaidGyms[gym.id] === null) {
                             this.smartRaidGyms[gym.id] = gym
                         }
@@ -78,7 +79,7 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
             let updated = this.smartRaidPointsUpdated.get(gymsInPoint);
             let nowTimestamp = new Date().getUTCSeconds();
             if (updated === null || nowTimestamp >= updated + CircleSmartRaidInstanceController.ignoreTime) {
-                this.gymsInPoint.forEach(function(id) {
+                this.gymsInPoint.forEach(id => {
                     let gym = this.smartRaidGyms[id];
                     if (gym.raidEndTimestamp === null ||
                         nowTimestamp >= parseInt(gym.raidEndTimestamp) + CircleSmartRaidInstanceController.noRaidTime) {

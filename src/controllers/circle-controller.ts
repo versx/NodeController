@@ -13,9 +13,9 @@ class CircleInstanceController {
     coords: any[];
 
     //coords;
-    lastIndex: number;
-    lastLastCompletedTime: number;
-    lastCompletedTime: number;
+    private lastIndex: number;
+    private lastLastCompletedTime: number;
+    private lastCompletedTime: number;
 
     constructor(name: string, type: InstanceType, minLevel: number, maxLevel: number, coords: any[]) {
         this.name = name;

@@ -3,6 +3,9 @@
 const gymsPath = './data/gyms.json';
 const fs       = require('fs');
 
+/**
+ * Gym model class.
+ */
 class Gym {
     static Gyms = {};
 
@@ -34,6 +37,10 @@ class Gym {
     updated: number;
     cellId: string;
 
+    /**
+     * Initialize new Gym object.
+     * @param data 
+     */
     constructor(data: any) {
         if (data.fort !== undefined) {
             this.id = data.fort.id.toString();
@@ -103,18 +110,37 @@ class Gym {
             this.sponsorId = data.sponsorId;
         }
     }
+    /**
+     * Get all gyms.
+     */
     static getAll() {
         return this.load();
     }
+    /**
+     * Get gym by gym id.
+     * @param gymId 
+     */
     static getById(gymId: string) {
         return this.Gyms[gymId];
     }
+    /**
+     * Get gyms in cell ids.
+     * @param cellIds 
+     */
     static getByCellIds(cellIds: string[]) {
         return new Gym[0]; // TODO: Implement getByCellIds
     }
+    /**
+     * Add gym details from GetMapObjects response.
+     * @param fort 
+     */
     addDetails(fort: any) {
-
+        // TODO: Gym.addDetails
     }
+    /**
+     * Add gym details from GymGetInfo response.
+     * @param gymInfo 
+     */
     addGymInfo(gymInfo: any) {
         if (this.name !== gymInfo.name && gymInfo.name !== undefined && gymInfo.name !== null) {
             this.name = gymInfo.name;
@@ -123,11 +149,17 @@ class Gym {
             this.url = gymInfo.url;
         }
     }
+    /**
+     * Save gym.
+     */
     save() {
         //TODO: Check if values changed, if not skip.
         Gym.Gyms[this.id] = this;
         save(Gym.Gyms, gymsPath);
     }
+    /**
+     * Load all gyms.
+     */
     static load() {
         let data = fs.readFileSync(gymsPath);
         let keys = Object.keys(data);

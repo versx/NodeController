@@ -7,6 +7,7 @@ class DeviceGroup {
     instanceName: string;
     devices: Device[];
     count: number;
+
     constructor(name: string, instanceName: string, devices: Device[]) {
         this.name = name;
         this.instanceName = instanceName;

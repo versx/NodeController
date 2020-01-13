@@ -3,16 +3,19 @@
 import { Assignment } from "../models/assignment";
 import { Device } from "../models/device";
 import * as moment from 'moment';
+import { InstanceController } from "./instance-controller";
 
 class AssignmentController /*InstanceControllerDelegate?*/ {
-    assignments: Assignment[];
-    isSetup: boolean = false;
+    static instance = new AssignmentController();
+
+    private assignments: Assignment[];
+    private isSetup: boolean = false;
     //queue: ThreadQueue;
     //timeZone: TimeZone;
 
     constructor() {
     }
-    static setup() {
+    setup() {
         console.log("[AssignmentController] Starting up...");
 
         /*
@@ -70,7 +73,7 @@ class AssignmentController /*InstanceControllerDelegate?*/ {
         let done: boolean = false;
         while (!done) {
             try {
-                device = Device.getById(assignment.deviceUUID);
+                // TODO: device = Device.getById(assignment.deviceUUID);
                 done = true;
             } catch (err) {
                 // TODO: sleep 1 second
@@ -78,7 +81,7 @@ class AssignmentController /*InstanceControllerDelegate?*/ {
         }
         if (device && device.instanceName !== assignment.instanceName) {
             console.log("[AssignmentController] Assigning", assignment.deviceUUID, "to", assignment.instanceName);
-            // TODO: InstanceController.global.removeDevice(device);
+            InstanceController.instance.removeDevice(device);
             device.instanceName = assignment.instanceName;
             done = false;
             while (!done) {
@@ -93,7 +96,7 @@ class AssignmentController /*InstanceControllerDelegate?*/ {
         }
     }
     instanceControllerDone(name: string) {
-        this.assignments.forEach(function(assignment) {
+        this.assignments.forEach(assignment => {
             /*
             let deviceUUIDs = InstanceController.global.getDeviceUUIDsInInstance(name)
             if (assignment.enabled && assignment.time === 0 && deviceUUIDs.includes(assignment.deviceUUID)) {

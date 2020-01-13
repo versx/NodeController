@@ -5,8 +5,10 @@ import { Pokemon } from './models/pokemon';
 import { Pokestop } from './models/pokestop';
 import { Spawnpoint } from './models/spawnpoint';
 import { S2Cell } from './models/s2cell';
+import { Weather } from './models/weather';
 const redis = require('redis');
 const client = redis.createClient();
+const timerInterval = 10 * 1000; // 10 seconds
 
 client.on('connect', function() {
     console.log('Redis client connected');
@@ -15,20 +17,18 @@ client.on('error', function(err){
     console.log('Error occurred:', err)
 });
 
-var timerInterval = 10 * 1000; // 10 seconds
-setInterval(distributeConsumables, timerInterval);
-
-var pokemonList: {};
-var gymList = {};
-var raidList = {};
-var pokestopList = {};
-var questList = {};
-var spawnpointList = {};
-var cellList = {};
+let pokemonList = {};
+let gymList = {};
+let raidList = {};
+let pokestopList = {};
+let questList = {};
+let spawnpointList = {};
+let cellList = {};
+let weatherList = {};
 
 class RedisClient {
     constructor() {
-        //setTimeout(distributeConsumables, timerInterval);
+        setInterval(distributeConsumables, timerInterval);
     }
     get(key: string) {
         return client.get(key, function(err, result) {
@@ -73,6 +73,9 @@ class RedisClient {
     }
     addCell(cell: S2Cell) {
         cellList[cell.id] = cell;
+    }
+    addWeather(weather: Weather) {
+        weatherList[weather.id] = weather;
     }
 }
 
