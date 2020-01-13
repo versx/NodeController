@@ -1,7 +1,7 @@
 "use strict"
 
 import * as mysql from '../data/mysql';
-const config       = require('../config.json');
+import config      = require('../config.json');
 const db           = new mysql.Database(config);
 
 /**
@@ -145,7 +145,7 @@ class Instance implements IInstance {
         let sql = `
         SELECT name, type, data
         FROM instance
-        `; //TODO: ptc_token
+        `;
         let results = await db.query(sql)
             .then(x => x)
             .catch(x => {
@@ -154,7 +154,7 @@ class Instance implements IInstance {
             });
         let instances: Instance[] = [];
         let keys = Object.values(results);
-        keys.forEach(function(key) {
+        keys.forEach(key => {
             let instance = new Instance(
                 key.name,
                 key.type,

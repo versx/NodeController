@@ -135,7 +135,7 @@ class Account {
             });
         let account: Account;
         let keys = Object.values(result);
-        keys.forEach(function(key) {
+        keys.forEach(key => {
             account = new Account(
                 key.username,
                 key.password,
