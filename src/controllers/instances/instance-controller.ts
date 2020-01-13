@@ -1,14 +1,14 @@
 "use strict"
 
-import { Device } from "../models/device"
-import { Pokemon } from "../models/pokemon"
-import { Instance, InstanceType } from "../models/instance"
+import { Device } from "../../models/device"
+import { Pokemon } from "../../models/pokemon"
+import { Instance, InstanceType } from "../../models/instance"
 import { IInstanceController } from "./iinstance-controller"
 import { CircleInstanceController } from "./circle-controller"
 import { CircleSmartRaidInstanceController } from "./smart-circle-controller"
 import { IVInstanceController } from "./iv-controller"
 import { AutoInstanceController, AutoInstanceType } from "./auto-instance-controller"
-import { AssignmentController } from "./assignment-controller"
+import { AssignmentController } from "../assignment-controller"
 
 class InstanceController implements IInstanceController {
     static instance = new InstanceController();

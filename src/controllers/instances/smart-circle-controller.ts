@@ -1,6 +1,6 @@
 "use strict"
 
-import { Gym } from "../models/gym";
+import { Gym } from "../../models/gym";
 import { InstanceType } from "./instance-controller";
 import { CircleInstanceController } from "./circle-controller";
 import S2 = require("nodes2ts");

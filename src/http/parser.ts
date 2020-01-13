@@ -1,8 +1,7 @@
 "use strict"
 
-const POGOProtos  = require('../../pogo-protos');
-const S2          = require('nodes2ts');
-
+const POGOProtos = require('../../pogo-protos');
+import * as S2 from 'nodes2ts';
 import { Account } from '../models/account';
 import { Device } from '../models/device';
 import { Pokemon } from '../models/pokemon';
@@ -11,7 +10,7 @@ import { Pokestop } from '../models/pokestop';
 import { S2Cell } from '../models/s2cell';
 import { Weather } from '../models/weather';
 import { RedisClient } from '../redis-client';
-import { InstanceController } from '../controllers/instance-controller';
+import { InstanceController } from '../controllers/instances/instance-controller';
 
 const client = new RedisClient();
 
@@ -676,7 +675,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
 
         let gymIdsPerCell = []; //[UInt64: [String]]
         let stopsIdsPerCell = []; //[UInt64: [String]]
-        
+
         cells.forEach(cellId => {
             let s2cell = new S2.S2Cell(new S2.S2CellId(cellId.toString()));
             let lat = s2cell.getCapBound().getRectBound().getCenter().latDegrees;
@@ -869,15 +868,15 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                     //pokemon.save();
                     client.addPokemon(pokemon);
                 } else {
-                    let centerCoord = new S2.S2Point(encounter.wild_pokemon.latitude, encounter.wild_pokemon.longitude);
+                    let centerCoord = new S2.S2Point(encounter.wild_pokemon.latitude, encounter.wild_pokemon.longitude, 0);
                     let center = S2.S2LatLng.fromPoint(centerCoord);
                     let centerNormalized = center.normalized();
                     let centerNormalizedPoint = centerNormalized.toPoint();
                     var circle = new S2.S2Cap(centerNormalizedPoint, 0.0);
                     let coverer = new S2.S2RegionCoverer();
-                    coverer.maxCells = 1;
-                    coverer.minLevel = 15;
-                    coverer.maxLevel = 15;
+                    coverer.setMaxCells(1);
+                    coverer.setMinLevel(15);
+                    coverer.setMaxLevel(15);
                     let cellIds = coverer.getCoveringCells(circle);
                     console.log(cellIds);
                     let cellId = cellIds.pop();

@@ -8,7 +8,7 @@
 
 import { AccountController } from './controllers/account-controller';
 import { AssignmentController } from './controllers/assignment-controller';
-import { InstanceController } from './controllers/instance-controller';
+import { InstanceController } from './controllers/instances/instance-controller';
 import { WebhookListener } from './http/listener';
 import config     = require('./config.json');
 import { Device } from './models/device';

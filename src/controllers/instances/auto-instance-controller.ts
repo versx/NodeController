@@ -1,9 +1,8 @@
 "use strict"
 
-import { InstanceController } from "./instance-controller";
-import { Account } from "../models/account";
-import { Pokestop } from "../models/pokestop";
-import { S2Cell } from "../models/s2cell";
+import { Account } from "../../models/account";
+import { Pokestop } from "../../models/pokestop";
+import { S2Cell } from "../../models/s2cell";
 
 import S2 = require('nodes2ts');
 import moment = require('moment');

@@ -1,7 +1,6 @@
 "use strict"
 
-import { InstanceController } from "./instance-controller";
-import { Pokemon } from "../models/pokemon";
+import { Pokemon } from "../../models/pokemon";
 
 class IVInstanceController {
     private multiPolygon: [any];

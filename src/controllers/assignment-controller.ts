@@ -2,8 +2,8 @@
 
 import { Assignment } from "../models/assignment";
 import { Device } from "../models/device";
+import { InstanceController } from "./instances/instance-controller";
 import * as moment from 'moment';
-import { InstanceController } from "./instance-controller";
 
 class AssignmentController /*InstanceControllerDelegate?*/ {
     static instance = new AssignmentController();

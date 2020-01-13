@@ -81,6 +81,7 @@ class Device {
      * @param lon 
      */
     static setLastLocation(uuid: string, lat: number, lon: number) {
+        // TODO: Device.setLastLocation
     }
     /**
      * Update host information for device.
@@ -88,6 +89,7 @@ class Device {
      * @param host 
      */
     touch(uuid: string, host: string) {
+        // TODO: Device.touch
     }
     /**
      * Create device.
@@ -112,6 +114,7 @@ class Device {
      * Clear device group field.
      */
     clearGroup() {
+        // TODO: Device.clearGroup
     }
     /**
      * Save device.
