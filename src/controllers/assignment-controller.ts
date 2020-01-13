@@ -15,41 +15,37 @@ class AssignmentController /*InstanceControllerDelegate?*/ {
 
     constructor() {
     }
-    setup() {
+    async setup() {
         console.log("[AssignmentController] Starting up...");
-
-        /*
-        this.assignments = Assignment.getAll();
-        this.timeZone = Localizer.global.timeZone;
-        
-        if (!isSetup) {
-            isSetup = true;
-
+        this.assignments = await Assignment.getAll();
+        //this.timeZone = Localizer.global.timeZone;
+        if (!this.isSetup) {
+            this.isSetup = true;
             //queue = Threading.getQueue(name: "AssignmentController-updater", type: .serial)
             //queue.dispatch {
                 let lastUpdate: number = -2;                
-                while (true) {
-                    let now = this.todaySeconds();
-                    if (lastUpdate == -2) {
+                //while (true) {
+                    let now = todaySeconds();
+                    if (lastUpdate === -2) {
                         // TODO: sleep 5 seconds
-                        lastUpdate = parseInt(now);
-                        continue;
+                        lastUpdate = now;
+                        //continue;
+                        return;
                     } else if (lastUpdate > now) {
                         lastUpdate = -1;
                     }
                     let assignments = this.assignments;
-                    assignments.forEach(function(assignment) {
+                    assignments.forEach(assignment => {
                         if (assignment.enabled && assignment.time !== 0 && now >= assignment.time && lastUpdate < assignment.time) {
                             this.triggerAssignment(assignment)
                         }
                     });
                     
                     // TODO: sleep 5 seconds
-                    lastUpdate = parseInt(now);
-                }
+                    lastUpdate = now;
+                //}
             //}
         }
-        */
     }
     addAssignment(assignment: Assignment) {
         this.assignments.push(assignment);
@@ -86,24 +82,22 @@ class AssignmentController /*InstanceControllerDelegate?*/ {
             done = false;
             while (!done) {
                 try {
-                    // TODO: device.save(device.uuid);
+                    device.save(device.uuid);
                     done = true;
                 } catch (err) {
                     // TODO: sleep 1 second
                 }
             }
-            // TODO: InstanceController.global.addDevice(device);
+            InstanceController.instance.addDevice(device);
         }
     }
     instanceControllerDone(name: string) {
         this.assignments.forEach(assignment => {
-            /*
-            let deviceUUIDs = InstanceController.global.getDeviceUUIDsInInstance(name)
+            let deviceUUIDs = InstanceController.instance.getDeviceUUIDsInInstance(name)
             if (assignment.enabled && assignment.time === 0 && deviceUUIDs.includes(assignment.deviceUUID)) {
                 this.triggerAssignment(assignment);
-                return
+                return;
             }
-            */
         });
     }
 }
