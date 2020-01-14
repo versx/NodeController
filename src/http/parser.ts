@@ -11,6 +11,7 @@ import { S2Cell } from '../models/s2cell';
 import { Weather } from '../models/weather';
 import { RedisClient } from '../redis-client';
 import { InstanceController } from '../controllers/instances/instance-controller';
+import { S1Angle } from 'nodes2ts';
 
 const client = new RedisClient();
 
@@ -72,8 +73,8 @@ function _handleRawData(req, res) {
 
     let json = jsonOpt;
     let trainerLevel = parseInt(json["trainerlvl"] || json["trainerLevel"]) || 0;
-    let username = json["username"];
-    if (username !== false && trainerLevel > 0) {
+    let username: string = json["username"];
+    if (username && trainerLevel > 0) {
         let oldLevel = levelCache[username];
         if (oldLevel !== trainerLevel) {
             let account = accounts[username];
@@ -97,8 +98,8 @@ function _handleRawData(req, res) {
         newDevice.save();
     }
 
-    let pokemonEncounterId = json["pokemon_encounter_id"];
-    let pokemonEncounterIdForEncounter = json["pokemon_encounter_id_for_encounter"];
+    let pokemonEncounterId: string = json["pokemon_encounter_id"];
+    let pokemonEncounterIdForEncounter: string = json["pokemon_encounter_id_for_encounter"];
     let targetMaxDistance = json["target_max_distnace"] || 250;
 
     let wildPokemons = []; //[{cell: UInt64, data: POGOProtos_Map_Pokemon_WildPokemon, timestampMs: UInt64}]
@@ -111,10 +112,10 @@ function _handleRawData(req, res) {
     let encounters = []; //[POGOProtos_Networking_Responses_EncounterResponse]
     let cells = []; //[UInt64]
 
-    let isEmptyGMO = true;
-    let isInvalidGMO = true;
-    let containsGMO = false;
-    let isMadData = false;
+    let isEmptyGMO: boolean = true;
+    let isInvalidGMO: boolean = true;
+    let containsGMO: boolean = false;
+    let isMadData: boolean = false;
 
     if (contents === undefined) {
         console.log("Contents is empty");
@@ -122,10 +123,10 @@ function _handleRawData(req, res) {
         return res.status(400).end();
     }
 
-    contents.forEach(function(rawData) {
+    contents.forEach((rawData: any) => {
         let data: any;
         let method: number;
-        let invalid = false;
+        let invalid: boolean = false;
         if (rawData["GetMapObjects"] !== undefined) {
             data = rawData["GetMapObjects"];
             method = 106;
@@ -201,22 +202,16 @@ function _handleRawData(req, res) {
                 let gmo = POGOProtos.Networking.Responses.GetMapObjectsResponse.decode(base64_decode(data));
                 if (gmo) {
                     isInvalidGMO = false;
-                    
-                    let newWildPokemons = []; //[{cell: UInt64, data: POGOProtos_Map_Pokemon_WildPokemon, timestampMs: UInt64}];
-                    let newNearbyPokemons = []; //[{cell: UInt64, data: POGOProtos_Map_Pokemon_NearbyPokemon}];
-                    let newClientWeathers = []; //[{cell: Int64, data: POGOProtos_Map_Weather_ClientWeather}];
-                    let newForts = []; //[{cell: UInt64, data: POGOProtos_Map_Fort_FortData}];
-                    let newCells = []; //[UInt64];
 
                     let mapCellsNew = gmo.map_cells;
                     if (mapCellsNew.length === 0) {
                         console.log("Map cells is empty");
                         return res.status(400).end();
                     }
-                    mapCellsNew.forEach(function(mapCell) {
+                    mapCellsNew.forEach((mapCell: any) => {
                         let timestampMs = mapCell.current_timestamp_ms;
                         let wildNew = mapCell.wild_pokemons;
-                        wildNew.forEach(function(wildPokemon) {
+                        wildNew.forEach((wildPokemon: any) => {
                             wildPokemons.push({
                                 cell: mapCell.s2_cell_id,
                                 data: wildPokemon,
@@ -224,14 +219,14 @@ function _handleRawData(req, res) {
                             });
                         });
                         let nearbyNew = mapCell.nearby_pokemons;
-                        nearbyNew.forEach(function(nearbyPokemon) {
+                        nearbyNew.forEach((nearbyPokemon: any) => {
                             nearbyPokemons.push({
                                 cell: mapCell.s2_cell_id,
                                 data: nearbyPokemon
                             });
                         });
                         let fortsNew = mapCell.forts;
-                        fortsNew.forEach(function(fort) {
+                        fortsNew.forEach((fort: any) => {
                             forts.push({
                                 cell: mapCell.s2_cell_id,
                                 data: fort
@@ -241,7 +236,7 @@ function _handleRawData(req, res) {
                     });
     
                     let weather = gmo.client_weather;
-                    weather.forEach(function(wmapCell) {
+                    weather.forEach((wmapCell: any) => {
                         clientWeathers.push({
                             cell: wmapCell.s2_cell_id,
                             data: wmapCell
@@ -249,7 +244,7 @@ function _handleRawData(req, res) {
                     });
     
                     if (wildPokemons.length === 0 && nearbyPokemons.length === 0 && forts.length === 0) {
-                        newCells.forEach(function(cell) {
+                        cells.forEach((cell: any) => {
                             let count = emptyCells[cell];
                             if (count === undefined) {
                                 emptyCells[cell] = 1;
@@ -264,9 +259,7 @@ function _handleRawData(req, res) {
                         
                         console.log("[WebhookRequestHandler] GMO is empty.");
                     } else {
-                        newCells.forEach(function(cell) {
-                            emptyCells[cell] = 0;
-                        });
+                        cells.forEach(cell => emptyCells[cell] = 0);
                         isEmptyGMO = false;
                     }
                 } else {
@@ -276,63 +269,60 @@ function _handleRawData(req, res) {
         }
     });
 
-    let targetCoord: { latitude: any; longitude: any; };
+    let targetCoord: S2.S2LatLng;
     let inArea = false
     if (latTarget !== undefined && lonTarget !== undefined) {
-        targetCoord = { latitude: latTarget, longitude: lonTarget };
+        targetCoord = new S2.S2LatLng(latTarget, lonTarget);
     } else {
         targetCoord = null;
     }
     
-    let pokemonCoords: { latitude: any; longitude: any; };
-    
+    let pokemonCoords: S2.S2LatLng;
     if (targetCoord !== null) {
         if (forts !== undefined) {
-            forts.forEach(function(fort) {
+            forts.forEach(fort => {
                 if (inArea === false) {
-                    //let coord = CLLocationCoordinate2D(latitude: fort.data.latitude, longitude: fort.data.longitude)
-                    let coord = { latitude: fort.data.latitude, longitude: fort.data.longitude };
-                    // TODO: if (coord.distance(to: targetCoord) <= targetMaxDistance) {
-                        inArea = true
-                    //}
+                    let coord = new S2.S2LatLng(fort.data.latitude, fort.data.longitude);
+                    if (coord.getDistance(targetCoord) <= targetMaxDistance) {
+                        inArea = true;
+                    }
                 }
             });
         }
     }
     if (targetCoord !== undefined || pokemonEncounterId !== undefined) {
-        wildPokemons.forEach(function(pokemon) {
-            if (targetCoord !== undefined) {
+        wildPokemons.forEach(pokemon => {
+            if (targetCoord) {
                 if (inArea === false) {
-                    //let coord = CLLocationCoordinate2D(latitude: pokemon.data.latitude, longitude: pokemon.data.longitude)
-                    let coord = { latitude: pokemon.data.latitude, longitude: pokemon.data.longitude };
-                    //TODO: if (coord.distance(to: targetCoord) <= targetMaxDistance) {
-                        inArea = true
-                    //}
-                } else if (pokemonCoords !== undefined && inArea) {
+                    let coord: S2.S2LatLng = new S2.S2LatLng(pokemon.data.latitude, pokemon.data.longitude);
+                    if (coord.getDistance(targetCoord) <= targetMaxDistance) {
+                        inArea = true;
+                    }
+                } else if (pokemonCoords && inArea) {
                     //break;
                 }
             }
-            if (pokemonEncounterId !== undefined) {
+            if (pokemonEncounterId) {
                 if (pokemonCoords === undefined) {
                     if (pokemon.data.encounter_id == pokemonEncounterId) {
-                        //pokemonCoords = CLLocationCoordinate2D(latitude: pokemon.data.latitude, longitude: pokemon.data.longitude)
-                        pokemonCoords = { latitude: pokemon.data.latitude, longitude: pokemon.data.longitude };
+                        pokemonCoords = new S2.S2LatLng(pokemon.data.latitude, pokemon.data.longitude);
                     }
-                } else if (pokemonCoords !== undefined && inArea) {
+                } else if (pokemonCoords && inArea) {
                     //break;
                 }
             }
         });
     }
     if (targetCoord !== undefined && inArea === false) {
-        cells.forEach(function(cell) {
+        cells.forEach(cell => {
             if (inArea === false) {
-                var s2cellId = new S2.S2CellId(cell.toString());
+                let s2cellId = new S2.S2CellId(cell.toString());
                 let s2cell = new S2Cell(s2cellId);
-                //let coord = new S2.S2LatLng(s2cell.getCenter()).coord
-                //if (coord.getDistance(targetCoord) <= max(targetMaxDistance, 100)) {
-                    inArea = true
-                //}
+                let coord = new S2.S2LatLng(s2cell.centerLat, s2cell.centerLon);
+                let radians: S1Angle = new S2.S1Angle(Math.max(targetMaxDistance, 100)); // REVIEW: wth is radians
+                if (coord.getDistance(targetCoord) <= radians) {
+                    inArea = true;
+                }
             }
         });
     }
@@ -354,7 +344,7 @@ function _handleRawData(req, res) {
         //only return encounters != 0 if we actually encounter that target.
         //"Guaranteed scan"
         data["encounters"] = 0;
-        encounters.forEach(function(encounter) {
+        encounters.forEach(encounter => {
             if (encounter.wild_pokemon.encounter_id === pokemonEncounterIdForEncounter){
                 //We actually encountered the target.
                 data["encounters"] = 1;
@@ -362,25 +352,26 @@ function _handleRawData(req, res) {
         });
     }
     
-    if (latTarget !== undefined && lonTarget !== undefined) {
-        data["in_area"] = inArea
-        data["lat_target"] = latTarget
-        data["lon_target"] = lonTarget
+    if (latTarget && lonTarget) {
+        data["in_area"] = inArea;
+        data["lat_target"] = latTarget;
+        data["lon_target"] = lonTarget;
     }
-    if (pokemonCoords !== undefined && pokemonEncounterId !== undefined) {
-        data["pokemon_lat"] = pokemonCoords.latitude
-        data["pokemon_lon"] = pokemonCoords.longitude
-        data["pokemon_encounter_id"] = pokemonEncounterId
+    if (pokemonCoords && pokemonEncounterId) {
+        let point = pokemonCoords.toPoint();
+        data["pokemon_lat"] = point.x; // TODO: pokemonCoords.latitude?
+        data["pokemon_lon"] = point.y; // TODO: pokemonCoords.longitude?
+        data["pokemon_encounter_id"] = pokemonEncounterId;
     }
 
 
     let listScatterPokemon = json["list_scatter_pokemon"];
-    if (listScatterPokemon && pokemonCoords != undefined && pokemonEncounterId != undefined) {
+    if (listScatterPokemon && pokemonCoords && pokemonEncounterId) {
         let uuid: string = json["uuid"];
         let controller = InstanceController.instance.getInstanceController(uuid); // TODO: Cast to IVInstanceController
         let scatterPokemon = [];
 
-        wildPokemons.forEach(function(pokemon) {
+        wildPokemons.forEach(pokemon => {
             //Don't return the main query in the scattershot list
             if (pokemon.data.encounter_id === pokemonEncounterId) {
                 return;
@@ -388,19 +379,20 @@ function _handleRawData(req, res) {
             
             try {
                 let oldPokemon = Pokemon.getById(pokemon.data.encounter_id);
-                if (oldPokemon !== undefined && oldPokemon.atkIv !== undefined) {
+                if (oldPokemon && oldPokemon.atkIv) {
                     //Skip going to mons already with IVs.
                     return;
                 }
             } catch {}
             
-            let coords = { latitude: pokemon.data.latitude, longitude: pokemon.data.longitude };
-            let distance = 35; // TODO: pokemonCoords.distance(to: coords)
+            let coords: S2.S2LatLng = new S2.S2LatLng(pokemon.data.latitude, pokemon.data.longitude);
+            let distance = pokemonCoords.getDistance(coords);
             
             // Only Encounter pokemon within 35m of initial pokemon scann
             let pokemonId: number = parseInt(pokemon.data.pokemon_data.pokemon_id);
             if (controller) {
-                if (distance <= 35 && controller.scatterPokemon.contains(pokemonId)) {
+                let radians: S1Angle = new S1Angle(35); // REVIEW: wth is radians
+                if (distance <= radians && controller.scatterPokemon.contains(pokemonId)) {
                     scatterPokemon.push({
                         lat: pokemon.data.latitude,
                         lon: pokemon.data.longitude,
@@ -450,11 +442,11 @@ function _handleControllerData(req, res) {
         console.log("Failed to parse controller data");
         return res.status(400).end();
     }
-    let type = typeO;
-    var uuid = uuidO;
-    var username = jsonO["username"];
-    let minLevel = parseInt(jsonO["min_level"] || 0);
-    let maxLevel = parseInt(jsonO["max_level"] || 29);
+    let type: string = typeO;
+    let uuid: string = uuidO;
+    let username: string = jsonO["username"];
+    let minLevel: number = parseInt(jsonO["min_level"] || 0);
+    let maxLevel: number = parseInt(jsonO["max_level"] || 29);
 
     switch (type) {
         case "init":
@@ -522,8 +514,8 @@ function _handleControllerData(req, res) {
             break;
         case "get_account":
             devices.then(x => {
-                var device = x.find(x => { return x.uuid === uuid; });
-                var account = Account.getNewAccount(minLevel, maxLevel);// randomValue(accounts); // TODO: Get new account from level restrictions
+                let device = x.find(x => { return x.uuid === uuid; });
+                let account = Account.getNewAccount(minLevel, maxLevel);// randomValue(accounts); // TODO: Get new account from level restrictions
                 console.log("GetAccount:", account);
                 account.then(x => {
                     console.log("Random Account:", x);
@@ -561,9 +553,9 @@ function _handleControllerData(req, res) {
             break;
         case "tutorial_done":
             devices.then(x => {
-                var device = x.find(x => { return x.uuid === uuid; });
-                var username = device.accountUsername;
-                var account = accounts[username];
+                let device = x.find(x => { return x.uuid === uuid; });
+                let username = device.accountUsername;
+                let account = accounts[username];
                 if (device === undefined || account === undefined) {
                     console.log("Failed to get account, device or account is null.");
                     return res.status(400).end();
@@ -577,9 +569,9 @@ function _handleControllerData(req, res) {
             break;
         case "account_banned":
             devices.then(x => {
-                var device = x.find(x => { return x.uuid === uuid; });
-                var username = device.accountUsername;
-                var account = accounts[username];
+                let device = x.find(x => { return x.uuid === uuid; });
+                let username = device.accountUsername;
+                let account = accounts[username];
                 if (device === undefined || account === undefined) {
                     console.log("Failed to get account, device or account is null.");
                     return res.status(400).end();
@@ -594,9 +586,9 @@ function _handleControllerData(req, res) {
             break;
         case "account_warning":
             devices.then(x => {
-                var device = x.find(x => { return x.uuid === uuid; });
-                var username = device.accountUsername;
-                var account = accounts[username];
+                let device = x.find(x => { return x.uuid === uuid; });
+                let username = device.accountUsername;
+                let account = accounts[username];
                 if (device === undefined || account === undefined) {
                     console.log("Failed to get account, device or account is null.");
                     return res.status(400).end();
@@ -610,9 +602,9 @@ function _handleControllerData(req, res) {
             break;
         case "account_invalid_credentials":
             devices.then(x => {
-                var device = x.find(x => { return x.uuid === uuid; });
-                var username = device.accountUsername;
-                var account = accounts[username];
+                let device = x.find(x => { return x.uuid === uuid; });
+                let username = device.accountUsername;
+                let account = accounts[username];
                 if (device === undefined || account === undefined) {
                     console.log("Failed to get account, device or account is null.");
                     return res.status(400).end();
@@ -627,9 +619,9 @@ function _handleControllerData(req, res) {
             break;
         case "error_26":
             devices.then(x => {
-                var device = x.find(x => { return x.uuid === uuid; });
-                var username = device.accountUsername;
-                var account = accounts[username];
+                let device = x.find(x => { return x.uuid === uuid; });
+                let username = device.accountUsername;
+                let account = accounts[username];
                 if (device === undefined || account === undefined) {
                     console.log("Failed to get account, device or account is null.");
                     return res.status(400).end();
@@ -644,7 +636,7 @@ function _handleControllerData(req, res) {
             break;
         case "logged_out":
             devices.then(x => {
-                var device = x.find(x => { return x.uuid === uuid; });
+                let device = x.find(x => { return x.uuid === uuid; });
                 device.accountUsername = null;
                 device.save(device.uuid);
                 res.send('OK');
@@ -706,7 +698,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
             let wlat = ws2cell.getCapBound().getRectBound().getCenter().latDegrees;
             let wlon = ws2cell.getCapBound().getRectBound().getCenter().lngDegrees;
             let wlevel = ws2cell.level;
-            var weather = new Weather({
+            let weather = new Weather({
                 id: ws2cell.id, 
                 level: wlevel,
                 lat: wlat,
@@ -872,13 +864,12 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                     let center = S2.S2LatLng.fromPoint(centerCoord);
                     let centerNormalized = center.normalized();
                     let centerNormalizedPoint = centerNormalized.toPoint();
-                    var circle = new S2.S2Cap(centerNormalizedPoint, 0.0);
+                    let circle = new S2.S2Cap(centerNormalizedPoint, 0.0);
                     let coverer = new S2.S2RegionCoverer();
                     coverer.setMaxCells(1);
                     coverer.setMinLevel(15);
                     coverer.setMaxLevel(15);
                     let cellIds = coverer.getCoveringCells(circle);
-                    console.log(cellIds);
                     let cellId = cellIds.pop();
                     if (cellId) {
                         let newPokemon = new Pokemon({

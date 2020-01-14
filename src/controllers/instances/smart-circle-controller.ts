@@ -11,11 +11,10 @@ class Coord {
 }
 
 class CircleSmartRaidInstanceController extends CircleInstanceController {
+    private smartRaidInterval: number = 30 * 1000; // 30 seconds
     private smartRaidGyms: Map<string, Gym>;
     private smartRaidGymsInPoint: Map<Coord, string>;
     private smartRaidPointsUpdated: Map<Coord, Date>;
-
-    //raidUpdaterQueue ThreadQueue
 
     private startDate: Date;
     private count: number = 0;
@@ -57,16 +56,26 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
             }
         });
         
-        //raidUpdaterQueue = Threading.getQueue(name:  "\(name)-raid-updater", type: .serial)
-        //raidUpdaterQueue!.dispatch {
-            this.raidUpdaterRun();
-        //}
+        setInterval(() => this.raidUpdaterRun(), this.smartRaidInterval);
     }
     raidUpdaterRun() {
-
+        while (!this.shouldExit) {
+            /*
+            let gyms = Gym.getWithIds(smartRaidGyms.keys);
+            if (gyms === null) {
+                // TODO: sleep 5 seconds
+                continue;
+            }
+            gyms.forEach(gym => {
+                this.smartRaidGyms[gym.id] = gym;
+            });
+            */
+            // TODO: sleep 30 seconds
+        }
     }
     stop() {
         this.shouldExit = true;
+        // TODO: Stop smart raid interval
         //if (raidUpdaterQueue !== null) {
         //    Threading.destroyQueue(raidUpdaterQueue);
         //}

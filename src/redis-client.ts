@@ -1,12 +1,17 @@
 "use strict"
 
 // Imports
+import { Assignment } from './models/assignment';
+import { Device } from './models/device';
+import { DeviceGroup } from './models/device-group';
+import { Instance } from './models/instance';
 import { Gym } from './models/gym';
 import { Pokemon } from './models/pokemon';
 import { Pokestop } from './models/pokestop';
 import { Spawnpoint } from './models/spawnpoint';
 import { S2Cell } from './models/s2cell';
 import { Weather } from './models/weather';
+
 const config = require('./config.json');
 const redis  = require('redis');
 const client = redis.createClient({
@@ -20,18 +25,27 @@ const timerInterval = 10 * 1000; // 10 seconds
 client.on('connect', function() {
     console.log('Redis client connected');
 });
-client.on('error', function(err){
+client.on('error', function(err) {
     console.log('Error occurred:', err)
 });
 
-let pokemonList = {};
-let gymList = {};
-let raidList = {};
-let pokestopList = {};
-let questList = {};
-let spawnpointList = {};
-let cellList = {};
-let weatherList = {};
+client.r
+
+// necessities
+let deviceList: Device[] = [];
+let instanceList: Instance[] = [];
+let assignmentList: Assignment[] = [];
+let deviceGroupList: DeviceGroup[] = [];
+
+// consumables
+let pokemonList: Pokemon[] = [];
+let gymList: Gym[] = [];
+let raidList: Gym[] = [];
+let pokestopList: Pokestop[] = [];
+let questList: Pokestop[] = [];
+let spawnpointList: Spawnpoint[] = [];
+let cellList: S2Cell[] = [];
+let weatherList: Weather[] = [];
 
 /**
  * Redis cache client class.
@@ -41,7 +55,8 @@ class RedisClient {
      * Initialize a new Redis client object.
      */
     constructor() {
-        setInterval(distributeConsumables, timerInterval);
+        setInterval(cacheConsumables, timerInterval);
+        setInterval(cacheNecessities, timerInterval);
     }
     /**
      * 
@@ -54,35 +69,192 @@ class RedisClient {
             return key;
         });
     }
+    set(id: string, key: string, value: any) {
+        client.set
+    }
+    /**
+     * 
+     * @param device 
+     */
+    addDevice(device: Device) {
+        deviceList[device.uuid] = device;
+    }
+    /**
+     * 
+     * @param instance 
+     */
+    addInstance(instance: Instance) {
+        instanceList[instance.name] = instance;
+    }
+    /**
+     * 
+     * @param assignment 
+     */
+    addAssignment(assignment: Assignment) {
+        let uuid = assignment.deviceUUID + "-" + assignment.instanceName + "-" + assignment.time;
+        assignmentList[uuid] = assignment;
+    }
+    /**
+     * 
+     * @param account 
+     */
+    addAccount(account: Account) {
+        // REVIEW: Hmm probably shouldn't cache accounts :joy: but maybe
+    }
+    /**
+     * 
+     * @param deviceGroup 
+     */
+    addDeviceGroup(deviceGroup: DeviceGroup) {
+        deviceGroupList[deviceGroup.name] = deviceGroup;
+    }
+    /**
+     * 
+     * @param pokemon 
+     */
     addPokemon(pokemon: Pokemon) {
         pokemonList[pokemon.id] = pokemon;
     }
+    /**
+     * 
+     * @param gym 
+     */
     addGym(gym: Gym) {
         gymList[gym.id] = gym;
     }
+    /**
+     * 
+     * @param raid 
+     */
     addRaid(raid: Gym) {
         raidList[raid.id] = raid;
     }
+    /**
+     * 
+     * @param pokestop 
+     */
     addPokestop(pokestop: Pokestop) {
         pokestopList[pokestop.id] = pokestop;
     }
+    /**
+     * 
+     * @param quest 
+     */
     addQuest(quest: Pokestop) {
         questList[quest.id] = quest;
     }
+    /**
+     * 
+     * @param spawnpoint 
+     */
     addSpawnpoint(spawnpoint: Spawnpoint) {
         spawnpointList[spawnpoint.id] = spawnpoint;
     }
+    /**
+     * 
+     * @param cell 
+     */
     addCell(cell: S2Cell) {
         cellList[cell.id] = cell;
     }
+    /**
+     * 
+     * @param weather 
+     */
     addWeather(weather: Weather) {
         weatherList[weather.id] = weather;
     }
+    deleteAllEntries() {
+        
+    }
 }
 
-function distributeConsumables() {
+/**
+ * 
+ */
+function cacheNecessities() {
+    console.log("[REDIS] Caching necessities...");
+    let startTime = process.hrtime();
+
+    if (deviceList) {
+        let deviceKeys = Object.keys(deviceList);
+        if (deviceKeys.length > 0) {
+            console.log("[REDIS] Devices", deviceKeys.length);
+            deviceKeys.forEach(id => {
+                let device = deviceList[id];
+                if (device instanceof Device) {
+                    let keys = Object.keys(device);
+                    keys.forEach(function(key) {
+                        if (device[key]) {
+                            client.hset(device.id, key, device[key] || "", redis.print);
+                        }
+                    });
+                }
+            });
+        }
+    }
+
+    if (deviceGroupList) {
+        let groupKeys = Object.keys(deviceGroupList);
+        if (groupKeys.length > 0) {
+            console.log("[REDIS] Device Groups", groupKeys.length);
+            groupKeys.forEach(id => {
+                let group = deviceGroupList[id];
+                if (group instanceof DeviceGroup) {
+                    let keys = Object.keys(group);
+                    keys.forEach(function(key) {
+                        if (group[key]) {
+                            client.hset(group.id, key, group[key] || "", redis.print);
+                        }
+                    });
+                }
+            });
+        }
+    }
+
+    if (instanceList) {
+        let instanceKeys = Object.keys(instanceList);
+        if (instanceKeys.length > 0) {
+            console.log("[REDIS] Instances", instanceKeys.length);
+            instanceKeys.forEach(id => {
+                let instance = instanceList[id];
+                if (instance instanceof Instance) {
+                    let keys = Object.keys(instance);
+                    keys.forEach(function(key) {
+                        if (instance[key]) {
+                            client.hset(instance.id, key, instance[key] || "", redis.print);
+                        }
+                    });
+                }
+            });
+        }
+    }
+
+    if (assignmentList) {
+        let assignmentKeys = Object.keys(assignmentList);
+        if (assignmentKeys.length > 0) {
+            console.log("[REDIS] Assignments", assignmentKeys.length);
+            assignmentKeys.forEach(id => {
+                let assignment = assignmentList[id];
+                if (assignment instanceof Assignment) {
+                    let keys = Object.keys(assignment);
+                    keys.forEach(function(key) {
+                        if (assignment[key]) {
+                            client.hset(assignment.id, key, assignment[key] || "", redis.print);
+                        }
+                    });
+                }
+            });
+        }
+    }
+}
+
+/**
+ * 
+ */
+function cacheConsumables() {
     // TODO: Properly implement caching
-    console.log("[REDIS] Distributing consumables...");
+    console.log("[REDIS] Caching consumables...");
     let startTime = process.hrtime();
 
     if (pokemonList) {
@@ -196,6 +368,9 @@ function distributeConsumables() {
     console.log("[REDIS] Cached", total, "objects in", endTime + "s");
 }
 
+/**
+ * 
+ */
 function getTotalCount() {
     let pokemon = Object.keys(pokemonList || {}).length;
     let gyms = Object.keys(gymList || {}).length;

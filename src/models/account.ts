@@ -80,7 +80,7 @@ class Account {
             });
         let account: Account;
         let keys = Object.values(result);
-        keys.forEach(function(key) {
+        keys.forEach(key => {
             account = new Account(
                 key.username,
                 key.password,
@@ -169,7 +169,7 @@ class Account {
         let args = [newLat, newLon, encounterTime, username];
         let result = await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
+            .catch(err => {
                 console.log("[ACCOUNT] Failed to set encounter info for account with username", username);
                 return null;
             });
@@ -261,7 +261,7 @@ class Account {
             });
         let accounts: Account[] = [];
         let keys = Object.values(results);
-        keys.forEach(function(key) {
+        keys.forEach(key => {
             let account = new Account(
                 key.username,
                 key.password,

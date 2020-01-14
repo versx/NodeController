@@ -1,9 +1,9 @@
 "use strict"
 
 import { Device } from "./device";
-import { Database } from 'src/data/mysql';
+import { Database } from '../data/mysql';
 
-const config = require('config.json');
+const config = require('../config.json');
 const db = new Database(config);
 
 /**

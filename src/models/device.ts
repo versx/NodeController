@@ -1,8 +1,10 @@
 "use strict"
 
 import * as mysql from '../data/mysql';
+import { RedisClient } from '../redis-client';
 import config      = require('../config.json');
 const db           = new mysql.Database(config);
+const client       = new RedisClient();
 
 /**
  * Device model class.
@@ -61,7 +63,7 @@ class Device {
             });
         let device: Device;
         let keys = Object.values(result);
-        keys.forEach(function(key) {
+        keys.forEach(key => {
             device = new Device(
                 key.uuid,
                 key.instance_name,
@@ -114,6 +116,7 @@ class Device {
                 return null;
             });
         console.log("[DEVICE] Touch:", results);
+        client.addDevice(this);
     }
     /**
      * Create device.
@@ -131,6 +134,7 @@ class Device {
                 return null;
             });
         console.log("[DEVICE] Insert:", results);
+        client.addDevice(this);
     }
     /**
      * Clear device group field.
@@ -149,6 +153,7 @@ class Device {
                 return null;
             });
         console.log("[DEVICE] ClearGroup:", results);
+        client.addDevice(this);
     }
     /**
      * Save device.
@@ -168,23 +173,12 @@ class Device {
                return null;
            });
        console.log("[DEVICE] Update:", results);
+       client.addDevice(this);
     }
     /**
      * Load all devices.
      */
     static async load() {
-        /*
-        let data = fs.readFileSync(devicesPath);
-        let obj = JSON.parse(data);
-        let deviceList = []
-        for (var key in obj) {
-            if (obj.hasOwnProperty(key)) {
-                let dev = obj[key];
-                deviceList.push(new Device(dev.uuid, dev.instanceName, dev.accountUsername, dev.lastHost, dev.lastSeen, dev.lastLat, dev.lastLon));
-            }
-        };
-        return deviceList;
-        */
         let sql = `
         SELECT uuid, instance_name, account_username, last_host, last_seen, last_lat, last_lon
         FROM device
@@ -197,7 +191,7 @@ class Device {
             });
         let devices: Device[] = [];
         let keys = Object.values(results);
-        keys.forEach(function(key) {
+        keys.forEach(key => {
             let device = new Device(
                 key.uuid,
                 key.instance_name,
@@ -207,6 +201,7 @@ class Device {
                 key.last_lat,
                 key.last_lon
             );
+            client.addDevice(device);
             devices.push(device);
         });
         return devices;

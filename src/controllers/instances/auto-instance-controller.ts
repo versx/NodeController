@@ -45,56 +45,14 @@ class AutoInstanceController {
         this.bootstrap();
 
         if (type === AutoInstanceType.Quest) {
-            // TODO: new thread
-            while (!this.shouldExit) {
-                let date = moment(new Date(), 'HH:mm:ss');
-                // TODO: formatter.timeZone = TimeZone(secondsFromGMT: timezoneOffset) ?? Localizer.global.timeZone;
-                let split = date.toString().split(":");
-                let hour = parseInt(split[0]);
-                let minute = parseInt(split[1]);
-                let second = parseInt(split[2]);
-
-                let timeLeft = (23 - hour) * 3600 + (59 - minute) * 60 + (60 - second);
-                let at = date.add(timeLeft);
-                console.log("[AutoInstanceController]", "[" + name + "]", "Clearing Quests in", timeLeft + "s", "at \(formatter.string(from: at)) (Currently: \(formatter.string(from: date)))");
-
-                if (timeLeft > 0) {
-                    // TODO: sleep timeLeft
-                    if (this.shouldExit) {
-                        return;
-                    }
-                    if (this.allStops === undefined || this.allStops === null) {
-                        console.log("[AutoInstanceController]", "[" + name + "]", "Tried clearing quests but no stops.");
-                        continue;
-                    }
-
-                    console.log("[AutoInstanceController]", "[" + name + "]", "Getting stop ids.");
-                    let ids = this.allStops.map(function(stop) {
-                        return stop.id;
-                    });
-                    let done = false;
-                    console.log("[AutoInstanceController]", "[", name, "]", "Clearing Quests for ids:", ids);
-                    while (!done) {
-                        try {
-                            Pokestop.clearQuests(ids);
-                            done = true;
-                        } catch (err) {
-                            // TODO: sleep 5 seconds
-                            if (this.shouldExit) {
-                                return;
-                            }
-                        }
-                    }
-                    this.update();
-                }
-            }
+            setInterval(() => this.autoLoop());
         }
     }
     bootstrap() {
         console.log("[AutoInstanceController]", name, "Checking Bootstrap Status...");
         let start = new Date();
         let totalCount = 0;
-        let missingCellIds: [S2Cell];
+        let missingCellIds: [S2.S2CellId];
         this.multiPolygon.polygons.forEach(polygon => {
             // TODO: actual multipolygon
             let cellIds = polygon.getS2CellIds(15, 15, Number.MAX_VALUE);
@@ -110,16 +68,12 @@ class AutoInstanceController {
                     // TODO: sleep 1 second
                 }
             }
-            cellIds.forEach(cellId => {
-                // TODO: Check cells, add missing
-                /*
-                if !cells.contains(where: { (cell) -> Bool in
-                    return cell.id == cellID.uid
-                }) {
-                    missingCellIDs.append(cellID)
-                }
-                */
-            });
+            for (let i = 0; i < cells.length; i++) {
+                let cell = cells[i];
+                if (cells.includes(cell)) {
+                    missingCellIds.push(new S2.S2CellId(cell.prototype.id));
+                }   
+            }
         });
         console.log("[AutoInstanceController]", name, "Bootstrap Status:", totalCount - missingCellIds.length + "/" + totalCount, "after", Math.round(new Date().getUTCSeconds() - start.getUTCSeconds()) + "s")
         //this.bootstrapCellIds = missingCellIds; // TODO: fix
@@ -467,7 +421,50 @@ class AutoInstanceController {
         //if (this.questClearerQueue !== null) {
         //    // TODO: Threading.destroyQueue(questClearerQueue!)
         //}
+    }
+    autoLoop() {
+        while (!this.shouldExit) {
+            let date = moment(new Date(), 'HH:mm:ss');
+            // TODO: formatter.timeZone = TimeZone(secondsFromGMT: timezoneOffset) ?? Localizer.global.timeZone;
+            let split = date.toString().split(":");
+            let hour = parseInt(split[0]);
+            let minute = parseInt(split[1]);
+            let second = parseInt(split[2]);
 
+            let timeLeft = (23 - hour) * 3600 + (59 - minute) * 60 + (60 - second);
+            let at = date.add(timeLeft);
+            console.log("[AutoInstanceController]", "[" + name + "]", "Clearing Quests in", timeLeft + "s", "at \(formatter.string(from: at)) (Currently: \(formatter.string(from: date)))");
+
+            if (timeLeft > 0) {
+                // TODO: sleep timeLeft
+                if (this.shouldExit) {
+                    return;
+                }
+                if (this.allStops === undefined || this.allStops === null) {
+                    console.log("[AutoInstanceController]", "[" + name + "]", "Tried clearing quests but no stops.");
+                    continue;
+                }
+
+                console.log("[AutoInstanceController]", "[" + name + "]", "Getting stop ids.");
+                let ids = this.allStops.map(function(stop) {
+                    return stop.id;
+                });
+                let done = false;
+                console.log("[AutoInstanceController]", "[", name, "]", "Clearing Quests for ids:", ids);
+                while (!done) {
+                    try {
+                        Pokestop.clearQuests(ids);
+                        done = true;
+                    } catch (err) {
+                        // TODO: sleep 5 seconds
+                        if (this.shouldExit) {
+                            return;
+                        }
+                    }
+                }
+                this.update();
+            }
+        }
     }
 }
 

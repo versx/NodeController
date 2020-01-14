@@ -6,11 +6,11 @@
         "password": ""
     },
     "db": {
-        "host": "127.0.0.1",
-        "port": 3306,
-        "username": "user",
-        "password": "pass123",
-        "database": "node",
+        "host": "10.0.1.100",
+        "port": 3307,
+        "username": "versx",
+        "password": "jerm5301",
+        "database": "rdmdb_level",
         "connectionLimit": 1000
     },
     "webhook": {

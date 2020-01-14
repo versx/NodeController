@@ -51,31 +51,31 @@ class AssignmentController /*InstanceControllerDelegate?*/ {
         this.assignments.push(assignment);
     }
     editAssignment(oldAssignment: Assignment, newAssignment: Assignment) {
-        let index = this.assignments.indexOf(oldAssignment);
-        if (index >= 0) {
-            // TODO: this.assignments.remove(index);
+        let index = this.assignments.indexOf(oldAssignment, 0);
+        if (index > -1) {
+            this.assignments.splice(index, 1); //REVIEW: Is this correct?
         }
         this.assignments.push(newAssignment);
 
     }
     deleteAssignment(assignment: Assignment) {
-        let index = this.assignments.indexOf(assignment);
-        if (index >= 0) {
-            // TODO: this.assignments.remove(index);
+        let index = this.assignments.indexOf(assignment, 0);
+        if (index > -1) {
+            this.assignments.splice(index, 1);
         }
     }
-    triggerAssignment(assignment: Assignment) {
+    async triggerAssignment(assignment: Assignment) {
         let device: Device;
         let done: boolean = false;
         while (!done) {
             try {
-                // TODO: device = Device.getById(assignment.deviceUUID);
+                device = await Device.getById(assignment.deviceUUID);
                 done = true;
             } catch (err) {
                 // TODO: sleep 1 second
             }
         }
-        if (device && device.instanceName !== assignment.instanceName) {
+        if (device instanceof Device && device.instanceName !== assignment.instanceName) {
             console.log("[AssignmentController] Assigning", assignment.deviceUUID, "to", assignment.instanceName);
             InstanceController.instance.removeDevice(device);
             device.instanceName = assignment.instanceName;
@@ -95,7 +95,9 @@ class AssignmentController /*InstanceControllerDelegate?*/ {
         this.assignments.forEach(assignment => {
             let deviceUUIDs = InstanceController.instance.getDeviceUUIDsInInstance(name)
             if (assignment.enabled && assignment.time === 0 && deviceUUIDs.includes(assignment.deviceUUID)) {
-                this.triggerAssignment(assignment);
+                this.triggerAssignment(assignment).then(x => {
+                    console.log("[AssignmentController] Triggered assignment", x);
+                });
                 return;
             }
         });
@@ -104,7 +106,7 @@ class AssignmentController /*InstanceControllerDelegate?*/ {
 
 function todaySeconds() {
     let date = moment(new Date(), "HH:mm:ss").toString();
-    //formatter.timeZone = timeZone
+    // TODO: formatter.timeZone = timeZone
     let split = date.split(":");
     if (split.length >= 3) {
         let hour = parseInt(split[0]) || 0;

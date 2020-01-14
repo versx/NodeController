@@ -1,6 +1,6 @@
 "use strict"
 
-import { InstanceController, InstanceType } from "./instance-controller"
+import { InstanceType } from "./instance-controller"
 
 class CircleInstanceController {
     lastUuidIndex = {};
@@ -12,7 +12,6 @@ class CircleInstanceController {
     maxLevel: number;
     coords: any[];
 
-    //coords;
     private lastIndex: number;
     private lastLastCompletedTime: number;
     private lastCompletedTime: number;
@@ -26,13 +25,16 @@ class CircleInstanceController {
         this.lastCompletedTime = new Date().getUTCSeconds();
     }
     getTask(uuid: string, username: string) {
-        let currentIndex = this.lastIndex;
-        if (this.lastIndex + 1 === this.coords.length) {
-            this.lastLastCompletedTime = this.lastCompletedTime;
-            this.lastCompletedTime = new Date().getUTCSeconds();
-            this.lastIndex = 0;
-        } else {
-            this.lastIndex = this.lastIndex + 1;
+        let currentIndex: number = 0;
+        if (this.type !== InstanceType.CirclePokemon) {
+           currentIndex = this.lastIndex;
+            if (this.lastIndex + 1 == this.coords.length) {
+                this.lastLastCompletedTime = this.lastCompletedTime;
+                this.lastCompletedTime = new Date().getUTCSeconds();
+                this.lastIndex = 0;
+            } else {
+                this.lastIndex = this.lastIndex + 1
+            }
         }
 
         let currentCoord = this.coords[currentIndex];
@@ -69,17 +71,35 @@ class CircleInstanceController {
         this.lastIndex = 0;
     }
     stop() {}
-    routeDistance(x, y) {
+    routeDistance(x: number, y: number) {
         if (x < y ) {
             return y - x;
         }
         return y + (this.coords.length - x);
     }
     queryLiveDevices(uuid: string, index: number) {
-        let deadDeviceCutOff = new Date().getUTCSeconds() - 60 * 1000;
+        //In seconds
+        let deadDeviceCutoff = new Date().getUTCSeconds() - 60 * 1000;
+        //Include the querying device in the count
         let numLiveDevices = 1;
         let distanceToNext = this.coords.length;
-        // TODO: finish new routing logic        
+        var keys = Object.keys(this.lastUuidIndex);
+        for (let i = 0; i < keys.length; i++) {
+            let ouuid = this.lastUuidIndex[i];
+            // Skip the querying device
+            if (ouuid === uuid) {
+                continue;
+            }
+            let lastSeen = this.lastUuidSeenTime[ouuid];
+            if (lastSeen > deadDeviceCutoff) {
+                numLiveDevices++;
+                let dist = this.routeDistance(index, i);
+                if (dist < distanceToNext) {
+                    distanceToNext = dist;
+                }
+            }
+        }
+        return [numLiveDevices, distanceToNext];
     }
 }
 

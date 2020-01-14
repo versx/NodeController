@@ -112,14 +112,17 @@ class IVInstanceController {
             if (this.pokemonQueue.includes(pokemon)) {
                 return;
             }
-            let index = lastIndexOf(pokemon.pokemonId);
+            let index = this.lastIndexOf(pokemon.pokemonId);
             if (this.pokemonQueue.length >= this.ivQueueLimit && index === null) {
                 console.log("[IVInstanceController] Queue is full!");
             } else if (this.pokemonQueue.length >= this.ivQueueLimit) {
-                //this.pokemonQueue.insert(pokemon, index); // TODO: Insert pokemon into IV queue
+                // Insert pokemon at top of queue.
+                this.pokemonQueue.splice(0, 0, pokemon);
+                // Remove last pokemon.
+                this.pokemonQueue.splice(index, 1);
                 //_ = this.pokemonQueue.popLast()?
             } else if (index >= 0) {
-                //this.pokemonQueue.insert(pokemon, index); // TODO: Insert pokemon into IV queue
+                this.pokemonQueue.splice(index, 0, pokemon);
             } else {
                 this.pokemonQueue.push(pokemon);
             }
@@ -127,9 +130,9 @@ class IVInstanceController {
     }
     gotIV(pokemon: Pokemon) {
         if (this.multiPolygon.includes({})) {
-            let index = this.pokemonQueue.indexOf(pokemon);
-            if (index >= 0) {
-                // TODO: this.pokemonQueue.remove(index);
+            let index = this.pokemonQueue.indexOf(pokemon, 0);
+            if (index > -1) {
+                this.pokemonQueue.splice(index, 1);
             }
             if (this.startDate === undefined) {
                 this.startDate = new Date();
@@ -142,21 +145,18 @@ class IVInstanceController {
             }
         }
     }
-}
-
-function lastIndexOf(pokemonId: number) {
-    /*
-    let targetPriority = pokemonList.indexOf(pokemonId);
-    let i = 0;
-    this.pokemonQueue.forEach(pokemon => { // TODO: Convert to for loop?
-        let priority = pokemonList.indexOf(pokemon.pokemonId);
-        if (targetPriority < priority) {
-            return i;
-        }
-        i++;
-    });
-    */
-    return null;
+    lastIndexOf(pokemonId: number) {
+        let targetPriority = this.pokemonList.indexOf(pokemonId);
+        let i = 0;
+        this.pokemonQueue.forEach(pokemon => {
+            let priority = this.pokemonList.indexOf(pokemon.pokemonId);
+            if (targetPriority < priority) {
+                return i;
+            }
+            i++;
+        });
+        return null;
+    }
 }
 
 export { IVInstanceController };

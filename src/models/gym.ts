@@ -135,7 +135,10 @@ class Gym {
      * @param fort 
      */
     addDetails(fort: any) {
-        // TODO: Gym.addDetails
+        if (fort.imageUrls === undefined || fort.imageUrls === null) {
+            this.url = fort.imageUrls[0];
+        }
+        this.name = fort.name;
     }
     /**
      * Add gym details from GymGetInfo response.
@@ -156,6 +159,7 @@ class Gym {
         //TODO: Check if values changed, if not skip.
         Gym.Gyms[this.id] = this;
         save(Gym.Gyms, gymsPath);
+        // TODO: Save to mysql
     }
     /**
      * Load all gyms.
@@ -167,6 +171,7 @@ class Gym {
             this.Gyms[key] = new Gym(data[key]);
         });
         //this.Gyms = JSON.parse(data);
+        // TODO: Load from mysql
         return this.Gyms;
     }
 }
