@@ -11,14 +11,14 @@ class IVInstanceController {
     private shouldExit = false;
 
     name: string;
-    area: [any];
+    area: any;
     pokemonList: [number];
     minLevel: number = 0;
     maxLevel: number = 29;
     ivQueueLimit: number =  100;
     scatterList: [number];
 
-    constructor(name: string, area: [any], pokemonList: [number], minLevel: number, maxLevel: number, ivQueueLimit: number, scatterList: [number]) {
+    constructor(name: string, area: any, pokemonList: [number], minLevel: number, maxLevel: number, ivQueueLimit: number, scatterList: [number]) {
         this.name = name;
         this.area = area;
         this.pokemonList = pokemonList;

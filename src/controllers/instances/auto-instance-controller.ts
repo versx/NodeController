@@ -17,7 +17,7 @@ enum AutoInstanceType {
 
 class AutoInstanceController {
     name: string;
-    area: [any];
+    area: any;
     timeZoneOffset: number;
     minLevel: number;
     maxLevel: number;
@@ -32,7 +32,7 @@ class AutoInstanceController {
     private bootstrapCellIds: number[];
     private bootstrapTotalCount: number = 0;
 
-    constructor(name: string, area: [any], type: AutoInstanceType, timeZoneOffset: number, minLevel: number, maxLevel: number, spinLimit: number) {
+    constructor(name: string, area: any, type: AutoInstanceType, timeZoneOffset: number, minLevel: number, maxLevel: number, spinLimit: number) {
         this.name = name;
         this.area = area;
         this.type = type;

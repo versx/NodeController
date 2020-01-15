@@ -29,7 +29,8 @@
     "protobufjs": "^6.8.8",
     "redis": "^2.8.0",
     "request": "^2.88.0",
-    "turf": "^3.0.14"
+    "turf": "^3.0.14",
+    "winston": "^3.2.1"
   },
   "devDependencies": {
     "@types/body-parser": "^1.17.1",

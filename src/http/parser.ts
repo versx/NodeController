@@ -16,7 +16,7 @@ import { S1Angle } from 'nodes2ts';
 const client = new RedisClient();
 
 let accounts = Account.getAll();
-let devices = Device.getAll();
+//let devices = Device.getAll();
 
 let emptyCells = [];//[UInt64: Int]
 let levelCache = {};
@@ -392,6 +392,8 @@ function _handleRawData(req, res) {
             let pokemonId: number = parseInt(pokemon.data.pokemon_data.pokemon_id);
             if (controller) {
                 let radians: S1Angle = new S1Angle(35); // REVIEW: wth is radians
+                /*
+                TODO: Fix scatterPokemon
                 if (distance <= radians && controller.scatterPokemon.contains(pokemonId)) {
                     scatterPokemon.push({
                         lat: pokemon.data.latitude,
@@ -399,6 +401,7 @@ function _handleRawData(req, res) {
                         id: pokemon.data.encounterID.description
                     });
                 }
+                */
             }
         });
 
@@ -447,46 +450,43 @@ function _handleControllerData(req, res) {
     let username: string = jsonO["username"];
     let minLevel: number = parseInt(jsonO["min_level"] || 0);
     let maxLevel: number = parseInt(jsonO["max_level"] || 29);
+    let device: Device = InstanceController.instance.Devices[uuid];
 
     switch (type) {
         case "init":
-            //TODO: TryCatch
-            devices.then(x => {
-                var device = x.find(x => { return x.uuid === uuid; });
-                var firstWarningTimestamp = null;
-                if (device === undefined || device.accountUsername === undefined) {
+            var firstWarningTimestamp = null;
+            if (device === undefined || device.accountUsername === undefined) {
+                firstWarningTimestamp = null;
+            } else {
+                let account = accounts[device.accountUsername];
+                if (account !== undefined) {
+                    firstWarningTimestamp = account.firstWarningTimestamp;
+                } else {
                     firstWarningTimestamp = null;
-                } else {
-                    let account = accounts[device.accountUsername];
-                    if (account !== undefined) {
-                        firstWarningTimestamp = account.firstWarningTimestamp;
-                    } else {
-                        firstWarningTimestamp = null;
+                }
+            }
+            if (device instanceof Device) {
+                // Device is already registered
+                console.log("Device registered");
+                res.send({
+                    data: {
+                        assigned: device.instanceName !== undefined,
+                        first_warning_timestamp: firstWarningTimestamp
                     }
-                }
-                if (device instanceof Device) {
-                    // Device is already registered
-                    console.log("Device registered");
-                    res.send({
-                        data: {
-                            assigned: device.instanceName !== undefined,
-                            first_warning_timestamp: firstWarningTimestamp
-                        }
-                    });
-                } else {
-                    // Register new device
-                    console.log("Registering device");
-                    let newDevice = new Device(uuid, null, null, null, 0, 0.0, 0.0);
-                    newDevice.create();
-                    devices[uuid] = newDevice;
-                    res.send({ 
-                        data: { 
-                            assigned: false,
-                            first_warning_timestamp: firstWarningTimestamp
-                        }
-                    });
-                }
-            });
+                });
+            } else {
+                // Register new device
+                console.log("Registering device");
+                let newDevice = new Device(uuid, null, null, null, 0, 0.0, 0.0);
+                newDevice.create();
+                //devices[uuid] = newDevice;
+                res.send({ 
+                    data: { 
+                        assigned: false,
+                        first_warning_timestamp: firstWarningTimestamp
+                    }
+                });
+            }
             break;
         case "heartbeat":
             // TODO: heartbeat
@@ -513,65 +513,56 @@ function _handleControllerData(req, res) {
             */
             break;
         case "get_account":
-            devices.then(x => {
-                let device = x.find(x => { return x.uuid === uuid; });
-                let account = Account.getNewAccount(minLevel, maxLevel);// randomValue(accounts); // TODO: Get new account from level restrictions
-                console.log("GetAccount:", account);
-                account.then(x => {
-                    console.log("Random Account:", x);
-                    if (device === undefined || x === undefined) {
-                        console.log("Failed to get account, device or account is null.");
-                        return res.status(400).end();
+            var account = Account.getNewAccount(minLevel, maxLevel);// randomValue(accounts); // TODO: Get new account from level restrictions
+            console.log("GetAccount:", account);
+            account.then(x => {
+                console.log("Random Account:", x);
+                if (device === undefined || x === undefined) {
+                    console.log("Failed to get account, device or account is null.");
+                    return res.status(400).end();
+                }
+                if (device.accountUsername !== undefined) {
+                    let oldAccount = accounts[device.accountUsername];
+                    if (oldAccount instanceof Account && oldAccount.firstWarningTimestamp === undefined && oldAccount.failed === undefined && oldAccount.failedTimestamp === undefined) {
+                        res.send({
+                            data: {
+                                username: oldAccount.username,
+                                password: oldAccount.password,
+                                first_warning_timestamp: oldAccount.firstWarningTimestamp,
+                                level: oldAccount.level
+                            }
+                        });
+                        return;
                     }
-                    if (device.accountUsername !== undefined) {
-                        let oldAccount = accounts[device.accountUsername];
-                        if (oldAccount instanceof Account && oldAccount.firstWarningTimestamp === undefined && oldAccount.failed === undefined && oldAccount.failedTimestamp === undefined) {
-                            res.send({
-                                data: {
-                                    username: oldAccount.username,
-                                    password: oldAccount.password,
-                                    first_warning_timestamp: oldAccount.firstWarningTimestamp,
-                                    level: oldAccount.level
-                                }
-                            });
-                            return;
-                        }
-                    }
+                }
 
-                    device.accountUsername = x.username;
-                    device.save(device.uuid);
-                    res.send({
-                        data: {
-                            username: x.username,
-                            password: x.password,
-                            first_warning_timestamp: x.firstWarningTimestamp,
-                            level: x.level
-                        }
-                    });
+                device.accountUsername = x.username;
+                device.save(device.uuid);
+                res.send({
+                    data: {
+                        username: x.username,
+                        password: x.password,
+                        first_warning_timestamp: x.firstWarningTimestamp,
+                        level: x.level
+                    }
                 });
             });
             break;
         case "tutorial_done":
-            devices.then(x => {
-                let device = x.find(x => { return x.uuid === uuid; });
-                let username = device.accountUsername;
-                let account = accounts[username];
+            accounts[device.accountUsername].then((account: Account) => {
                 if (device === undefined || account === undefined) {
                     console.log("Failed to get account, device or account is null.");
                     return res.status(400).end();
                 }
                 if (account.level === 0) {
                     account.level = 1;
-                    account.save();
+                    account.save(true);
                     res.send('OK');
                 }
             });
             break;
         case "account_banned":
-            devices.then(x => {
-                let device = x.find(x => { return x.uuid === uuid; });
-                let username = device.accountUsername;
-                let account = accounts[username];
+            accounts[device.accountUsername].then((account: Account) => {
                 if (device === undefined || account === undefined) {
                     console.log("Failed to get account, device or account is null.");
                     return res.status(400).end();
@@ -579,32 +570,26 @@ function _handleControllerData(req, res) {
                 if (account.failedTimestamp === undefined || account.failed === undefined) {
                     account.failedTimestamp = new Date().getUTCSeconds();
                     account.failed = "banned";
-                    account.save();
+                    account.save(true);
                     res.send('OK');
                 }
             });
             break;
         case "account_warning":
-            devices.then(x => {
-                let device = x.find(x => { return x.uuid === uuid; });
-                let username = device.accountUsername;
-                let account = accounts[username];
+            accounts[device.accountUsername].then((account: Account) => {
                 if (device === undefined || account === undefined) {
                     console.log("Failed to get account, device or account is null.");
                     return res.status(400).end();
                 }
                 if (account.firstWarningTimestamp === undefined) {
                     account.firstWarningTimestamp = new Date().getUTCSeconds();
-                    account.save();
+                    account.save(true);
                     res.send('OK');
                 }
             });
             break;
         case "account_invalid_credentials":
-            devices.then(x => {
-                let device = x.find(x => { return x.uuid === uuid; });
-                let username = device.accountUsername;
-                let account = accounts[username];
+            accounts[device.accountUsername].then((account: Account) => {
                 if (device === undefined || account === undefined) {
                     console.log("Failed to get account, device or account is null.");
                     return res.status(400).end();
@@ -612,16 +597,13 @@ function _handleControllerData(req, res) {
                 if (account.failedTimestamp === undefined || account.failed === undefined) {
                     account.failedTimestamp = new Date().getUTCSeconds();
                     account.failed = "invalid_credentials";
-                    account.save();
+                    account.save(true);
                     res.send('OK');
                 }
             });
             break;
         case "error_26":
-            devices.then(x => {
-                let device = x.find(x => { return x.uuid === uuid; });
-                let username = device.accountUsername;
-                let account = accounts[username];
+            accounts[device.accountUsername].then((account: Account) => {
                 if (device === undefined || account === undefined) {
                     console.log("Failed to get account, device or account is null.");
                     return res.status(400).end();
@@ -629,18 +611,15 @@ function _handleControllerData(req, res) {
                 if (account.failedTimestamp === undefined || account.failed === undefined) {
                     account.failedTimestamp = new Date().getUTCSeconds();
                     account.failed = "error_26";
-                    account.save();
+                    account.save(true);
                     res.send('OK');
                 }
             });
             break;
         case "logged_out":
-            devices.then(x => {
-                let device = x.find(x => { return x.uuid === uuid; });
-                device.accountUsername = null;
-                device.save(device.uuid);
-                res.send('OK');
-            });
+            device.accountUsername = null;
+            device.save(device.uuid);
+            res.send('OK');
             break;
         default:
             console.log("[WebhookRequestHandler] Unhandled Request:", type);

@@ -12,40 +12,45 @@ import { Spawnpoint } from './models/spawnpoint';
 import { S2Cell } from './models/s2cell';
 import { Weather } from './models/weather';
 
+const DEVICE_LIST = 'DEVICE_LIST';
+const INSTANCE_LIST = 'INSTANCE_LIST';
+const ASSIGNMENT_LIST = 'ASSIGNMENT_LIST';
+
 const config = require('./config.json');
 const redis  = require('redis');
 const client = redis.createClient({
-
     host: config.redis.host,
     port: config.redis.port,
     password: config.redis.password
 });
 const timerInterval = 10 * 1000; // 10 seconds
 
+const {promisify} = require('util');
+const getAsync = promisify(client.get).bind(client);
+
 client.on('connect', function() {
     console.log('Redis client connected');
+    console.log("DEVICE_LIST:", client.get(DEVICE_LIST));//, redis.print));
 });
-client.on('error', function(err) {
+client.on('error', function(err: Error) {
     console.log('Error occurred:', err)
 });
 
-client.r
-
 // necessities
-let deviceList: Device[] = [];
-let instanceList: Instance[] = [];
-let assignmentList: Assignment[] = [];
-let deviceGroupList: DeviceGroup[] = [];
+let deviceList = {};
+let instanceList = {};
+let assignmentList = {};
+let deviceGroupList = {};
 
 // consumables
-let pokemonList: Pokemon[] = [];
-let gymList: Gym[] = [];
-let raidList: Gym[] = [];
-let pokestopList: Pokestop[] = [];
-let questList: Pokestop[] = [];
-let spawnpointList: Spawnpoint[] = [];
-let cellList: S2Cell[] = [];
-let weatherList: Weather[] = [];
+let pokemonList = {};
+let gymList = {};
+let raidList = {};
+let pokestopList = {};
+let questList = {};
+let spawnpointList = {};
+let cellList = {};
+let weatherList = {};
 
 /**
  * Redis cache client class.
@@ -58,19 +63,27 @@ class RedisClient {
         setInterval(cacheConsumables, timerInterval);
         setInterval(cacheNecessities, timerInterval);
     }
+    saveDevices() {
+        let json = JSON.stringify(deviceList, null, 2);
+        client.set(DEVICE_LIST, json);
+    }
+    saveInstances() {
+        let json = JSON.stringify(instanceList, null, 2);
+        client.set(INSTANCE_LIST, json);
+    }
+    saveAssignments() {
+        let json = JSON.stringify(assignmentList, null, 2);
+        client.set(ASSIGNMENT_LIST, json);
+    }
     /**
      * 
      * @param key 
      */
-    get(key: string) {
-        return client.get(key, function(err, result) {
-            if (err) throw err;
-            console.log("[REDIS] get:", result);
-            return key;
-        });
+    get(key: string): any {
+        return client.get(key);
     }
     set(id: string, key: string, value: any) {
-        client.set
+        //client.set
     }
     /**
      * 
@@ -78,6 +91,7 @@ class RedisClient {
      */
     addDevice(device: Device) {
         deviceList[device.uuid] = device;
+        this.saveDevices();
     }
     /**
      * 
@@ -93,6 +107,7 @@ class RedisClient {
     addAssignment(assignment: Assignment) {
         let uuid = assignment.deviceUUID + "-" + assignment.instanceName + "-" + assignment.time;
         assignmentList[uuid] = assignment;
+        this.saveAssignments();
     }
     /**
      * 
@@ -168,7 +183,6 @@ class RedisClient {
         
     }
 }
-
 /**
  * 
  */
@@ -186,7 +200,7 @@ function cacheNecessities() {
                     let keys = Object.keys(device);
                     keys.forEach(function(key) {
                         if (device[key]) {
-                            client.hset(device.id, key, device[key] || "", redis.print);
+                            client.hset(device.id, key, device[key] || "");//, redis.print);
                         }
                     });
                 }
@@ -204,7 +218,7 @@ function cacheNecessities() {
                     let keys = Object.keys(group);
                     keys.forEach(function(key) {
                         if (group[key]) {
-                            client.hset(group.id, key, group[key] || "", redis.print);
+                            client.hset(group.id, key, group[key] || "");//, redis.print);
                         }
                     });
                 }
@@ -222,7 +236,7 @@ function cacheNecessities() {
                     let keys = Object.keys(instance);
                     keys.forEach(function(key) {
                         if (instance[key]) {
-                            client.hset(instance.id, key, instance[key] || "", redis.print);
+                            client.hset(instance.id, key, instance[key] || "");//, redis.print);
                         }
                     });
                 }
@@ -240,13 +254,17 @@ function cacheNecessities() {
                     let keys = Object.keys(assignment);
                     keys.forEach(function(key) {
                         if (assignment[key]) {
-                            client.hset(assignment.id, key, assignment[key] || "", redis.print);
+                            client.hset(assignment.id, key, assignment[key] || "");//, redis.print);
                         }
                     });
                 }
             });
         }
     }
+
+    let endTime = process.hrtime(startTime);
+    //let total = getTotalCount();
+    //console.log("[REDIS] Cached", total, "objects in", endTime + "s");
 }
 
 /**
@@ -383,4 +401,4 @@ function getTotalCount() {
 }
 
 // Export the class
-export { RedisClient };
+export { client, RedisClient, DEVICE_LIST, INSTANCE_LIST, ASSIGNMENT_LIST };

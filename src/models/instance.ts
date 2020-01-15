@@ -1,7 +1,10 @@
 "use strict"
 
 import * as mysql from '../data/mysql';
+import { client, RedisClient, INSTANCE_LIST } from '../redis-client';
 import config      = require('../config.json');
+import { logger } from '../utils/logger';
+import { InstanceController } from '../controllers/instances/instance-controller';
 const db           = new mysql.Database(config);
 
 /**
@@ -142,6 +145,32 @@ class Instance implements IInstance {
      * Load all instances.
      */
     static async load() {
+        // TODO: Load instances from cache and mysql, check diff, add new/changes to cache.
+        //let data = redisClient.get(INSTANCE_LIST);
+        client.get(INSTANCE_LIST, function(err: Error, result) {
+            if (err) {
+                logger.error("[INSTANCE] load: " + err);
+            }
+            if (result) {
+                let data = JSON.parse(result);
+                let keys = Object.keys(data);
+                for (let i = 0; i < keys.length; i++) {
+                    let key = keys[i];
+                    let instance = data[key];
+                    InstanceController.instance.Instances[key] = new Instance(
+                        instance.name,
+                        instance.type,
+                        instance.minLevel,
+                        instance.maxLevel,
+                        instance.area,
+                        instance.data
+                    );
+                }
+                console.log("INSTANCE RESULT:", data);
+                //return data;
+            }
+        });
+        /*
         let sql = `
         SELECT name, type, data
         FROM instance
@@ -166,6 +195,7 @@ class Instance implements IInstance {
             instances.push(instance);
         });
         return instances;
+        */
     }
 }
 

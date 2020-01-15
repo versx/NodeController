@@ -1,10 +1,12 @@
 "use strict"
 
 import * as mysql from '../data/mysql';
-import { RedisClient } from '../redis-client';
+import { client, RedisClient, DEVICE_LIST } from '../redis-client';
 import config      = require('../config.json');
+import { logger } from '../utils/logger';
+import { InstanceController } from '../controllers/instances/instance-controller';
 const db           = new mysql.Database(config);
-const client       = new RedisClient();
+const redisClient       = new RedisClient();
 
 /**
  * Device model class.
@@ -41,14 +43,25 @@ class Device {
     /**
      * Get all devices.
      */
-    static getAll() {
+    /*
+    static getAll(): Promise<Device[]> {
         return this.load();
     }
+    */
     /**
      * Get device based on uuid.
      * @param uuid 
      */
-    static async getById(uuid: string) {
+    static async getById(uuid: string): Promise<Device> {
+        let deviceRedis = redisClient.get(DEVICE_LIST);
+        if (deviceRedis) {
+            let devices: Device[] = JSON.parse(deviceRedis);
+            if (devices) {
+                let device = devices.find(x => x.uuid === uuid);
+                return device;
+            }
+        }
+
         let sql = `
         SELECT uuid, instance_name, account_username, last_host, last_seen, last_lat, last_lon
         FROM device
@@ -68,10 +81,10 @@ class Device {
                 key.uuid,
                 key.instance_name,
                 key.account_username,
-                key.last_host,
-                key.last_seen,
-                key.last_lat,
-                key.last_lon
+                key.last_host || "",
+                key.last_seen || "",
+                key.last_lat || "",
+                key.last_lon || ""
             );
         })
         return device;
@@ -116,7 +129,7 @@ class Device {
                 return null;
             });
         console.log("[DEVICE] Touch:", results);
-        client.addDevice(this);
+        redisClient.addDevice(this);
     }
     /**
      * Create device.
@@ -134,7 +147,7 @@ class Device {
                 return null;
             });
         console.log("[DEVICE] Insert:", results);
-        client.addDevice(this);
+        redisClient.addDevice(this);
     }
     /**
      * Clear device group field.
@@ -153,7 +166,7 @@ class Device {
                 return null;
             });
         console.log("[DEVICE] ClearGroup:", results);
-        client.addDevice(this);
+        redisClient.addDevice(this);
     }
     /**
      * Save device.
@@ -173,12 +186,39 @@ class Device {
                return null;
            });
        console.log("[DEVICE] Update:", results);
-       client.addDevice(this);
+       redisClient.addDevice(this);
     }
     /**
      * Load all devices.
      */
-    static async load() {
+    static load() {
+        // TODO: Load devices from cache and mysql, check diff, add new/changes to cache.
+        //let data = redisClient.get(DEVICE_LIST);
+        client.get(DEVICE_LIST, function(err: Error, result) {
+            if (err) {
+                logger.error("[DEVICE] load: " + err);
+            }
+            if (result) {
+                let data = JSON.parse(result);
+                let keys = Object.keys(data);
+                for (let i = 0; i < keys.length; i++) {
+                    let key = keys[i];
+                    let device = data[key];
+                    InstanceController.instance.Devices[key] = new Device(
+                        device.uuid,
+                        device.instanceName,
+                        device.accountUsername,
+                        device.lastHost,
+                        device.lastSeen,
+                        device.lastLat,
+                        device.lastLon
+                    );
+                }
+                console.log("[DEVICE] RESULT:", data);
+            }
+        });
+        /*
+
         let sql = `
         SELECT uuid, instance_name, account_username, last_host, last_seen, last_lat, last_lon
         FROM device
@@ -201,10 +241,11 @@ class Device {
                 key.last_lat,
                 key.last_lon
             );
-            client.addDevice(device);
+            redisClient.addDevice(device);
             devices.push(device);
         });
         return devices;
+        */
     }
 }
 

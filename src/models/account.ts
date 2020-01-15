@@ -253,31 +253,32 @@ class Account {
         SELECT username, password, first_warning_timestamp, failed_timestamp, failed, level, last_encounter_lat, last_encounter_lon, last_encounter_time, spins, tutorial
         FROM account
         `; //TODO: ptc_token
-        let results = await db.query(sql)
+        let results: any = await db.query(sql)
             .then(x => x)
             .catch(x => {
-                console.log("[DEVICE] Error:", x);
+                console.log("[ACCOUNT] Error:", x);
                 return null;
             });
         let accounts: Account[] = [];
-        let keys = Object.values(results);
-        keys.forEach(key => {
-            let account = new Account(
-                key.username,
-                key.password,
-                key.first_warning_timestamp,
-                key.failed_timestamp,
-                key.failed,
-                key.level,
-                key.last_encounter_lat,
-                key.last_encounter_lon,
-                key.last_encounter_time,
-                key.spins,
-                key.tutorial,
-                null//key.ptc_token
-            );
-            accounts.push(account);
-        });
+        if (results.length > 0) {
+            for (let i = 0; i < results.length; i++) {
+                let row = results[i];
+                accounts.push(new Account(
+                    row.username,
+                    row.password,
+                    row.first_warning_timestamp,
+                    row.failed_timestamp,
+                    row.failed,
+                    row.level,
+                    row.last_encounter_lat,
+                    row.last_encounter_lon,
+                    row.last_encounter_time,
+                    row.spins,
+                    row.tutorial,
+                    null//key.ptc_token
+                ));
+            }
+        }
         return accounts;
     }
 }

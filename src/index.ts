@@ -9,15 +9,15 @@
 import { AccountController } from './controllers/account-controller';
 import { AssignmentController } from './controllers/assignment-controller';
 import { InstanceController } from './controllers/instances/instance-controller';
+import { WebhookController } from './controllers/webhook-controller';
 import { WebhookListener } from './http/listener';
 import config     = require('./config.json');
 import { Device } from './models/device';
-import { WebhookController } from './controllers/webhook-controller';
 
 // Setup controllers
+InstanceController.instance.setup();
 AccountController.instance.setup();
 AssignmentController.instance.setup();
-InstanceController.instance.setup();
 WebhookController.instance.start();
 
 // Start listener

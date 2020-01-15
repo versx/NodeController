@@ -12,8 +12,8 @@ import { AssignmentController } from "../assignment-controller"
 
 class InstanceController implements IInstanceController {
     static instance = new InstanceController();
-    static Devices = {};
-    static Instances = {};
+    Devices = {};
+    Instances = {};
 
     private instancesByInstanceName = {};
     private devicesByDeviceUUID = {};
@@ -21,51 +21,36 @@ class InstanceController implements IInstanceController {
     constructor() { }
     setup() {
         console.log("[InstanceController] Starting up...");
-        let devices = Device.getAll();
-        devices.then(x => x.forEach((device: Device) => {
-            InstanceController.Devices[device.uuid] = device;
-        }));
-        let instances = Instance.getAll();
-        instances.then(x => x.forEach((instance: Instance) => {
-            InstanceController.Instances[instance.name] = instance;
-        }));
+        Device.load();
+        Instance.load();
     }
-    getInstanceControllerByInstanceName(instanceName: String) {
-        var keys = Object.keys(this.instancesByInstanceName);
-        keys.forEach(key => {
-            if (instanceName === key) {
-                return this.instancesByInstanceName[key];
-            }
-        });
+    getInstanceControllerByInstanceName(instanceName: string) {
+        if (this.instancesByInstanceName[instanceName]) {
+            return this.instancesByInstanceName[instanceName];
+        }
         return null;
     }
-    getInstanceController(deviceUUID: String) {
-        let keys = Object.keys(this.devicesByDeviceUUID);
-        keys.forEach(key => {
-            if (deviceUUID === key) {
-                let device = this.devicesByDeviceUUID[key];
-                let instanceName = device.instanceName;
-                if (device instanceof Device && instanceName !== undefined && instanceName !== null) {
-                    return this.instancesByInstanceName[instanceName];
-                }
-                return null;
-            }
-        });
+    getInstanceController(deviceUUID: string) {
+        let device: Device = this.devicesByDeviceUUID[deviceUUID];
+        if (device) {
+            let instance: Instance = this.instancesByInstanceName[device.instanceName];
+            return instance;
+        }
         return null;
     }
     addInstance(instance: Instance) {
-        let instanceController;
+        let instanceController: IInstanceController;
         switch (instance.type) {
             case InstanceType.SmartCircleRaid:
             case InstanceType.CirclePokemon:
             case InstanceType.CircleRaid:
                 let coordsArray = <[any]>{ };
-                if (instance.area !== undefined && instance.area !== null) {
+                if (instance.area) {
                     coordsArray.push(instance.area); //TODO: Check
                 } else {
                     let coords = instance.area;
                     coords.forEach((coord) => {
-                        coordsArray.push({ lat: coord["lat"], lon: coord["lon"] });
+                        coordsArray.push({ lat: coord["lat"], lon: coord["lon"] }); // TODO: Use class
                     });
                 }
                 let minLevel = instance.minLevel || 0;
@@ -85,14 +70,14 @@ class InstanceController implements IInstanceController {
             case InstanceType.PokemonIV:
             case InstanceType.AutoQuest:
                 let areaArray = [];
-                if (instance.area !== undefined && instance.area !== null) {
+                if (instance.area) {
                     areaArray = instance.area;
                 } else {
                     let areas = instance.area;
                     let i = 0;
-                    areas.forEach((coords: [any]) => {
-                        coords.forEach((coord: [any]) => {
-                            while (areaArray.length != i + 1) {
+                    areas.forEach((coords: any) => {
+                        coords.forEach((coord: any) => {
+                            while (areaArray.length !== i + 1) {
                                 areaArray.push({});
                             }
                             areaArray[i].push({ lat: coord["lat"], lon: coord["lon"] });
@@ -101,8 +86,8 @@ class InstanceController implements IInstanceController {
                     });
                     //TODO: Cast instance to AutoQuestController and get timeZoneOffset property
                     let timeZoneOffset = instance.data.timeZoneOffset || 0;
-                    let areaArrayEmptyInner = <[any]>{ };
-                    areaArray.forEach((coords: [any]) => {
+                    let areaArrayEmptyInner = [];
+                    areaArray.forEach((coords: any) => {
                         let polyCoords = [];
                         coords.forEach(coord => {
                             polyCoords.push({ lat: coord["lat"], lon: coord["lon"] });
@@ -120,8 +105,7 @@ class InstanceController implements IInstanceController {
                     } else {
                         let spinLimit = instance.data["spin_limit"] || 500
                         instanceController = new AutoInstanceController(instance.name, areaArrayEmptyInner, AutoInstanceType.Quest, timeZoneOffset, minLevel, maxLevel, spinLimit);
-                    }
-                    
+                    }                    
                 }
                 break;
         }
@@ -137,12 +121,11 @@ class InstanceController implements IInstanceController {
     }
     reloadInstance(newInstance: Instance, oldInstanceName: string) {
         let oldInstance = this.instancesByInstanceName[oldInstanceName];
-        if (oldInstance != undefined && oldInstance !== null) {
+        if (oldInstance) {
             let keys = Object.keys(this.devicesByDeviceUUID);
             keys.forEach(deviceUUID => {
-                let row = this.devicesByDeviceUUID[deviceUUID];
-                if (row.instanceName === oldInstance.name) {
-                    let device = row;
+                let device = this.devicesByDeviceUUID[deviceUUID];
+                if (device.instanceName === oldInstance.name) {
                     device.instanceName = newInstance.name;
                     this.devicesByDeviceUUID[deviceUUID] = device;
                 }
@@ -156,10 +139,10 @@ class InstanceController implements IInstanceController {
         this.instancesByInstanceName[instance.name].stop();
         this.instancesByInstanceName[instance.name] = null;
         var keys = Object.keys(this.devicesByDeviceUUID);
-        keys.forEach(key => {
-            var device = this.devicesByDeviceUUID[key];
+        keys.forEach(deviceUUID => {
+            var device = this.devicesByDeviceUUID[deviceUUID];
             if (device.instanceName === instance.name) {
-                this.devicesByDeviceUUID[key] = null;
+                this.devicesByDeviceUUID[deviceUUID] = null;
             }
         });
         AssignmentController.instance.setup();
@@ -169,8 +152,8 @@ class InstanceController implements IInstanceController {
         this.instancesByInstanceName[instanceName].stop();
         this.instancesByInstanceName[instanceName] = null;
         var keys = Object.keys(this.devicesByDeviceUUID);
-        keys.forEach(key => {
-            var device = this.devicesByDeviceUUID[key];
+        keys.forEach(deviceUUID => {
+            var device = this.devicesByDeviceUUID[deviceUUID];
             if (device.instanceName === instanceName) {
                 this.devicesByDeviceUUID[device] = null;
             }
@@ -197,15 +180,15 @@ class InstanceController implements IInstanceController {
         AssignmentController.instance.setup();
     }
     getDeviceUUIDsInInstance(instanceName: String) {
-        let deviceUUIDS: string[];
+        let deviceUUIDs: string[];
         let keys = Object.keys(this.devicesByDeviceUUID);
-        keys.forEach(key => {
-            let device = this.devicesByDeviceUUID[key];
+        keys.forEach(deviceUUID => {
+            let device = this.devicesByDeviceUUID[deviceUUID];
             if (device.instanceName === instanceName) {
-                deviceUUIDS.push(device.uuid);
+                deviceUUIDs.push(device.uuid);
             }
         });
-        return deviceUUIDS;
+        return deviceUUIDs;
     }
     getInstanceStatus(instance: Instance, formatted: boolean) {
         let instanceProto = this.instancesByInstanceName[instance.name];
@@ -216,8 +199,8 @@ class InstanceController implements IInstanceController {
     }
     gotPokemon(pokemon: Pokemon) {
         let keys = Object.keys(this.instancesByInstanceName);
-        keys.forEach(key => {
-            let instance = this.instancesByInstanceName[key];
+        keys.forEach(instanceName => {
+            let instance = this.instancesByInstanceName[instanceName];
             if (instance instanceof IVInstanceController) {
                 instance.addPokemon(pokemon);
             }
@@ -225,8 +208,8 @@ class InstanceController implements IInstanceController {
     }
     gotIV(pokemon: Pokemon) {
         let keys = Object.keys(this.instancesByInstanceName);
-        keys.forEach(key => {
-            let instance = this.instancesByInstanceName[key];
+        keys.forEach(instanceName => {
+            let instance = this.instancesByInstanceName[instanceName];
             if (instance instanceof IVInstanceController) {
                 instance.gotIV(pokemon);
             }
@@ -237,7 +220,7 @@ class InstanceController implements IInstanceController {
         if (instance instanceof IVInstanceController) {
             return instance.getQueue();
         }
-        return new Pokemon[0];
+        return [];
     }
     getTask(uuid: string, username: string) {
     }
