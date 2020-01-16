@@ -1,11 +1,10 @@
 "use strict"
 
-import * as mysql from '../data/mysql';
-import { client, RedisClient, INSTANCE_LIST } from '../redis-client';
+import { Database } from '../data/mysql';
 import config      = require('../config.json');
 import { logger } from '../utils/logger';
 import { InstanceController } from '../controllers/instances/instance-controller';
-const db           = new mysql.Database(config);
+const db           = new Database(config);
 
 /**
  * Instance type enumeration.
@@ -24,8 +23,13 @@ enum InstanceType {
  * Instance data interface.
  */
 interface IInstanceData {
+    //[json("timezone_offset")]
     timeZoneOffset: number;
     spinLimit: number;
+    ivQueueLimit: number;
+    area: any;
+    minLevel: number;
+    maxLevel: number
 }
 
 /**
@@ -34,9 +38,6 @@ interface IInstanceData {
 interface IInstance {
     name: string;
     type: InstanceType;
-    minLevel: number;
-    maxLevel: number;
-    area: [any];
     data: IInstanceData;
 }
 
@@ -46,9 +47,6 @@ interface IInstance {
 class Instance implements IInstance {
     name: string;
     type: InstanceType;
-    minLevel: number;
-    maxLevel: number;
-    area: [any];
     data: IInstanceData;
 
     /**
@@ -60,25 +58,22 @@ class Instance implements IInstance {
      * @param area 
      * @param data 
      */
-    constructor(name: string, type: InstanceType, minLevel: number, maxLevel: number, area: [any], data: IInstanceData) {
+    constructor(name: string, type: InstanceType, data: IInstanceData) {
         this.name = name;
         this.type = type;
-        this.minLevel = minLevel;
-        this.maxLevel = maxLevel;
-        this.area = area,
         this.data = data;
     }
     /**
      * Get all Instances.
      */
-    static getAll() {
+    static getAll(): Promise<Instance[]> {
         return this.load();
     }
     /**
      * Get instance by name.
      * @param instanceName 
      */
-    static async getByName(instanceName: string) {
+    static async getByName(instanceName: string): Promise<Instance> {
         let sql = `
         SELECT name, type, data
         FROM instance
@@ -88,7 +83,7 @@ class Instance implements IInstance {
         let result = await db.query(sql, instanceName)
             .then(x => x)
             .catch(x => { 
-                console.log("[ACCOUNT] Failed to get Instance with name", instanceName);
+                logger.error("[ACCOUNT] Failed to get Instance with name " + instanceName);
                 return null;
             });
         let instance: Instance;
@@ -97,9 +92,6 @@ class Instance implements IInstance {
             instance = new Instance(
                 key.name,
                 key.type,
-                key.data.minLevel,
-                key.data.maxLevel,
-                key.data.area,
                 key.data
             );
         })
@@ -109,7 +101,7 @@ class Instance implements IInstance {
      * Delete instance by name.
      * @param instanceName 
      */
-    static async delete(instanceName: string) {
+    static async delete(instanceName: string): Promise<void> {
         let sql = `
         DELETE FROM instance
         WHERE name = ?
@@ -117,16 +109,16 @@ class Instance implements IInstance {
         let result = await db.query(sql, instanceName)
             .then(x => x)
             .catch(x => { 
-                console.log("[INSTANCE] Failed to delete instance with name", name);
+                logger.error("[INSTANCE] Failed to delete instance with name " + name);
                 return null;
             });
-        console.log("[INSTANCE] Delete:", result);
+        logger.debug("[INSTANCE] Delete: " + result);
     }
     /**
      * Update instance data.
      * @param oldName 
      */
-    async update(oldName: string) {
+    async update(oldName: string): Promise<void> {
         let sql = `
         UPDATE instance
         SET data = ?, name = ?, type = ?
@@ -136,17 +128,19 @@ class Instance implements IInstance {
         let result = await db.query(sql, args)
             .then(x => x)
             .catch(x => { 
-                console.log("[INSTANCE] Failed to update instance with name", name);
+                logger.error("[INSTANCE] Failed to update instance with name " + name);
                 return null;
             });
-        console.log("[INSTANCE] Update:", result);
+        logger.debug("[INSTANCE] Update: " + result);
     }
     /**
      * Load all instances.
      */
-    static async load() {
+    static async load(): Promise<Instance[]> {
         // TODO: Load instances from cache and mysql, check diff, add new/changes to cache.
         //let data = redisClient.get(INSTANCE_LIST);
+        // TODO: Someone else do redis, I'm good.
+        /*
         client.get(INSTANCE_LIST, function(err: Error, result) {
             if (err) {
                 logger.error("[INSTANCE] load: " + err);
@@ -170,7 +164,7 @@ class Instance implements IInstance {
                 //return data;
             }
         });
-        /*
+        */
         let sql = `
         SELECT name, type, data
         FROM instance
@@ -178,24 +172,22 @@ class Instance implements IInstance {
         let results = await db.query(sql)
             .then(x => x)
             .catch(x => {
-                console.log("[INSTANCE] Error:", x);
+                logger.error("[INSTANCE] Error: " + x);
                 return null;
             });
         let instances: Instance[] = [];
         let keys = Object.values(results);
         keys.forEach(key => {
+            let data = JSON.parse(key.data);
             let instance = new Instance(
                 key.name,
                 key.type,
-                key.data.minLevel,
-                key.data.maxLevel,
-                key.data.area,
-                key.data
+                data // TODO: Deserialize data to InstanceData object.
             );
             instances.push(instance);
+            InstanceController.instance.Instances[key.name] = instance;
         });
         return instances;
-        */
     }
 }
 

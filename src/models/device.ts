@@ -1,12 +1,10 @@
 "use strict"
 
-import * as mysql from '../data/mysql';
-import { client, RedisClient, DEVICE_LIST } from '../redis-client';
-import config      = require('../config.json');
+import { Database } from '../data/mysql';
 import { logger } from '../utils/logger';
+import config      = require('../config.json');
 import { InstanceController } from '../controllers/instances/instance-controller';
-const db           = new mysql.Database(config);
-const redisClient       = new RedisClient();
+const db           = new Database(config);
 
 /**
  * Device model class.
@@ -53,6 +51,7 @@ class Device {
      * @param uuid 
      */
     static async getById(uuid: string): Promise<Device> {
+        /*
         let deviceRedis = redisClient.get(DEVICE_LIST);
         if (deviceRedis) {
             let devices: Device[] = JSON.parse(deviceRedis);
@@ -61,6 +60,7 @@ class Device {
                 return device;
             }
         }
+        */
 
         let sql = `
         SELECT uuid, instance_name, account_username, last_host, last_seen, last_lat, last_lon
@@ -71,7 +71,7 @@ class Device {
         let result = await db.query(sql, uuid)
             .then(x => x)
             .catch(x => { 
-                console.log("[DEVICE] Failed to get Device with uuid", uuid);
+                logger.error("[DEVICE] Failed to get Device with uuid " + uuid);
                 return null;
             });
         let device: Device;
@@ -95,7 +95,7 @@ class Device {
      * @param lat 
      * @param lon 
      */
-    static async setLastLocation(uuid: string, lat: number, lon: number) {
+    static async setLastLocation(uuid: string, lat: number, lon: number): Promise<void> {
         let sql = `
         UPDATE device
         SET last_lat = ?, last_lon = ?, last_seen = UNIX_TIMESTAMP()
@@ -105,17 +105,17 @@ class Device {
         let results = await db.query(sql, args)
             .then(x => x)
             .catch(x => {
-                console.log("[DEVICE] Error:", x);
+                logger.error("[DEVICE] Error: " + x);
                 return null;
             });
-        console.log("[DEVICE] SetLastLocation:", results);
+        logger.debug("[DEVICE] SetLastLocation: " + results);
     }
     /**
      * Update host information for device.
      * @param uuid 
      * @param host 
      */
-    async touch(uuid: string, host: string) {
+    async touch(uuid: string, host: string): Promise<void> {
         let sql = `
         UPDATE device
         SET last_host = ?
@@ -125,16 +125,16 @@ class Device {
         let results = await db.query(sql, args)
             .then(x => x)
             .catch(x => {
-                console.log("[DEVICE] Error:", x);
+                logger.error("[DEVICE] Error: " + x);
                 return null;
             });
-        console.log("[DEVICE] Touch:", results);
-        redisClient.addDevice(this);
+        logger.debug("[DEVICE] Touch: " + results);
+        //redisClient.addDevice(this);
     }
     /**
      * Create device.
      */
-    async create() {
+    async create(): Promise<void> {
         let sql = `
         INSERT INTO device (uuid, instance_name, account_username, last_host, last_seen, last_lat, last_lon)
         VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -143,16 +143,16 @@ class Device {
         let results = await db.query(sql, args)
             .then(x => x)
             .catch(x => {
-                console.log("[DEVICE] Error:", x);
+                logger.error("[DEVICE] Error: " + x);
                 return null;
             });
-        console.log("[DEVICE] Insert:", results);
-        redisClient.addDevice(this);
+        logger.debug("[DEVICE] Insert: " + results);
+        //redisClient.addDevice(this);
     }
     /**
      * Clear device group field.
      */
-    async clearGroup() {
+    async clearGroup(): Promise<void> {
         let sql = `
         UPDATE device 
         SET device_group = ?
@@ -162,17 +162,17 @@ class Device {
         let results = await db.query(sql, args)
             .then(x => x)
             .catch(x => {
-                console.log("[DEVICE] Error:", x);
+                logger.error("[DEVICE] Error: " + x);
                 return null;
             });
-        console.log("[DEVICE] ClearGroup:", results);
-        redisClient.addDevice(this);
+        logger.debug("[DEVICE] ClearGroup: " + results);
+        //redisClient.addDevice(this);
     }
     /**
      * Save device.
      * @param oldUUID 
      */
-    async save(oldUUID?: string) {
+    async save(oldUUID?: string): Promise<void> {
        let sql = `
        UPDATE device 
        SET uuid = ?, instance_name = ?, account_username = ?, last_host = ?, last_seen = ?, last_lat = ?, last_lon = ?
@@ -182,18 +182,19 @@ class Device {
        let results = await db.query(sql, args)
            .then(x => x)
            .catch(x => {
-               console.log("[DEVICE] Error:", x);
+               logger.error("[DEVICE] Error: " + x);
                return null;
            });
-       console.log("[DEVICE] Update:", results);
-       redisClient.addDevice(this);
+       logger.debug("[DEVICE] Update: " + results);
+       //redisClient.addDevice(this);
     }
     /**
      * Load all devices.
      */
-    static load() {
+    static async load(): Promise<Device[]> {
         // TODO: Load devices from cache and mysql, check diff, add new/changes to cache.
         //let data = redisClient.get(DEVICE_LIST);
+        /*
         client.get(DEVICE_LIST, function(err: Error, result) {
             if (err) {
                 logger.error("[DEVICE] load: " + err);
@@ -217,8 +218,7 @@ class Device {
                 console.log("[DEVICE] RESULT:", data);
             }
         });
-        /*
-
+        */
         let sql = `
         SELECT uuid, instance_name, account_username, last_host, last_seen, last_lat, last_lon
         FROM device
@@ -226,7 +226,7 @@ class Device {
         let results = await db.query(sql)
             .then(x => x)
             .catch(x => {
-                console.log("[DEVICE] Error:", x);
+                logger.error("[DEVICE] Error: " + x);
                 return null;
             });
         let devices: Device[] = [];
@@ -241,11 +241,11 @@ class Device {
                 key.last_lat,
                 key.last_lon
             );
-            redisClient.addDevice(device);
+            //redisClient.addDevice(device);
             devices.push(device);
+            //InstanceController.instance.Devices[key.uuid] = device;
         });
         return devices;
-        */
     }
 }
 

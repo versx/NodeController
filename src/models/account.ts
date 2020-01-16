@@ -1,8 +1,9 @@
 "use strict"
 
-import * as mysql from '../data/mysql';
 import config      = require('../config.json');
-const db           = new mysql.Database(config);
+import { Database } from '../data/mysql';
+import { logger } from '../utils/logger';
+const db           = new Database(config);
 
 /**
  * Account model class.
@@ -55,7 +56,7 @@ class Account {
     /**
      * Get all accounts.
      */
-    static getAll() {
+    static getAll(): Promise<Account[]> {
         return this.load();
     }
     /**
@@ -63,7 +64,7 @@ class Account {
      * @param minLevel 
      * @param maxLevel 
      */
-    static async getNewAccount(minLevel: number, maxLevel: number) {
+    static async getNewAccount(minLevel: number, maxLevel: number): Promise<Account> {
         let sql = `
         SELECT username, password, level, first_warning_timestamp, failed_timestamp, failed, last_encounter_lat, last_encounter_lon, last_encounter_time, spins
         FROM account
@@ -75,7 +76,7 @@ class Account {
         let result = await db.query(sql, [minLevel, maxLevel])
             .then(x => x)
             .catch(x => { 
-                console.log("[ACCOUNT] Failed to get new Account");
+                logger.error("[ACCOUNT] Failed to get new Account");
                 return null;
             });
         let account: Account;
@@ -102,7 +103,7 @@ class Account {
      * Increment spin for account with username.
      * @param username 
      */
-    static async spin(username: string) {
+    static async spin(username: string): Promise<void> {
         let sql = `
         UPDATE account
         SET spins = spins + 1
@@ -111,16 +112,16 @@ class Account {
         let result = await db.query(sql, username)
             .then(x => x)
             .catch(x => {
-                console.log("[ACCOUNT] Failed to increment spin count for account with username", username);
+                logger.error("[ACCOUNT] Failed to increment spin count for account with username " + username);
                 return null;
             });
-        console.log("[ACCOUNT] Spin:", result);
+        logger.debug("[ACCOUNT] Spin: " + result);
     }
     /**
      * Get account with username.
      * @param username 
      */
-    static async getWithUsername(username: string) {
+    static async getWithUsername(username: string): Promise<Account> {
         let sql = `
         SELECT username, password, first_warning_timestamp, failed_timestamp, failed, level, last_encounter_lat, last_encounter_lon, last_encounter_time, spins, tutorial, ptc_token
         FROM account
@@ -130,7 +131,7 @@ class Account {
         let result = await db.query(sql, username)
             .then(x => x)
             .catch(x => { 
-                console.log("[ACCOUNT] Failed to get Account with username", username);
+                logger.error("[ACCOUNT] Failed to get Account with username " + username);
                 return null;
             });
         let account: Account;
@@ -160,7 +161,7 @@ class Account {
      * @param newLon 
      * @param encounterTime 
      */
-    static async didEncounter(username: string, newLat: number, newLon: number, encounterTime: number) {
+    static async didEncounter(username: string, newLat: number, newLon: number, encounterTime: number): Promise<void> {
         let sql = `
         UPDATE account
         SET last_encounter_lat = ?, last_encounter_lon = ?, last_encounter_time = ?
@@ -170,15 +171,15 @@ class Account {
         let result = await db.query(sql, args)
             .then(x => x)
             .catch(err => {
-                console.log("[ACCOUNT] Failed to set encounter info for account with username", username);
+                logger.error("[ACCOUNT] Failed to set encounter info for account with username " + username);
                 return null;
             });
-        console.log("[ACCOUNT] DidEncounter:", result);
+        logger.debug("[ACCOUNT] DidEncounter: " + result);
     }
     /**
      * Clear spins for account.
      */
-    static async clearSpins() {
+    static async clearSpins(): Promise<void> {
         let sql = `
         UPDATE account
         SET spins = 0
@@ -186,17 +187,17 @@ class Account {
         let result = await db.query(sql)
             .then(x => x)
             .catch(x => {
-                console.log("[ACCOUNT] Failed to set clear spins for accounts.");
+                logger.error("[ACCOUNT] Failed to set clear spins for accounts.");
                 return null;
             });
-        console.log("[ACCOUNT] ClearSpins:", result);
+        logger.debug("[ACCOUNT] ClearSpins: " + result);
     }
     /**
      * Set account level.
      * @param username 
      * @param level 
      */
-    static async setLevel(username: string, level: number) {
+    static async setLevel(username: string, level: number): Promise<void> {
         let sql = `
         UPDATE account
         SET level = ?
@@ -205,16 +206,16 @@ class Account {
         let result = await db.query(sql, username)
             .then(x => x)
             .catch(x => { 
-                console.log("[ACCOUNT] Failed to set Account level for username", username);
+                logger.error("[ACCOUNT] Failed to set Account level for username " + username);
                 return null;
             });
-        console.log("[ACCOUNT] Results:", result);
+        logger.debug("[ACCOUNT] Results: " + result);
     }
     /**
      * Save account.
      * @param update 
      */
-    async save(update: boolean) {
+    async save(update: boolean): Promise<void> {
 
         if (update) {
             let sql = `
@@ -226,10 +227,10 @@ class Account {
             let result = await db.query(sql, args)
                 .then(x => x)
                 .catch(x => {
-                    console.log("[ACCOUNT] Error:", x);
+                    logger.error("[ACCOUNT] Error: " + x);
                     return null;
                 });
-            console.log("[ACCOUNT] Update:", result)
+            logger.debug("[ACCOUNT] Update: " + result)
         } else {
             let sql = `
             INSERT INTO account (username, password, level, first_warning_timestamp, failed_timestamp, failed, last_encounter_lat, last_encounter_lon, last_encounter_time, spins)
@@ -239,16 +240,16 @@ class Account {
             let result = await db.query(sql, args)
                 .then(x => x)
                 .catch(x => {
-                    console.log("[ACCOUNT] Error:", x);
+                    logger.error("[ACCOUNT] Error: " + x);
                     return null;
                 });
-            console.log("[ACCOUNT] Insert:", result)
+            logger.debug("[ACCOUNT] Insert: " + result)
         }
     }
     /**
      * Load all accounts.
      */
-    static async load() {
+    static async load(): Promise<Account[]> {
         let sql = `
         SELECT username, password, first_warning_timestamp, failed_timestamp, failed, level, last_encounter_lat, last_encounter_lon, last_encounter_time, spins, tutorial
         FROM account
@@ -256,7 +257,7 @@ class Account {
         let results: any = await db.query(sql)
             .then(x => x)
             .catch(x => {
-                console.log("[ACCOUNT] Error:", x);
+                logger.error("[ACCOUNT] Error: " + x);
                 return null;
             });
         let accounts: Account[] = [];

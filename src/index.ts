@@ -11,8 +11,9 @@ import { AssignmentController } from './controllers/assignment-controller';
 import { InstanceController } from './controllers/instances/instance-controller';
 import { WebhookController } from './controllers/webhook-controller';
 import { WebhookListener } from './http/listener';
-import config     = require('./config.json');
 import { Device } from './models/device';
+import { logger } from './utils/logger';
+import config     = require('./config.json');
 
 // Setup controllers
 InstanceController.instance.setup();
@@ -27,4 +28,4 @@ listener.start();
 // TODO: Implement webhooks
 
 let a = Device.getById("iPhoneSGV17SE");
-console.log("Device:", a);
+logger.debug("Device:", a);

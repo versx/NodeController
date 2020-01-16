@@ -9,6 +9,8 @@ import { CircleSmartRaidInstanceController } from "./smart-circle-controller"
 import { IVInstanceController } from "./iv-controller"
 import { AutoInstanceController, AutoInstanceType } from "./auto-instance-controller"
 import { AssignmentController } from "../assignment-controller"
+import { Coord } from "../../coord";
+import { logger } from "../../utils/logger"
 
 class InstanceController implements IInstanceController {
     static instance = new InstanceController();
@@ -19,10 +21,19 @@ class InstanceController implements IInstanceController {
     private devicesByDeviceUUID = {};
 
     constructor() { }
-    setup() {
-        console.log("[InstanceController] Starting up...");
-        Device.load();
-        Instance.load();
+    async setup() {
+        logger.debug("[InstanceController] Starting up...");
+        this.Devices = await Device.load();
+        this.Instances = await Instance.load();
+
+        let keys = Object.keys(this.Devices);
+        keys.forEach((uuid: string) => {
+            this.addDevice(this.Devices[uuid]);
+        });
+        keys = Object.keys(this.Instances);
+        keys.forEach((name: string) => {
+            this.addInstance(this.Instances[name]);
+        });
     }
     getInstanceControllerByInstanceName(instanceName: string) {
         if (this.instancesByInstanceName[instanceName]) {
@@ -31,9 +42,9 @@ class InstanceController implements IInstanceController {
         return null;
     }
     getInstanceController(deviceUUID: string) {
-        let device: Device = this.devicesByDeviceUUID[deviceUUID];
+        let device/*: Device*/ = this.devicesByDeviceUUID[deviceUUID];
         if (device) {
-            let instance: Instance = this.instancesByInstanceName[device.instanceName];
+            let instance: IInstanceController = <IInstanceController>this.instancesByInstanceName[device.instanceName];
             return instance;
         }
         return null;
@@ -44,23 +55,25 @@ class InstanceController implements IInstanceController {
             case InstanceType.SmartCircleRaid:
             case InstanceType.CirclePokemon:
             case InstanceType.CircleRaid:
-                let coordsArray = <[any]>{ };
-                if (instance.area) {
-                    coordsArray.push(instance.area); //TODO: Check
+            case InstanceType.Leveling:
+            case InstanceType.GatherToken:
+                let coordsArray: Coord[] = [];
+                if (instance.data.area) {
+                    coordsArray = instance.data.area; //TODO: Check
                 } else {
-                    let coords = instance.area;
-                    coords.forEach((coord) => {
-                        coordsArray.push({ lat: coord["lat"], lon: coord["lon"] }); // TODO: Use class
+                    let coords = instance.data.area;
+                    coords.forEach((coord: any) => {
+                        coordsArray.push(new Coord(coord["lat"], coord["lon"]));
                     });
                 }
-                let minLevel = instance.minLevel || 0;
-                let maxLevel = instance.maxLevel || 29;
+                let minLevel = instance.data.minLevel || 0;
+                let maxLevel = instance.data.maxLevel || 29;
                 switch (instance.type) {
                     case InstanceType.CirclePokemon:
-                        instanceController = new CircleInstanceController(instance.name, InstanceType.CirclePokemon, minLevel, maxLevel, coordsArray);
-                        break;
                     case InstanceType.CircleRaid:
-                        instanceController = new CircleInstanceController(instance.name, InstanceType.CircleRaid, minLevel, maxLevel, coordsArray);
+                    case InstanceType.Leveling:
+                    case InstanceType.GatherToken:                        
+                        instanceController = new CircleInstanceController(instance.name, instance.type, minLevel, maxLevel, coordsArray);
                         break;
                     default:
                         instanceController = new CircleSmartRaidInstanceController(instance.name, minLevel, maxLevel, coordsArray);
@@ -70,10 +83,10 @@ class InstanceController implements IInstanceController {
             case InstanceType.PokemonIV:
             case InstanceType.AutoQuest:
                 let areaArray = [];
-                if (instance.area) {
-                    areaArray = instance.area;
+                if (instance.data.area) {
+                    areaArray = instance.data.area;
                 } else {
-                    let areas = instance.area;
+                    let areas = instance.data.area;
                     let i = 0;
                     areas.forEach((coords: any) => {
                         coords.forEach((coord: any) => {
@@ -95,10 +108,10 @@ class InstanceController implements IInstanceController {
                         areaArrayEmptyInner.push(polyCoords);
                     });
 
-                    let minLevel = instance.minLevel || 0;
-                    let maxLevel = instance.maxLevel || 29;
+                    let minLevel = instance.data.minLevel || 0;
+                    let maxLevel = instance.data.maxLevel || 29;
                     if (instance.type == InstanceType.PokemonIV) {
-                        let pokemonList = instance.data["pokemon_ids"] || [];
+                        let pokemonList: number[] = instance.data["pokemon_ids"] || [];
                         let ivQueueLimit = instance.data["iv_queue_limit"] || 100;
                         let scatterList = instance.data["scatter_pokemon_ids"] || [];
                         instanceController = new IVInstanceController(instance.name, areaArrayEmptyInner, pokemonList, minLevel, maxLevel, ivQueueLimit, scatterList);
@@ -190,7 +203,7 @@ class InstanceController implements IInstanceController {
         });
         return deviceUUIDs;
     }
-    getInstanceStatus(instance: Instance, formatted: boolean) {
+    getInstanceStatus(instance: Instance, formatted: boolean): string {
         let instanceProto = this.instancesByInstanceName[instance.name];
         if (instanceProto instanceof Instance) {
             return "";// TODO: instanceProto.getStatus(formatted);
@@ -215,7 +228,7 @@ class InstanceController implements IInstanceController {
             }
         });
     }
-    getIVQueue(name: string) {
+    getIVQueue(name: string): Pokemon[] {
         var instance = this.instancesByInstanceName[name];
         if (instance instanceof IVInstanceController) {
             return instance.getQueue();

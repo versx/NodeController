@@ -1,5 +1,6 @@
 "use strict"
 
+// TODO: All consumable objects should inherit the Consumable class.
 class Consumable {
     id: string;
     lat: number;

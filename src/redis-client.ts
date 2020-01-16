@@ -25,8 +25,8 @@ const client = redis.createClient({
 });
 const timerInterval = 10 * 1000; // 10 seconds
 
-const {promisify} = require('util');
-const getAsync = promisify(client.get).bind(client);
+//const {promisify} = require('util');
+//const getAsync = promisify(client.get).bind(client);
 
 client.on('connect', function() {
     console.log('Redis client connected');
@@ -60,8 +60,8 @@ class RedisClient {
      * Initialize a new Redis client object.
      */
     constructor() {
-        setInterval(cacheConsumables, timerInterval);
-        setInterval(cacheNecessities, timerInterval);
+        //setInterval(cacheConsumables, timerInterval);
+        //setInterval(cacheNecessities, timerInterval);
     }
     saveDevices() {
         let json = JSON.stringify(deviceList, null, 2);

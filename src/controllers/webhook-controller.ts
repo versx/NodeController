@@ -24,63 +24,63 @@ class WebhookController {
     private raidEvents = {};
     private weatherEvents = {};
 
-    addPokemonEvent(pokemon: Pokemon) {
+    addPokemonEvent(pokemon: Pokemon): void {
         if (this.webhookURLStrings.length > 0) {
             this.pokemonEvents[pokemon.id] = pokemon;
         }
     }
-    addPokestopEvent(pokestop: Pokestop) {
+    addPokestopEvent(pokestop: Pokestop): void {
         if (this.webhookURLStrings.length > 0) {
             this.pokestopEvents[pokestop.id] = pokestop;
         }
     }
-    addLureEvent(pokestop: Pokestop) {
+    addLureEvent(pokestop: Pokestop): void {
         if (this.webhookURLStrings.length > 0) {
             this.lureEvents[pokestop.id] = pokestop;
         }
     }
-    addInvasionEvent(pokestop: Pokestop) {
+    addInvasionEvent(pokestop: Pokestop): void {
         if (this.webhookURLStrings.length > 0) {
             this.invasionEvents[pokestop.id] = pokestop;
         }
     }
-    addQuestEvent(pokestop: Pokestop) {
+    addQuestEvent(pokestop: Pokestop): void {
         if (this.webhookURLStrings.length > 0) {
             this.questEvents[pokestop.id] = pokestop;
         }
     }
-    addGymEvent(gym: Gym) {
+    addGymEvent(gym: Gym): void {
         if (this.webhookURLStrings.length > 0) {
             this.gymEvents[gym.id] = gym;
         }
     }
-    addGymInfoEvent(gym: Gym) {
+    addGymInfoEvent(gym: Gym): void {
         if (this.webhookURLStrings.length > 0) {
             this.gymInfoEvents[gym.id] = gym;
         }
     }
-    addEggEvent(gym: Gym) {
+    addEggEvent(gym: Gym): void {
         if (this.webhookURLStrings.length > 0) {
             this.eggEvents[gym.id] = gym;
         }
     }
-    addRaidEvent(gym: Gym) {
+    addRaidEvent(gym: Gym): void {
         if (this.webhookURLStrings.length > 0) {
             this.raidEvents[gym.id] = gym;
         }
     }
-    addWeatherEvent(weather: Weather) {
+    addWeatherEvent(weather: Weather): void {
         if (this.webhookURLStrings.length > 0) {
             this.weatherEvents[weather.id] = weather;
         }
     }
-    start() {
+    start(): void {
         console.log("[WebhookController] Starting up...");
         // TODO: Background thread or event based?
         // TODO: Get webhook strings from database.
         setInterval(() => this.loopEvents());
     }
-    loopEvents() {
+    loopEvents(): void {
         this.webhookURLStrings = config.webhook.urls;
         if (this.webhookURLStrings.length > 0) {
             let events: any;
@@ -161,7 +161,7 @@ class WebhookController {
             }
         }
     }
-    sendEvents(events: any[], url: String) {
+    sendEvents(events: any, url: String): void {
         let data = JSON.stringify(events);
         let req = {
             url: url,

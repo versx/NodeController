@@ -1,6 +1,7 @@
 "use strict"
 
 import { InstanceType } from "./instance-controller"
+import { Coord } from "../../coord";
 
 class CircleInstanceController {
     lastUuidIndex = {};
@@ -10,25 +11,26 @@ class CircleInstanceController {
     type: InstanceType;
     minLevel: number;
     maxLevel: number;
-    coords: any[];
+    coords: Coord[];
 
     private lastIndex: number;
     private lastLastCompletedTime: number;
     private lastCompletedTime: number;
 
-    constructor(name: string, type: InstanceType, minLevel: number, maxLevel: number, coords: any[]) {
+    constructor(name: string, type: InstanceType, minLevel: number, maxLevel: number, coords: Coord[]) {
         this.name = name;
         this.type = type;
         this.minLevel = minLevel;
         this.maxLevel = maxLevel;
         this.coords = coords;
         this.lastCompletedTime = new Date().getUTCSeconds();
+        this.lastIndex = 0;
     }
     getTask(uuid: string, username: string) {
         let currentIndex: number = 0;
         if (this.type !== InstanceType.CirclePokemon) {
            currentIndex = this.lastIndex;
-            if (this.lastIndex + 1 == this.coords.length) {
+            if (this.lastIndex + 1 === this.coords.length) {
                 this.lastLastCompletedTime = this.lastCompletedTime;
                 this.lastCompletedTime = new Date().getUTCSeconds();
                 this.lastIndex = 0;
@@ -37,10 +39,11 @@ class CircleInstanceController {
             }
         }
 
-        let currentCoord = this.coords[currentIndex];
+        let currentCoord = this.coords[currentIndex]; //TODO: Fix coords, add individually not full array, or find addRange method
         switch (this.type) {
             case InstanceType.CirclePokemon:
                 return {
+                    area: this.name,
                     action: "scan_pokemon",
                     lat: currentCoord.lat,
                     lon: currentCoord.lon,
@@ -49,7 +52,28 @@ class CircleInstanceController {
                 };
             case InstanceType.CircleRaid:
                 return {
+                    area: this.name,
                     action: "scan_raid",
+                    lat: currentCoord.lat,
+                    lon: currentCoord.lon,
+                    min_level: this.minLevel,
+                    max_level: this.maxLevel
+                };
+            case InstanceType.Leveling:
+                /*
+                let currentUuidIndex: [string, number] = [uuid, this.lastUuidIndex[uuid] || 0];
+                //if (!startup) {
+                    if ((this.lastUuidIndex[uuid] || 0) + 1 == this.coords.length) {
+                        this.lastUuidIndex[uuid] = 0
+                    } else {
+                        this.lastUuidIndex[uuid] = (this.lastUuidIndex[uuid] || 0) + 1
+                    }
+                //}
+                currentCoord = this.coords[currentUuidIndex[uuid] || 0]
+                */
+                return {
+                  area: this.name,
+                    action: "leveling",
                     lat: currentCoord.lat,
                     lon: currentCoord.lon,
                     min_level: this.minLevel,
@@ -78,9 +102,9 @@ class CircleInstanceController {
         return y + (this.coords.length - x);
     }
     queryLiveDevices(uuid: string, index: number) {
-        //In seconds
+        // In seconds
         let deadDeviceCutoff = new Date().getUTCSeconds() - 60 * 1000;
-        //Include the querying device in the count
+        // Include the querying device in the count
         let numLiveDevices = 1;
         let distanceToNext = this.coords.length;
         var keys = Object.keys(this.lastUuidIndex);

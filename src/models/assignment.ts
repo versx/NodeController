@@ -41,16 +41,18 @@ class Assignment {
                 return null;
             });
         let assignments: Assignment[] = [];
-        let keys = Object.values(results);
-        keys.forEach(function(key) {
-            let assignment = new Assignment(
-                key.instance_name,
-                key.device_uuid,
-                key.time,
-                key.enabled                
-            );
-            assignments.push(assignment);
-        });
+        if (Object.keys(results).length > 0) { // TODO: Better way, please
+            let keys = Object.values(results);
+            keys.forEach(function(key) {
+                let assignment = new Assignment(
+                    key.instance_name,
+                    key.device_uuid,
+                    key.time,
+                    key.enabled                
+                );
+                assignments.push(assignment);
+            });
+        }
         return assignments;
     }
 

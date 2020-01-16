@@ -3,8 +3,8 @@
 import { Pokemon } from "../../models/pokemon";
 
 class IVInstanceController {
-    private multiPolygon: [any];
-    private pokemonQueue: [Pokemon];
+    private multiPolygon: any[];
+    private pokemonQueue: Pokemon[];
     private scannedPokemon = []; // { date: "", pokemon: {} }
     private startDate: Date;
     private count: number;
@@ -12,13 +12,13 @@ class IVInstanceController {
 
     name: string;
     area: any;
-    pokemonList: [number];
+    pokemonList: number[];
     minLevel: number = 0;
     maxLevel: number = 29;
     ivQueueLimit: number =  100;
-    scatterList: [number];
+    scatterList: number[];
 
-    constructor(name: string, area: any, pokemonList: [number], minLevel: number, maxLevel: number, ivQueueLimit: number, scatterList: [number]) {
+    constructor(name: string, area: any, pokemonList: number[], minLevel: number, maxLevel: number, ivQueueLimit: number, scatterList: number[]) {
         this.name = name;
         this.area = area;
         this.pokemonList = pokemonList;
@@ -44,7 +44,7 @@ class IVInstanceController {
                 }
             }
             let success = false;
-            let pokemonReal;
+            let pokemonReal: Pokemon;
             while (!success) {
                 // TODO: TryCatch
                 try {

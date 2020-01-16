@@ -9,11 +9,13 @@ import { Gym } from '../models/gym';
 import { Pokestop } from '../models/pokestop';
 import { S2Cell } from '../models/s2cell';
 import { Weather } from '../models/weather';
-import { RedisClient } from '../redis-client';
+//import { RedisClient } from '../redis-client';
 import { InstanceController } from '../controllers/instances/instance-controller';
 import { S1Angle } from 'nodes2ts';
+import { logger } from '../utils/logger';
 
-const client = new RedisClient();
+//:haunter:
+//const client = new RedisClient();
 
 let accounts = Account.getAll();
 //let devices = Device.getAll();
@@ -58,13 +60,13 @@ function _handleRawData(req, res) {
     let jsonOpt: any = {};
     try {
         jsonOpt = JSON.parse(req.body);
-        //console.log("HandleRawData Parsed:", jsonOpt);
+        //console.log("[Raw] HandleRawData Parsed:", jsonOpt);
     } catch (e) {
-        console.log(e);
+        logger.error(e);
         return res.status(400).end();
     }
     if (jsonOpt === undefined) {
-        console.log("Bad data");
+        logger.error("[Raw] Bad data");
         return res.status(400).end();
     }
     if (jsonOpt['payload'] !== undefined) {
@@ -87,7 +89,7 @@ function _handleRawData(req, res) {
     }
     let contents: any = json["contents"] || json["protos"] || json["gmo"];
     if (contents === undefined) {
-        console.log("Invalid GMO");
+        logger.error("[Raw] Invalid GMO");
         return res.status(400).end();
     }
     var uuid: string = json["uuid"];
@@ -118,7 +120,7 @@ function _handleRawData(req, res) {
     let isMadData: boolean = false;
 
     if (contents === undefined) {
-        console.log("Contents is empty");
+        logger.error("[Raw] Contents is empty");
         res.send("Contents is empty");
         return res.status(400).end();
     }
@@ -155,115 +157,135 @@ function _handleRawData(req, res) {
         }
 
         if (invalid !== false) {
-            console.log("Invalid data");
+            logger.error("[Raw] Invalid data");
             return res.status(400).end();
         }
 
         switch (method) {
             case 101: // FortSearchResponse
-                let fsr = POGOProtos.Networking.Responses.FortSearchResponse.decode(base64_decode(data));
-                if (fsr) {
-                    if (fsr.hasChallengeQuest && fsr.challengeQuest.hasQuest) {
-                        let quest = fsr.challengeQuest.quest;
-                        quests.push(quest);
+                try {
+                    let fsr = POGOProtos.Networking.Responses.FortSearchResponse.decode(base64_decode(data));
+                    if (fsr) {
+                        if (fsr.hasChallengeQuest && fsr.challengeQuest.hasQuest) {
+                            let quest = fsr.challengeQuest.quest;
+                            quests.push(quest);
+                        }
+                    } else {
+                        logger.error("[Raw] Malformed FortSearchResponse");
                     }
-                } else {
-                    console.log("[WebhookRequestHandler] Malformed FortSearchResponse");
+                } catch (err) {
+                    logger.error("[Raw] Unable to decode FortSearchResponse");
                 }
                 break;
             case 102: // EncounterResponse
                 if (trainerLevel >= 0 || isMadData !== false) { //TODO: Set trainerLevel >= 30
-                    let er = POGOProtos.Networking.Responses.EncounterResponse.decode(base64_decode(data));
-                    if (er) {
-                        encounters.push(er);
-                    } else {
-                        console.log("[WebhookRequestHandler] Malformed EncounterResponse");
+                    try {
+                        let er = POGOProtos.Networking.Responses.EncounterResponse.decode(base64_decode(data));
+                        if (er) {
+                            encounters.push(er);
+                        } else {
+                            logger.error("[Raw] Malformed EncounterResponse");
+                        }
+                    } catch (err) {
+                        logger.error("[Raw] Unable to decode EncounterResponse");
                     }
                 }
                 break;
             case 104: // FortDetailsResponse
-                let fdr = POGOProtos.Networking.Responses.FortDetailsResponse.decode(base64_decode(data));
-                if (fdr) {
-                    fortDetails.push(fdr);
-                } else {
-                    console.log("[WebhookRequestHandler] Malformed FortDetailsResponse");
+                try {
+                    let fdr = POGOProtos.Networking.Responses.FortDetailsResponse.decode(base64_decode(data));
+                    if (fdr) {
+                        fortDetails.push(fdr);
+                    } else {
+                        logger.error("[Raw] Malformed FortDetailsResponse");
+                    }
+                } catch (err) {
+                    logger.error("[Raw] Unable to decode FortDetailsResponse");
                 }
                 break;
             case 156: // GymGetInfoResponse
-                let ggi = POGOProtos.Networking.Responses.GymGetInfoResponse.decode(base64_decode(data));
-                if (ggi) {
-                    gymInfos.push(ggi);
-                } else {
-                    console.log("[WebhookRequestHandler] Malformed GymGetInfoResponse");
+                try {
+                    let ggi = POGOProtos.Networking.Responses.GymGetInfoResponse.decode(base64_decode(data));
+                    if (ggi) {
+                        gymInfos.push(ggi);
+                    } else {
+                        logger.error("[Raw] Malformed GymGetInfoResponse");
+                    }
+                } catch (err) {
+                    logger.error("[Raw] Unable to decode GymGetInfoResponse");
                 }
                 break;
             case 106: // GetMapObjectsResponse
                 containsGMO = true;
-                let gmo = POGOProtos.Networking.Responses.GetMapObjectsResponse.decode(base64_decode(data));
-                if (gmo) {
-                    isInvalidGMO = false;
+                try {
+                    let gmo = POGOProtos.Networking.Responses.GetMapObjectsResponse.decode(base64_decode(data));
+                    if (gmo) {
+                        isInvalidGMO = false;
 
-                    let mapCellsNew = gmo.map_cells;
-                    if (mapCellsNew.length === 0) {
-                        console.log("Map cells is empty");
-                        return res.status(400).end();
-                    }
-                    mapCellsNew.forEach((mapCell: any) => {
-                        let timestampMs = mapCell.current_timestamp_ms;
-                        let wildNew = mapCell.wild_pokemons;
-                        wildNew.forEach((wildPokemon: any) => {
-                            wildPokemons.push({
-                                cell: mapCell.s2_cell_id,
-                                data: wildPokemon,
-                                timestampMs: timestampMs
+                        let mapCellsNew = gmo.map_cells;
+                        if (mapCellsNew.length === 0) {
+                            logger.debug("[Raw] Map cells is empty");
+                            return res.status(400).end();
+                        }
+                        mapCellsNew.forEach((mapCell: any) => {
+                            let timestampMs = mapCell.current_timestamp_ms;
+                            let wildNew = mapCell.wild_pokemons;
+                            wildNew.forEach((wildPokemon: any) => {
+                                wildPokemons.push({
+                                    cell: mapCell.s2_cell_id,
+                                    data: wildPokemon,
+                                    timestampMs: timestampMs
+                                });
+                            });
+                            let nearbyNew = mapCell.nearby_pokemons;
+                            nearbyNew.forEach((nearbyPokemon: any) => {
+                                nearbyPokemons.push({
+                                    cell: mapCell.s2_cell_id,
+                                    data: nearbyPokemon
+                                });
+                            });
+                            let fortsNew = mapCell.forts;
+                            fortsNew.forEach((fort: any) => {
+                                forts.push({
+                                    cell: mapCell.s2_cell_id,
+                                    data: fort
+                                });
+                            });
+                            cells.push(mapCell.s2_cell_id);
+                        });
+        
+                        let weather = gmo.client_weather;
+                        weather.forEach((wmapCell: any) => {
+                            clientWeathers.push({
+                                cell: wmapCell.s2_cell_id,
+                                data: wmapCell
                             });
                         });
-                        let nearbyNew = mapCell.nearby_pokemons;
-                        nearbyNew.forEach((nearbyPokemon: any) => {
-                            nearbyPokemons.push({
-                                cell: mapCell.s2_cell_id,
-                                data: nearbyPokemon
+        
+                        if (wildPokemons.length === 0 && nearbyPokemons.length === 0 && forts.length === 0) {
+                            cells.forEach((cell: any) => {
+                                let count = emptyCells[cell];
+                                if (count === undefined) {
+                                    emptyCells[cell] = 1;
+                                } else {
+                                    emptyCells[cell] = count + 1;
+                                }
+                                if (count === 3) {
+                                    logger.debug("[Raw] Cell", cell, "was empty 3 times in a row. Assuming empty.");
+                                    cells.push(cell);
+                                }
                             });
-                        });
-                        let fortsNew = mapCell.forts;
-                        fortsNew.forEach((fort: any) => {
-                            forts.push({
-                                cell: mapCell.s2_cell_id,
-                                data: fort
-                            });
-                        });
-                        cells.push(mapCell.s2_cell_id);
-                    });
-    
-                    let weather = gmo.client_weather;
-                    weather.forEach((wmapCell: any) => {
-                        clientWeathers.push({
-                            cell: wmapCell.s2_cell_id,
-                            data: wmapCell
-                        });
-                    });
-    
-                    if (wildPokemons.length === 0 && nearbyPokemons.length === 0 && forts.length === 0) {
-                        cells.forEach((cell: any) => {
-                            let count = emptyCells[cell];
-                            if (count === undefined) {
-                                emptyCells[cell] = 1;
-                            } else {
-                                emptyCells[cell] = count + 1;
-                            }
-                            if (count === 3) {
-                                console.log("[WebhookRequestHandler] Cell", cell, "was empty 3 times in a row. Asuming empty.");
-                                cells.push(cell);
-                            }
-                        });
-                        
-                        console.log("[WebhookRequestHandler] GMO is empty.");
+                            
+                            logger.debug("[Raw] GMO is empty.");
+                        } else {
+                            cells.forEach(cell => emptyCells[cell] = 0);
+                            isEmptyGMO = false;
+                        }
                     } else {
-                        cells.forEach(cell => emptyCells[cell] = 0);
-                        isEmptyGMO = false;
+                        logger.error("[Raw] Malformed GetMapObjectsResponse");
                     }
-                } else {
-                    console.log("[WebhookRequestHandler] Malformed GetMapObjectsResponse");
+                } catch (err) {
+                    logger.error("[Raw] Unable to decode GetMapObjectsResponse");
                 }
                 break;
         }
@@ -364,7 +386,6 @@ function _handleRawData(req, res) {
         data["pokemon_encounter_id"] = pokemonEncounterId;
     }
 
-
     let listScatterPokemon = json["list_scatter_pokemon"];
     if (listScatterPokemon && pokemonCoords && pokemonEncounterId) {
         let uuid: string = json["uuid"];
@@ -408,7 +429,7 @@ function _handleRawData(req, res) {
         data["scatter_pokemon"] = scatterPokemon;
     }
 
-    console.log("Sending response to device:", data);
+    logger.debug("[Raw] Sending response to device:", data);
     res.send(data);
 
     handleConsumables(
@@ -436,13 +457,13 @@ function _handleControllerData(req, res) {
         jsonO = JSON.parse(req.body);
         //console.log("HandleControllerData Parsed:", jsonO);
     } catch (e) {
-        console.log(e);
+        logger.error(e);
         return res.status(400).end();
     }
     let typeO = jsonO["type"];
     let uuidO = jsonO["uuid"];
     if (typeO === undefined || uuidO === undefined) {
-        console.log("Failed to parse controller data");
+        logger.error("[Controller] Failed to parse controller data");
         return res.status(400).end();
     }
     let type: string = typeO;
@@ -450,7 +471,7 @@ function _handleControllerData(req, res) {
     let username: string = jsonO["username"];
     let minLevel: number = parseInt(jsonO["min_level"] || 0);
     let maxLevel: number = parseInt(jsonO["max_level"] || 29);
-    let device: Device = InstanceController.instance.Devices[uuid];
+    let device: Device = InstanceController.instance.Devices[uuid]; // TODO: Change
 
     switch (type) {
         case "init":
@@ -467,7 +488,7 @@ function _handleControllerData(req, res) {
             }
             if (device instanceof Device) {
                 // Device is already registered
-                console.log("Device registered");
+                logger.debug("[Controller] Device registered");
                 res.send({
                     data: {
                         assigned: device.instanceName !== undefined,
@@ -476,7 +497,7 @@ function _handleControllerData(req, res) {
                 });
             } else {
                 // Register new device
-                console.log("Registering device");
+                logger.debug("[Controller] Registering device");
                 let newDevice = new Device(uuid, null, null, null, 0, 0.0, 0.0);
                 newDevice.create();
                 //devices[uuid] = newDevice;
@@ -493,32 +514,30 @@ function _handleControllerData(req, res) {
             res.send('OK');
             break;
         case "get_job":
-            /*
             let controller = InstanceController.instance.getInstanceController(uuid);
             if (controller !== null) {
-            */
                 try {
+                    let task = controller.getTask(uuid, username);
                     res.send({
-                        data: /*controller.*/getTask(uuid, username)
+                        data: task
                     });
                 } catch (err) {
                     res.status(404);
                     res.end();
                 }
-            /*
             } else {
+                logger.info("[Controller] Device " + uuid + " not assigned to an instance!");
                 res.status(404);
                 res.end();
             }
-            */
             break;
         case "get_account":
             var account = Account.getNewAccount(minLevel, maxLevel);// randomValue(accounts); // TODO: Get new account from level restrictions
-            console.log("GetAccount:", account);
+            logger.debug("[Controller] GetAccount: " + account);
             account.then(x => {
-                console.log("Random Account:", x);
+                logger.debug("[Controller] Random Account: " + x);
                 if (device === undefined || x === undefined) {
-                    console.log("Failed to get account, device or account is null.");
+                    logger.error("[Controller] Failed to get account, device or account is null.");
                     return res.status(400).end();
                 }
                 if (device.accountUsername !== undefined) {
@@ -551,7 +570,7 @@ function _handleControllerData(req, res) {
         case "tutorial_done":
             accounts[device.accountUsername].then((account: Account) => {
                 if (device === undefined || account === undefined) {
-                    console.log("Failed to get account, device or account is null.");
+                    logger.error("[Controller] Failed to get account, device or account is null.");
                     return res.status(400).end();
                 }
                 if (account.level === 0) {
@@ -564,7 +583,7 @@ function _handleControllerData(req, res) {
         case "account_banned":
             accounts[device.accountUsername].then((account: Account) => {
                 if (device === undefined || account === undefined) {
-                    console.log("Failed to get account, device or account is null.");
+                    logger.error("[Controller] Failed to get account, device or account is null.");
                     return res.status(400).end();
                 }
                 if (account.failedTimestamp === undefined || account.failed === undefined) {
@@ -578,7 +597,7 @@ function _handleControllerData(req, res) {
         case "account_warning":
             accounts[device.accountUsername].then((account: Account) => {
                 if (device === undefined || account === undefined) {
-                    console.log("Failed to get account, device or account is null.");
+                    logger.error("[Controller] Failed to get account, device or account is null.");
                     return res.status(400).end();
                 }
                 if (account.firstWarningTimestamp === undefined) {
@@ -591,7 +610,7 @@ function _handleControllerData(req, res) {
         case "account_invalid_credentials":
             accounts[device.accountUsername].then((account: Account) => {
                 if (device === undefined || account === undefined) {
-                    console.log("Failed to get account, device or account is null.");
+                    logger.error("[Controller] Failed to get account, device or account is null.");
                     return res.status(400).end();
                 }
                 if (account.failedTimestamp === undefined || account.failed === undefined) {
@@ -605,7 +624,7 @@ function _handleControllerData(req, res) {
         case "error_26":
             accounts[device.accountUsername].then((account: Account) => {
                 if (device === undefined || account === undefined) {
-                    console.log("Failed to get account, device or account is null.");
+                    logger.error("[Controller] Failed to get account, device or account is null.");
                     return res.status(400).end();
                 }
                 if (account.failedTimestamp === undefined || account.failed === undefined) {
@@ -622,7 +641,7 @@ function _handleControllerData(req, res) {
             res.send('OK');
             break;
         default:
-            console.log("[WebhookRequestHandler] Unhandled Request:", type);
+            logger.error("[Controller] Unhandled Request:", type);
             break;
     }
 }
@@ -659,8 +678,8 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                 lon: lon,
                 updated: new Date().getUTCSeconds()
             });
-            //cell.save();
-            client.addCell(cell);
+            cell.save();
+            //client.addCell(cell);
             
             if (gymIdsPerCell[cellId] === undefined) {
                 gymIdsPerCell[cellId] = [];
@@ -678,18 +697,18 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
             let wlon = ws2cell.getCapBound().getRectBound().getCenter().lngDegrees;
             let wlevel = ws2cell.level;
             let weather = new Weather({
-                id: ws2cell.id, 
+                id: ws2cell.id.toString(), 
                 level: wlevel,
                 lat: wlat,
                 lon: wlon,
                 conditions: conditions.data,
                 updated: null
             });
-            //weather.save(update: true)
-            client.addWeather(weather);
+            weather.save(); // TODO: update: true
+            //client.addWeather(weather);
         });
         let endClientWeathers = process.hrtime(startClientWeathers);
-        console.log("[WebhookRequestHandler] Weather Detail Count:", clientWeathers.length, "parsed in", endClientWeathers + "s");
+        logger.info("[]  Weather Detail Count: " + clientWeathers.length + " parsed in " + endClientWeathers + "s");
     
         let startWildPokemon = process.hrtime();
         wildPokemons.forEach(wildPokemon => {
@@ -699,11 +718,11 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                 timestampMs: wildPokemon.timestamp_ms,
                 wild: wildPokemon.data
             });
-            //pokemon.save();
-            client.addPokemon(pokemon);
+            pokemon.save();
+            //client.addPokemon(pokemon);
         });
         let endWildPokemon = process.hrtime(startWildPokemon);
-        console.log("[WebhookRequestHandler] Pokemon Count:", wildPokemons.length, "parsed in", endWildPokemon + "s");
+        logger.info("[] Pokemon Count: " + wildPokemons.length + " parsed in " + endWildPokemon + "s");
     
         let startNearbyPokemon = process.hrtime();
         nearbyPokemons.forEach(nearbyPokemon => {
@@ -713,11 +732,11 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                 //timestampMs: nearbyPokemon.timestamp_ms,
                 nearby: nearbyPokemon.data
             });
-            //pokemon.save();
-            client.addPokemon(pokemon);
+            pokemon.save();
+            //client.addPokemon(pokemon);
         });
         let endNearbyPokemon = process.hrtime(startNearbyPokemon);
-        console.log("[WebhookRequestHandler] NearbyPokemon Count:", nearbyPokemons.length, "parsed in", endNearbyPokemon + "s");
+        logger.info("[] NearbyPokemon Count: " + nearbyPokemons.length + " parsed in " + endNearbyPokemon + "s");
     
         let startForts = process.hrtime();
         forts.forEach(fort => {
@@ -727,8 +746,8 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                         cellId: fort.cell,
                         fort: fort.data
                     });
-                    //gym.save();
-                    client.addGym(gym);
+                    gym.save();
+                    //client.addGym(gym);
                     if (gymIdsPerCell[fort.cell] === undefined) {
                         gymIdsPerCell[fort.cell] = [];
                     }
@@ -739,8 +758,8 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                         cellId: fort.cell,
                         fort: fort.data
                     });
-                    //pokestop.save();
-                    client.addPokestop(pokestop);
+                    pokestop.save();
+                    //client.addPokestop(pokestop);
                     if (stopsIdsPerCell[fort.cell] === undefined) {
                         stopsIdsPerCell[fort.cell] = [];
                     }
@@ -749,7 +768,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
             }
         });
         let endForts = process.hrtime(startForts);
-        console.log("[WebhookRequestHandler] Forts Count:", forts.length, "parsed in", endForts + "s");
+        logger.info("[] Forts Count: " + forts.length + " parsed in " + endForts + "s");
     
         if (fortDetails.length > 0) {
             let startFortDetails = process.hrtime();
@@ -764,8 +783,8 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                         }
                         if (gym) {
                             gym.addDetails(fort);
-                            //gym.save();
-                            client.addGym(gym);
+                            gym.save();
+                            //client.addGym(gym);
                         }
                         break;
                     case 1: // checkpoint
@@ -777,14 +796,14 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                         }
                         if (pokestop) {
                             pokestop.addDetails(fort);
-                            //pokestop.save();
-                            client.addPokestop(pokestop);
+                            pokestop.save();
+                            //client.addPokestop(pokestop);
                         }
                         break;
                 }
             });
             let endFortDetails = process.hrtime(startFortDetails);
-            console.log("[WebhookRequestHandler] Forts Detail Count:", fortDetails.length, "parsed in", endFortDetails + "s");
+            logger.info("[] Forts Detail Count: " + fortDetails.length + " parsed in " + endFortDetails + "s");
         }
         
         if (gymInfos.length > 0) {
@@ -798,12 +817,12 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                 }
                 if (gym) {
                     gym.addGymInfo(gymInfo);
-                    //gym.save();
-                    client.addGym(gym);
+                    gym.save();
+                    //client.addGym(gym);
                 }
             });
             let endGymInfos = process.hrtime(startGymInfos);
-            console.log("[WebhookRequestHandler] Forts Detail Count:", gymInfos.length, "parsed in", endGymInfos + "s");
+            logger.info("[] Forts Detail Count: " + gymInfos.length + " parsed in " + endGymInfos + "s");
         }
         
         if (quests.length > 0) {
@@ -817,12 +836,12 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                 }
                 if (pokestop) {
                     pokestop.addQuest(quest);
-                    //pokestop.save();
-                    client.addQuest(quest);
+                    pokestop.save();
+                    //client.addQuest(quest);
                 }
             });
             let endQuests = process.hrtime(startQuests);
-            console.log("[WebhookRequestHandler] Quest Count:", quests.length, "parsed in", endQuests + "s");
+            logger.info("[] Quest Count: " + quests.length + " parsed in " + endQuests + "s");
         }
         
         if (encounters.length > 0) {
@@ -836,8 +855,8 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                 }
                 if (pokemon) {
                     pokemon.addEncounter(encounter, username);
-                    //pokemon.save();
-                    client.addPokemon(pokemon);
+                    pokemon.save();
+                    //client.addPokemon(pokemon);
                 } else {
                     let centerCoord = new S2.S2Point(encounter.wild_pokemon.latitude, encounter.wild_pokemon.longitude, 0);
                     let center = S2.S2LatLng.fromPoint(centerCoord);
@@ -863,7 +882,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                 }
             });
             let endEncounters = process.hrtime(startEncounters);
-            console.log("[WebhookRequestHandler] Encounter Count:", encounters.length, "parsed in ", endEncounters + "s");
+            logger.info("[] Encounter Count: " + encounters.length + " parsed in " + endEncounters + "s");
         }
 }
 
