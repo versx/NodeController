@@ -82,6 +82,7 @@ class InstanceController implements IInstanceController {
                 break;
             case InstanceType.PokemonIV:
             case InstanceType.AutoQuest:
+                // TODO: Polygon library
                 let areaArray = [];
                 if (instance.data.area) {
                     areaArray = instance.data.area;

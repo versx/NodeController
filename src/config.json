@@ -3,7 +3,7 @@
     "redis": {
         "host": "127.0.0.1",
         "port": 6379,
-        "password": ""
+        "password": null
     },
     "db": {
         "host": "10.0.1.100",
@@ -11,6 +11,8 @@
         "username": "versx",
         "password": "jerm5301",
         "database": "rdmdb_level",
+        "charset": "utf8mb4",
+        "debug": true,
         "connectionLimit": 1000
     },
     "webhook": {

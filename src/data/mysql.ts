@@ -1,9 +1,9 @@
 "use strict"
 
-import mysql  = require('mysql');
+import * as mysql from 'mysql';
 
 class Database {
-    private pool;
+    private pool: mysql.Pool;
 
     constructor(config: any) {
         this.pool = mysql.createPool({
@@ -12,6 +12,8 @@ class Database {
             user       : config.db.username,
             password   : config.db.password,
             database   : config.db.database,
+            charset    : config.db.charset,
+            debug      : config.db.debug,
             connectionLimit: config.db.connectionLimit
         });
         this.pool.getConnection((err, connection) => {
@@ -54,4 +56,4 @@ class Database {
     }
 }
 
-export { /*pool,*/ Database };
+export { Database };
