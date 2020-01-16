@@ -12,7 +12,7 @@ import { Weather } from '../models/weather';
 //import { RedisClient } from '../redis-client';
 import { InstanceController } from '../controllers/instances/instance-controller';
 import { S1Angle } from 'nodes2ts';
-import { logger } from '../utils/logger';
+//import { winston } from '../utils/logger';
 
 //:haunter:
 //const client = new RedisClient();
@@ -62,11 +62,11 @@ function _handleRawData(req, res) {
         jsonOpt = JSON.parse(req.body);
         //console.log("[Raw] HandleRawData Parsed:", jsonOpt);
     } catch (e) {
-        logger.error(e);
+        console.error(e);
         return res.status(400).end();
     }
     if (jsonOpt === undefined) {
-        logger.error("[Raw] Bad data");
+        console.error("[Raw] Bad data");
         return res.status(400).end();
     }
     if (jsonOpt['payload'] !== undefined) {
@@ -89,7 +89,7 @@ function _handleRawData(req, res) {
     }
     let contents: any = json["contents"] || json["protos"] || json["gmo"];
     if (contents === undefined) {
-        logger.error("[Raw] Invalid GMO");
+        console.error("[Raw] Invalid GMO");
         return res.status(400).end();
     }
     var uuid: string = json["uuid"];
@@ -120,7 +120,7 @@ function _handleRawData(req, res) {
     let isMadData: boolean = false;
 
     if (contents === undefined) {
-        logger.error("[Raw] Contents is empty");
+        console.error("[Raw] Contents is empty");
         res.send("Contents is empty");
         return res.status(400).end();
     }
@@ -157,7 +157,7 @@ function _handleRawData(req, res) {
         }
 
         if (invalid !== false) {
-            logger.error("[Raw] Invalid data");
+            console.error("[Raw] Invalid data");
             return res.status(400).end();
         }
 
@@ -171,10 +171,10 @@ function _handleRawData(req, res) {
                             quests.push(quest);
                         }
                     } else {
-                        logger.error("[Raw] Malformed FortSearchResponse");
+                        console.error("[Raw] Malformed FortSearchResponse");
                     }
                 } catch (err) {
-                    logger.error("[Raw] Unable to decode FortSearchResponse");
+                    console.error("[Raw] Unable to decode FortSearchResponse");
                 }
                 break;
             case 102: // EncounterResponse
@@ -184,10 +184,10 @@ function _handleRawData(req, res) {
                         if (er) {
                             encounters.push(er);
                         } else {
-                            logger.error("[Raw] Malformed EncounterResponse");
+                            console.error("[Raw] Malformed EncounterResponse");
                         }
                     } catch (err) {
-                        logger.error("[Raw] Unable to decode EncounterResponse");
+                        console.error("[Raw] Unable to decode EncounterResponse");
                     }
                 }
                 break;
@@ -197,10 +197,10 @@ function _handleRawData(req, res) {
                     if (fdr) {
                         fortDetails.push(fdr);
                     } else {
-                        logger.error("[Raw] Malformed FortDetailsResponse");
+                        console.error("[Raw] Malformed FortDetailsResponse");
                     }
                 } catch (err) {
-                    logger.error("[Raw] Unable to decode FortDetailsResponse");
+                    console.error("[Raw] Unable to decode FortDetailsResponse");
                 }
                 break;
             case 156: // GymGetInfoResponse
@@ -209,10 +209,10 @@ function _handleRawData(req, res) {
                     if (ggi) {
                         gymInfos.push(ggi);
                     } else {
-                        logger.error("[Raw] Malformed GymGetInfoResponse");
+                        console.error("[Raw] Malformed GymGetInfoResponse");
                     }
                 } catch (err) {
-                    logger.error("[Raw] Unable to decode GymGetInfoResponse");
+                    console.error("[Raw] Unable to decode GymGetInfoResponse");
                 }
                 break;
             case 106: // GetMapObjectsResponse
@@ -224,7 +224,7 @@ function _handleRawData(req, res) {
 
                         let mapCellsNew = gmo.map_cells;
                         if (mapCellsNew.length === 0) {
-                            logger.debug("[Raw] Map cells is empty");
+                            console.debug("[Raw] Map cells is empty");
                             return res.status(400).end();
                         }
                         mapCellsNew.forEach((mapCell: any) => {
@@ -271,21 +271,21 @@ function _handleRawData(req, res) {
                                     emptyCells[cell] = count + 1;
                                 }
                                 if (count === 3) {
-                                    logger.debug("[Raw] Cell", cell, "was empty 3 times in a row. Assuming empty.");
+                                    console.debug("[Raw] Cell", cell, "was empty 3 times in a row. Assuming empty.");
                                     cells.push(cell);
                                 }
                             });
                             
-                            logger.debug("[Raw] GMO is empty.");
+                            console.debug("[Raw] GMO is empty.");
                         } else {
                             cells.forEach(cell => emptyCells[cell] = 0);
                             isEmptyGMO = false;
                         }
                     } else {
-                        logger.error("[Raw] Malformed GetMapObjectsResponse");
+                        console.error("[Raw] Malformed GetMapObjectsResponse");
                     }
                 } catch (err) {
-                    logger.error("[Raw] Unable to decode GetMapObjectsResponse");
+                    console.error("[Raw] Unable to decode GetMapObjectsResponse");
                 }
                 break;
         }
@@ -429,7 +429,7 @@ function _handleRawData(req, res) {
         data["scatter_pokemon"] = scatterPokemon;
     }
 
-    logger.debug("[Raw] Sending response to device:", data);
+    console.debug("[Raw] Sending response to device:", data);
     res.send(data);
 
     handleConsumables(
@@ -457,13 +457,13 @@ function _handleControllerData(req, res) {
         jsonO = JSON.parse(req.body);
         //console.log("HandleControllerData Parsed:", jsonO);
     } catch (e) {
-        logger.error(e);
+        console.error(e);
         return res.status(400).end();
     }
     let typeO = jsonO["type"];
     let uuidO = jsonO["uuid"];
     if (typeO === undefined || uuidO === undefined) {
-        logger.error("[Controller] Failed to parse controller data");
+        console.error("[Controller] Failed to parse controller data");
         return res.status(400).end();
     }
     let type: string = typeO;
@@ -488,7 +488,7 @@ function _handleControllerData(req, res) {
             }
             if (device instanceof Device) {
                 // Device is already registered
-                logger.debug("[Controller] Device registered");
+                console.debug("[Controller] Device registered");
                 res.send({
                     data: {
                         assigned: device.instanceName !== undefined,
@@ -497,7 +497,7 @@ function _handleControllerData(req, res) {
                 });
             } else {
                 // Register new device
-                logger.debug("[Controller] Registering device");
+                console.debug("[Controller] Registering device");
                 let newDevice = new Device(uuid, null, null, null, 0, 0.0, 0.0);
                 newDevice.create();
                 //devices[uuid] = newDevice;
@@ -526,18 +526,18 @@ function _handleControllerData(req, res) {
                     res.end();
                 }
             } else {
-                logger.info("[Controller] Device " + uuid + " not assigned to an instance!");
+                console.info("[Controller] Device " + uuid + " not assigned to an instance!");
                 res.status(404);
                 res.end();
             }
             break;
         case "get_account":
             var account = Account.getNewAccount(minLevel, maxLevel);// randomValue(accounts); // TODO: Get new account from level restrictions
-            logger.debug("[Controller] GetAccount: " + account);
+            console.debug("[Controller] GetAccount: " + account);
             account.then(x => {
-                logger.debug("[Controller] Random Account: " + x);
+                console.debug("[Controller] Random Account: " + x);
                 if (device === undefined || x === undefined) {
-                    logger.error("[Controller] Failed to get account, device or account is null.");
+                    console.error("[Controller] Failed to get account, device or account is null.");
                     return res.status(400).end();
                 }
                 if (device.accountUsername !== undefined) {
@@ -570,7 +570,7 @@ function _handleControllerData(req, res) {
         case "tutorial_done":
             accounts[device.accountUsername].then((account: Account) => {
                 if (device === undefined || account === undefined) {
-                    logger.error("[Controller] Failed to get account, device or account is null.");
+                    console.error("[Controller] Failed to get account, device or account is null.");
                     return res.status(400).end();
                 }
                 if (account.level === 0) {
@@ -583,7 +583,7 @@ function _handleControllerData(req, res) {
         case "account_banned":
             accounts[device.accountUsername].then((account: Account) => {
                 if (device === undefined || account === undefined) {
-                    logger.error("[Controller] Failed to get account, device or account is null.");
+                    console.error("[Controller] Failed to get account, device or account is null.");
                     return res.status(400).end();
                 }
                 if (account.failedTimestamp === undefined || account.failed === undefined) {
@@ -597,7 +597,7 @@ function _handleControllerData(req, res) {
         case "account_warning":
             accounts[device.accountUsername].then((account: Account) => {
                 if (device === undefined || account === undefined) {
-                    logger.error("[Controller] Failed to get account, device or account is null.");
+                    console.error("[Controller] Failed to get account, device or account is null.");
                     return res.status(400).end();
                 }
                 if (account.firstWarningTimestamp === undefined) {
@@ -610,7 +610,7 @@ function _handleControllerData(req, res) {
         case "account_invalid_credentials":
             accounts[device.accountUsername].then((account: Account) => {
                 if (device === undefined || account === undefined) {
-                    logger.error("[Controller] Failed to get account, device or account is null.");
+                    console.error("[Controller] Failed to get account, device or account is null.");
                     return res.status(400).end();
                 }
                 if (account.failedTimestamp === undefined || account.failed === undefined) {
@@ -624,7 +624,7 @@ function _handleControllerData(req, res) {
         case "error_26":
             accounts[device.accountUsername].then((account: Account) => {
                 if (device === undefined || account === undefined) {
-                    logger.error("[Controller] Failed to get account, device or account is null.");
+                    console.error("[Controller] Failed to get account, device or account is null.");
                     return res.status(400).end();
                 }
                 if (account.failedTimestamp === undefined || account.failed === undefined) {
@@ -641,7 +641,7 @@ function _handleControllerData(req, res) {
             res.send('OK');
             break;
         default:
-            logger.error("[Controller] Unhandled Request:", type);
+            console.error("[Controller] Unhandled Request:", type);
             break;
     }
 }
@@ -708,7 +708,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
             //client.addWeather(weather);
         });
         let endClientWeathers = process.hrtime(startClientWeathers);
-        logger.info("[]  Weather Detail Count: " + clientWeathers.length + " parsed in " + endClientWeathers + "s");
+        console.info("[]  Weather Detail Count: " + clientWeathers.length + " parsed in " + endClientWeathers + "s");
     
         let startWildPokemon = process.hrtime();
         wildPokemons.forEach(wildPokemon => {
@@ -722,7 +722,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
             //client.addPokemon(pokemon);
         });
         let endWildPokemon = process.hrtime(startWildPokemon);
-        logger.info("[] Pokemon Count: " + wildPokemons.length + " parsed in " + endWildPokemon + "s");
+        console.info("[] Pokemon Count: " + wildPokemons.length + " parsed in " + endWildPokemon + "s");
     
         let startNearbyPokemon = process.hrtime();
         nearbyPokemons.forEach(nearbyPokemon => {
@@ -736,7 +736,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
             //client.addPokemon(pokemon);
         });
         let endNearbyPokemon = process.hrtime(startNearbyPokemon);
-        logger.info("[] NearbyPokemon Count: " + nearbyPokemons.length + " parsed in " + endNearbyPokemon + "s");
+        console.info("[] NearbyPokemon Count: " + nearbyPokemons.length + " parsed in " + endNearbyPokemon + "s");
     
         let startForts = process.hrtime();
         forts.forEach(fort => {
@@ -768,7 +768,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
             }
         });
         let endForts = process.hrtime(startForts);
-        logger.info("[] Forts Count: " + forts.length + " parsed in " + endForts + "s");
+        console.info("[] Forts Count: " + forts.length + " parsed in " + endForts + "s");
     
         if (fortDetails.length > 0) {
             let startFortDetails = process.hrtime();
@@ -803,7 +803,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                 }
             });
             let endFortDetails = process.hrtime(startFortDetails);
-            logger.info("[] Forts Detail Count: " + fortDetails.length + " parsed in " + endFortDetails + "s");
+            console.info("[] Forts Detail Count: " + fortDetails.length + " parsed in " + endFortDetails + "s");
         }
         
         if (gymInfos.length > 0) {
@@ -822,7 +822,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                 }
             });
             let endGymInfos = process.hrtime(startGymInfos);
-            logger.info("[] Forts Detail Count: " + gymInfos.length + " parsed in " + endGymInfos + "s");
+            console.info("[] Forts Detail Count: " + gymInfos.length + " parsed in " + endGymInfos + "s");
         }
         
         if (quests.length > 0) {
@@ -841,7 +841,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                 }
             });
             let endQuests = process.hrtime(startQuests);
-            logger.info("[] Quest Count: " + quests.length + " parsed in " + endQuests + "s");
+            console.info("[] Quest Count: " + quests.length + " parsed in " + endQuests + "s");
         }
         
         if (encounters.length > 0) {
@@ -882,7 +882,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                 }
             });
             let endEncounters = process.hrtime(startEncounters);
-            logger.info("[] Encounter Count: " + encounters.length + " parsed in " + endEncounters + "s");
+            console.info("[] Encounter Count: " + encounters.length + " parsed in " + endEncounters + "s");
         }
 }
 

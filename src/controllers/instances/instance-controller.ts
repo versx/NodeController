@@ -10,7 +10,7 @@ import { IVInstanceController } from "./iv-controller"
 import { AutoInstanceController, AutoInstanceType } from "./auto-instance-controller"
 import { AssignmentController } from "../assignment-controller"
 import { Coord } from "../../coord";
-import { logger } from "../../utils/logger"
+//import { winston } from "../../utils/logger"
 
 class InstanceController implements IInstanceController {
     static instance = new InstanceController();
@@ -22,7 +22,7 @@ class InstanceController implements IInstanceController {
 
     constructor() { }
     async setup() {
-        logger.debug("[InstanceController] Starting up...");
+        console.trace("[InstanceController] Starting up...");
         this.Devices = await Device.load();
         this.Instances = await Instance.load();
 
@@ -42,7 +42,7 @@ class InstanceController implements IInstanceController {
         return null;
     }
     getInstanceController(deviceUUID: string) {
-        let device/*: Device*/ = this.devicesByDeviceUUID[deviceUUID];
+        let device: Device = this.devicesByDeviceUUID[deviceUUID];
         if (device) {
             let instance: IInstanceController = <IInstanceController>this.instancesByInstanceName[device.instanceName];
             return instance;

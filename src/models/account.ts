@@ -2,7 +2,7 @@
 
 import config      = require('../config.json');
 import { Database } from '../data/mysql';
-import { logger } from '../utils/logger';
+//import { winston } from '../utils/logger';
 const db           = new Database(config);
 
 /**
@@ -76,7 +76,7 @@ class Account {
         let result = await db.query(sql, [minLevel, maxLevel])
             .then(x => x)
             .catch(x => { 
-                logger.error("[ACCOUNT] Failed to get new Account");
+                console.log("[ACCOUNT] Failed to get new Account");
                 return null;
             });
         let account: Account;
@@ -112,10 +112,10 @@ class Account {
         let result = await db.query(sql, username)
             .then(x => x)
             .catch(x => {
-                logger.error("[ACCOUNT] Failed to increment spin count for account with username " + username);
+                console.log("[ACCOUNT] Failed to increment spin count for account with username " + username);
                 return null;
             });
-        logger.debug("[ACCOUNT] Spin: " + result);
+        console.log("[ACCOUNT] Spin: " + result);
     }
     /**
      * Get account with username.
@@ -131,7 +131,7 @@ class Account {
         let result = await db.query(sql, username)
             .then(x => x)
             .catch(x => { 
-                logger.error("[ACCOUNT] Failed to get Account with username " + username);
+                console.log("[ACCOUNT] Failed to get Account with username " + username);
                 return null;
             });
         let account: Account;
@@ -171,10 +171,10 @@ class Account {
         let result = await db.query(sql, args)
             .then(x => x)
             .catch(err => {
-                logger.error("[ACCOUNT] Failed to set encounter info for account with username " + username);
+                console.log("[ACCOUNT] Failed to set encounter info for account with username " + username);
                 return null;
             });
-        logger.debug("[ACCOUNT] DidEncounter: " + result);
+        console.log("[ACCOUNT] DidEncounter: " + result);
     }
     /**
      * Clear spins for account.
@@ -187,10 +187,10 @@ class Account {
         let result = await db.query(sql)
             .then(x => x)
             .catch(x => {
-                logger.error("[ACCOUNT] Failed to set clear spins for accounts.");
+                console.log("[ACCOUNT] Failed to set clear spins for accounts.");
                 return null;
             });
-        logger.debug("[ACCOUNT] ClearSpins: " + result);
+        console.log("[ACCOUNT] ClearSpins: " + result);
     }
     /**
      * Set account level.
@@ -206,10 +206,10 @@ class Account {
         let result = await db.query(sql, username)
             .then(x => x)
             .catch(x => { 
-                logger.error("[ACCOUNT] Failed to set Account level for username " + username);
+                console.log("[ACCOUNT] Failed to set Account level for username " + username);
                 return null;
             });
-        logger.debug("[ACCOUNT] Results: " + result);
+        console.log("[ACCOUNT] Results: " + result);
     }
     /**
      * Save account.
@@ -227,10 +227,10 @@ class Account {
             let result = await db.query(sql, args)
                 .then(x => x)
                 .catch(x => {
-                    logger.error("[ACCOUNT] Error: " + x);
+                    console.log("[ACCOUNT] Error: " + x);
                     return null;
                 });
-            logger.debug("[ACCOUNT] Update: " + result)
+            console.log("[ACCOUNT] Update: " + result)
         } else {
             let sql = `
             INSERT INTO account (username, password, level, first_warning_timestamp, failed_timestamp, failed, last_encounter_lat, last_encounter_lon, last_encounter_time, spins)
@@ -240,10 +240,10 @@ class Account {
             let result = await db.query(sql, args)
                 .then(x => x)
                 .catch(x => {
-                    logger.error("[ACCOUNT] Error: " + x);
+                    console.log("[ACCOUNT] Error: " + x);
                     return null;
                 });
-            logger.debug("[ACCOUNT] Insert: " + result)
+            console.log("[ACCOUNT] Insert: " + result)
         }
     }
     /**
@@ -257,7 +257,7 @@ class Account {
         let results: any = await db.query(sql)
             .then(x => x)
             .catch(x => {
-                logger.error("[ACCOUNT] Error: " + x);
+                console.log("[ACCOUNT] Error: " + x);
                 return null;
             });
         let accounts: Account[] = [];

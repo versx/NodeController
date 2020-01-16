@@ -49,7 +49,7 @@ class AutoInstanceController {
         }
     }
     bootstrap() {
-        console.log("[AutoInstanceController]", name, "Checking Bootstrap Status...");
+        console.info("[AutoInstanceController]", name, "Checking Bootstrap Status...");
         let start = new Date();
         let totalCount = 0;
         let missingCellIds: [S2.S2CellId];

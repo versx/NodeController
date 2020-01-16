@@ -74,8 +74,8 @@ class WebhookController {
             this.weatherEvents[weather.id] = weather;
         }
     }
-    start(): void {
-        console.log("[WebhookController] Starting up...");
+    setup(): void {
+        console.trace("[WebhookController] Starting up...");
         // TODO: Background thread or event based?
         // TODO: Get webhook strings from database.
         setInterval(() => this.loopEvents());

@@ -8,7 +8,7 @@ class AccountController {
     isSetup: boolean = false;
 
     setup() {
-        console.log("[AccountController] Starting up...");
+        console.trace("[AccountController] Starting up...");
         if (this.isSetup) {
             return;
         }
@@ -24,7 +24,7 @@ class AccountController {
         let timeLeft = (23 - hour) * 3600 + (59 - minute) * 60 + (60 - second);
         if (timeLeft > 0) {
             // TODO: sleep `timeLeft` seconds
-            console.log("[AccountController] Clearing Spins...");
+            console.info("[AccountController] Clearing Spins...");
             let done = false;
             while (!done) {
                 try {

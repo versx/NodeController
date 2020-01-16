@@ -16,7 +16,7 @@ class AssignmentController /*InstanceControllerDelegate?*/ {
     constructor() {
     }
     async setup() {
-        console.log("[AssignmentController] Starting up...");
+        console.trace("[AssignmentController] Starting up...");
         this.assignments = await Assignment.getAll();
         //this.timeZone = Localizer.global.timeZone;
         if (!this.isSetup) {
