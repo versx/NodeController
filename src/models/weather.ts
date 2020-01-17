@@ -23,8 +23,30 @@ class Weather {
     updated: number;
 
     constructor(data: any) {
-        if (data.weather !== undefined) {
-           // TODO: Init properties from protos data.weather object
+        if (data.weather) {
+           this.id = data.id;
+           this.level = data.level;
+           this.latitude = data.latitude;
+           this.longitude = data.longitude;
+           this.gameplayCondition = data.conditions.gameplayWeather.gameplayCondition;
+           this.windDirection = data.conditions.displayWeather.windDirection;
+           this.cloudLevel = data.conditions.displayWeather.cloudLevel;
+           this.rainLevel = data.conditions.displayWeather.rainLevel;
+           this.windLevel = data.conditions.displayWeather.windLevel;
+           this.snowLevel = data.conditions.displayWeather.snowLevel;
+           this.fogLevel = data.conditions.displayWeather.fogLevel;
+           this.seLevel = data.conditions.displayWeather.specialEffectLevel;
+           let alerts = data.conditions.alerts;
+           this.severity = alerts[0].severity;
+           this.warnWeather = alerts[0].warnWeather;
+           /*
+           for (let severityConditions in data.conditions.alerts) {
+               this.severity = severityConditions.severity;
+               this.warnWeather = severityConditions.warnWeather
+           }
+           */
+           this.updated = data.updated;
+   
         } else {
             this.id = data.id;
             this.level = data.level;
