@@ -4,6 +4,9 @@ import { Database } from '../data/mysql';
 import config = require('../config.json');
 const db = new Database(config);
 
+/**
+ * Weather model class.
+ */
 class Weather {
     static Weather = {};
 
@@ -23,6 +26,10 @@ class Weather {
 	warnWeather: boolean = false;
     updated: number;
 
+    /**
+     * Initialize new Weather object.
+     * @param data 
+     */
     constructor(data: any) {
         if (data.conditions) {
            this.id = data.id.toString();
@@ -115,6 +122,10 @@ class Weather {
         });
         return weather;
     }
+    /**
+     * 
+     * @param ids 
+     */
     static async getInIds(ids: number[]): Promise<Weather[]> {
         if (ids.length > 10000) {
             let result: Weather[] = [];
@@ -177,6 +188,10 @@ class Weather {
         });
         return weather;
     }
+    /**
+     * 
+     * @param update 
+     */
     async save(update: boolean): Promise<void> {
         //TODO: Check if values changed, if not skip.
         Weather.Weather[this.id] = this;
@@ -213,6 +228,9 @@ class Weather {
              });
          console.log("[Weather] Save:", result);
     }
+    /**
+     * 
+     */
     static async load(): Promise<Weather[]> {
         let sql = `
         SELECT id, level, latitude, longitude, gameplay_condition, wind_direction, cloud_level, rain_level, wind_level, snow_level, fog_level, special_effect_level, severity, warn_weather, updated
@@ -250,4 +268,5 @@ class Weather {
     }
 }
 
+// Export the class
 export { Weather };

@@ -4,6 +4,9 @@ import { Database } from '../data/mysql';
 import config = require('../config.json');
 const db = new Database(config);
 
+/**
+ * S2Cell model class.
+ */
 class Cell {
     static Cells = {};
 
@@ -13,6 +16,14 @@ class Cell {
     centerLon: number;
     updated: number;
 
+    /**
+     * Initialize new Cell object.
+     * @param id 
+     * @param level 
+     * @param centerLat 
+     * @param centerLon 
+     * @param updated 
+     */
     constructor(id: string, level: number, centerLat: number, centerLon: number, updated: number) {
         this.id = id;
         this.level = level;
@@ -206,4 +217,5 @@ class Cell {
     }
 }
 
+// Export the class
 export { Cell };
