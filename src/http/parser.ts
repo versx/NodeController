@@ -707,7 +707,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                 conditions: conditions.data,
                 updated: null
             });
-            weather.save(); // TODO: update: true
+            weather.save(true);
             //client.addWeather(weather);
         });
         let endClientWeathers = process.hrtime(startClientWeathers);

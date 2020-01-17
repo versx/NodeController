@@ -96,14 +96,15 @@ class Cell {
      */
     static async getInIds(ids: string[]): Promise<Cell[]> {
         if (ids.length > 10000) {
-            let result = [];
+            let result: Cell[] = [];
             let count = Math.ceil(ids.length / 10000.0);
             for (let i = 0; i < count; i++) {
                 let start = 10000 * i;
                 let end = Math.min(10000 * (i + 1) - 1, ids.length - 1);
                 let splice = ids.splice(start, end); // TODO: Double check
                 let spliceResult = this.getInIds(splice);
-                result.push((await spliceResult).keys); // TODO: Double check
+                (await spliceResult).forEach(x => result.push(x));
+                //result.push(spliceResult); // TODO: Double check
             }
             return result
         }
