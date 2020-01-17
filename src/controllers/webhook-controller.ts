@@ -175,11 +175,10 @@ class WebhookController {
                 'User-Agent': 'Nodedradamus'
             }
         };
-        request(req, (err, res, body) => {
+        request(req.url.toString(), (err, res, body) => {
             if (err) throw err;
             let data = JSON.parse(body);
             console.log("[WEBHOOK] Response:", data);
-            res.send();
         });
     }
 }
