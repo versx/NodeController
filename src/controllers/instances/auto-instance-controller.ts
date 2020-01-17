@@ -2,7 +2,7 @@
 
 import { Account } from "../../models/account";
 import { Pokestop } from "../../models/pokestop";
-import { S2Cell } from "../../models/s2cell";
+import { Cell } from "../../models/cell";
 
 import S2 = require('nodes2ts');
 import moment = require('moment');
@@ -53,16 +53,16 @@ class AutoInstanceController {
         let start = new Date();
         let totalCount = 0;
         let missingCellIds: [S2.S2CellId];
-        this.multiPolygon.polygons.forEach(polygon => {
+        this.multiPolygon.polygons.forEach(async (polygon: any/*TODO: Implement polygon class*/) => {
             // TODO: actual multipolygon
             let cellIds = polygon.getS2CellIds(15, 15, Number.MAX_VALUE);
             totalCount += cellIds.length;
             let ids = cellIds.map(x => x.id);
             let done = false;
-            let cells = [S2Cell];
+            let cells: Cell[] = [];
             while (!done) {
                 try {
-                    cells = S2Cell.getInIds(ids);
+                    cells = await Cell.getInIds(ids);
                     done = true;
                 } catch (err) {
                     // TODO: sleep 1 second
@@ -71,7 +71,7 @@ class AutoInstanceController {
             for (let i = 0; i < cells.length; i++) {
                 let cell = cells[i];
                 if (cells.includes(cell)) {
-                    missingCellIds.push(new S2.S2CellId(cell.prototype.id));
+                    missingCellIds.push(new S2.S2CellId(cell.id));
                 }   
             }
         });
@@ -234,7 +234,7 @@ class AutoInstanceController {
                     if (lastLat && lastLon) {
                         let current = { lat: lastLat, lon: lastLon };
                         let closest: Pokestop;
-                        let closestDistance: number = 10000000000000000;
+                        let closestDistance: number = 10000000000000000; // TODO: Fix numeric literals
                         let todayStopsC = this.todayStops;
                         if (!(todayStopsC.length > 0)) {
                             return { };

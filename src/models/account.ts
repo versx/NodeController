@@ -217,34 +217,29 @@ class Account {
      */
     async save(update: boolean): Promise<void> {
 
+        let sql: string = "";
+        let args: any = {};
         if (update) {
-            let sql = `
+            sql = `
             UPDATE account
             SET password = ?, level = ?, first_warning_timestamp = ?, failed_timestamp = ?, failed = ?, last_encounter_lat = ?, last_encounter_lon = ?, last_encounter_time = ?, spins = ?
             WHERE username = ?
             `;
-            let args = [this.password, this.level, this.firstWarningTimestamp, this.failedTimestamp, this.failed, this.lastEncounterLat, this.lastEncounterLon, this.lastEncounterTime, this.spins];
-            let result = await db.query(sql, args)
-                .then(x => x)
-                .catch(x => {
-                    console.log("[ACCOUNT] Error: " + x);
-                    return null;
-                });
-            console.log("[ACCOUNT] Update: " + result)
+            args = [this.password, this.level, this.firstWarningTimestamp, this.failedTimestamp, this.failed, this.lastEncounterLat, this.lastEncounterLon, this.lastEncounterTime, this.spins];
         } else {
-            let sql = `
+            sql = `
             INSERT INTO account (username, password, level, first_warning_timestamp, failed_timestamp, failed, last_encounter_lat, last_encounter_lon, last_encounter_time, spins)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
-            let args = [this.username, this.password, this.level, this.firstWarningTimestamp, this.failedTimestamp, this.failed, this.lastEncounterLat, this.lastEncounterLon, this.lastEncounterTime, this.spins];
-            let result = await db.query(sql, args)
-                .then(x => x)
-                .catch(x => {
-                    console.log("[ACCOUNT] Error: " + x);
-                    return null;
-                });
-            console.log("[ACCOUNT] Insert: " + result)
+            args = [this.username, this.password, this.level, this.firstWarningTimestamp, this.failedTimestamp, this.failed, this.lastEncounterLat, this.lastEncounterLon, this.lastEncounterTime, this.spins];
         }
+        let result = await db.query(sql, args)
+            .then(x => x)
+            .catch(x => {
+                console.log("[ACCOUNT] Error: " + x);
+                return null;
+            });
+        console.log("[ACCOUNT] Save: " + result)
     }
     /**
      * Load all accounts.

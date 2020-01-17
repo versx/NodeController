@@ -75,7 +75,7 @@ class WebhookController {
         }
     }
     setup(): void {
-        console.trace("[WebhookController] Starting up...");
+        console.info("[WebhookController] Starting up...");
         // TODO: Background thread or event based?
         // TODO: Get webhook strings from database.
         setInterval(() => this.loopEvents());

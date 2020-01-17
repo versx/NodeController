@@ -22,7 +22,7 @@ class InstanceController implements IInstanceController {
 
     constructor() { }
     async setup() {
-        console.trace("[InstanceController] Starting up...");
+        console.info("[InstanceController] Starting up...");
         this.Devices = await Device.load();
         this.Instances = await Instance.load();
 

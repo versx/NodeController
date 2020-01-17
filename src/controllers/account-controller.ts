@@ -8,7 +8,7 @@ class AccountController {
     isSetup: boolean = false;
 
     setup() {
-        console.trace("[AccountController] Starting up...");
+        console.info("[AccountController] Starting up...");
         if (this.isSetup) {
             return;
         }

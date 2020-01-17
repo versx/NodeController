@@ -1,3 +1,4 @@
+/*
 import winston = require('winston');
 
 const level = 'verbose';
@@ -26,3 +27,4 @@ winston.configure(options);
 winston.debug("Logging initialized at " + level + " level...");
 
 export { winston };
+*/

@@ -71,7 +71,6 @@ class Device {
             .then(x => x)
             .catch(x => { 
                 console.error("[DEVICE] Failed to get Device with uuid " + uuid);
-                return null;
             });
         let device: Device;
         let keys = Object.values(result);
@@ -105,7 +104,6 @@ class Device {
             .then(x => x)
             .catch(x => {
                 console.error("[DEVICE] Error: " + x);
-                return null;
             });
         console.debug("[DEVICE] SetLastLocation: " + results);
     }
@@ -125,7 +123,6 @@ class Device {
             .then(x => x)
             .catch(x => {
                 console.error("[DEVICE] Error: " + x);
-                return null;
             });
         console.debug("[DEVICE] Touch: " + results);
         //redisClient.addDevice(this);
@@ -143,7 +140,6 @@ class Device {
             .then(x => x)
             .catch(x => {
                 console.error("[DEVICE] Error: " + x);
-                return null;
             });
         console.debug("[DEVICE] Insert: " + results);
         //redisClient.addDevice(this);
@@ -182,9 +178,8 @@ class Device {
            .then(x => x)
            .catch(x => {
                console.error("[DEVICE] Error: " + x);
-               return null;
            });
-        console.debug("[DEVICE] Update: " + results);
+        console.debug("[DEVICE] Save: " + results);
        //redisClient.addDevice(this);
     }
     /**

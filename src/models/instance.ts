@@ -51,12 +51,9 @@ class Instance implements IInstance {
 
     /**
      * Initialize new Instance object.
-     * @param name 
-     * @param type 
-     * @param minLevel 
-     * @param maxLevel 
-     * @param area 
-     * @param data 
+     * @param name Name of the instance.
+     * @param type Type of instance.
+     * @param data Instance data containing area coordinates, minimum and maximum account level, etc.
      */
     constructor(name: string, type: InstanceType, data: IInstanceData) {
         this.name = name;
@@ -71,7 +68,7 @@ class Instance implements IInstance {
     }
     /**
      * Get instance by name.
-     * @param instanceName 
+     * @param instanceName Name of the instance.
      */
     static async getByName(instanceName: string): Promise<Instance> {
         let sql = `
@@ -99,7 +96,7 @@ class Instance implements IInstance {
     }
     /**
      * Delete instance by name.
-     * @param instanceName 
+     * @param instanceName Name of the instance.
      */
     static async delete(instanceName: string): Promise<void> {
         let sql = `
@@ -109,14 +106,14 @@ class Instance implements IInstance {
         let result = await db.query(sql, instanceName)
             .then(x => x)
             .catch(x => { 
-                console.log("[INSTANCE] Failed to delete instance with name " + name);
+                console.error("[INSTANCE] Failed to delete instance with name " + name);
                 return null;
             });
         console.debug("[INSTANCE] Delete:", result);
     }
     /**
      * Update instance data.
-     * @param oldName 
+     * @param oldName Old name of the instance.
      */
     async update(oldName: string): Promise<void> {
         let sql = `
@@ -128,7 +125,7 @@ class Instance implements IInstance {
         let result = await db.query(sql, args)
             .then(x => x)
             .catch(x => { 
-                console.log("[INSTANCE] Failed to update instance with name " + name);
+                console.error("[INSTANCE] Failed to update instance with name " + name);
                 return null;
             });
         console.debug("[INSTANCE] Update: " + result);
@@ -154,9 +151,6 @@ class Instance implements IInstance {
                     InstanceController.instance.Instances[key] = new Instance(
                         instance.name,
                         instance.type,
-                        instance.minLevel,
-                        instance.maxLevel,
-                        instance.area,
                         instance.data
                     );
                 }

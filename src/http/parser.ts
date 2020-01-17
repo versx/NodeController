@@ -7,10 +7,11 @@ import { Device } from '../models/device';
 import { Pokemon } from '../models/pokemon';
 import { Gym } from '../models/gym';
 import { Pokestop } from '../models/pokestop';
-import { S2Cell } from '../models/s2cell';
+import { Cell } from '../models/cell';
 import { Weather } from '../models/weather';
 //import { RedisClient } from '../redis-client';
 import { InstanceController } from '../controllers/instances/instance-controller';
+import { IVInstanceController } from 'src/controllers/instances/iv-controller';
 import { S1Angle } from 'nodes2ts';
 //import { winston } from '../utils/logger';
 
@@ -18,7 +19,6 @@ import { S1Angle } from 'nodes2ts';
 //const client = new RedisClient();
 
 let accounts = Account.getAll();
-//let devices = Device.getAll();
 
 let emptyCells = [];//[UInt64: Int]
 let levelCache = {};
@@ -56,7 +56,7 @@ class WebhookHandler {
  * @param {*} req 
  * @param {*} res 
  */
-function _handleRawData(req, res) {
+async function _handleRawData(req, res) {
     let jsonOpt: any = {};
     try {
         jsonOpt = JSON.parse(req.body);
@@ -339,8 +339,9 @@ function _handleRawData(req, res) {
         cells.forEach(cell => {
             if (inArea === false) {
                 let s2cellId = new S2.S2CellId(cell.toString());
-                let s2cell = new S2Cell(s2cellId);
-                let coord = new S2.S2LatLng(s2cell.centerLat, s2cell.centerLon);
+                let s2cell = new S2.S2Cell(s2cellId);
+                let center = s2cell.getCenter();
+                let coord = new S2.S2LatLng(center.x, center.y);
                 let radians: S1Angle = new S2.S1Angle(Math.max(targetMaxDistance, 100)); // REVIEW: wth is radians
                 if (coord.getDistance(targetCoord) <= radians) {
                     inArea = true;
@@ -413,6 +414,7 @@ function _handleRawData(req, res) {
             let pokemonId: number = parseInt(pokemon.data.pokemon_data.pokemon_id);
             if (controller) {
                 let radians: S1Angle = new S1Angle(35); // REVIEW: wth is radians
+                
                 /*
                 TODO: Fix scatterPokemon
                 if (distance <= radians && controller.scatterPokemon.contains(pokemonId)) {
@@ -542,7 +544,10 @@ function _handleControllerData(req, res) {
                 }
                 if (device.accountUsername !== undefined) {
                     let oldAccount = accounts[device.accountUsername];
-                    if (oldAccount instanceof Account && oldAccount.firstWarningTimestamp === undefined && oldAccount.failed === undefined && oldAccount.failedTimestamp === undefined) {
+                    if (oldAccount instanceof Account && 
+                        oldAccount.firstWarningTimestamp === undefined && 
+                        oldAccount.failed                === undefined && 
+                        oldAccount.failedTimestamp       === undefined) {
                         res.send({
                             data: {
                                 username: oldAccount.username,
@@ -671,14 +676,14 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
             let lat = s2cell.getCapBound().getRectBound().getCenter().latDegrees;
             let lon = s2cell.getCapBound().getRectBound().getCenter().lngDegrees;
             let level = s2cell.level;
-            let cell = new S2Cell({
-                id: cellId.toString(),
-                level: level,
-                lat: lat,
-                lon: lon,
-                updated: new Date().getUTCSeconds()
-            });
-            cell.save();
+            let cell = new Cell(
+                cellId.toString(),
+                level,
+                lat,
+                lon,
+                new Date().getUTCSeconds()
+            );
+            cell.save(true); //TODO: Add check if cell already exists.
             //client.addCell(cell);
             
             if (gymIdsPerCell[cellId] === undefined) {
