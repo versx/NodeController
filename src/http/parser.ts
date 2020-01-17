@@ -11,7 +11,6 @@ import { Cell } from '../models/cell';
 import { Weather } from '../models/weather';
 //import { RedisClient } from '../redis-client';
 import { InstanceController } from '../controllers/instances/instance-controller';
-import { IVInstanceController } from 'src/controllers/instances/iv-controller';
 import { S1Angle } from 'nodes2ts';
 //import { winston } from '../utils/logger';
 
@@ -414,7 +413,6 @@ async function _handleRawData(req, res) {
             let pokemonId: number = parseInt(pokemon.data.pokemon_data.pokemon_id);
             if (controller) {
                 let radians: S1Angle = new S1Angle(35); // REVIEW: wth is radians
-                
                 /*
                 TODO: Fix scatterPokemon
                 if (distance <= radians && controller.scatterPokemon.contains(pokemonId)) {
@@ -473,11 +471,11 @@ function _handleControllerData(req, res) {
     let username: string = jsonO["username"];
     let minLevel: number = parseInt(jsonO["min_level"] || 0);
     let maxLevel: number = parseInt(jsonO["max_level"] || 29);
-    let device: Device = InstanceController.instance.Devices[uuid]; // TODO: Change
+    let device: Device = getDevice(uuid); //InstanceController.instance.Devices[uuid]; // TODO: Change
 
     switch (type) {
         case "init":
-            var firstWarningTimestamp = null;
+            let firstWarningTimestamp;
             if (device === undefined || device.accountUsername === undefined) {
                 firstWarningTimestamp = null;
             } else {
@@ -889,6 +887,12 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
             let endEncounters = process.hrtime(startEncounters);
             console.info("[] Encounter Count: " + encounters.length + " parsed in " + endEncounters + "s");
         }
+}
+
+function getDevice(uuid: string) {
+    let devices: Device[] = Object.values(InstanceController.instance.Devices);
+    let device = devices.find(x => x.uuid === uuid);
+    return device;
 }
 
 /**
