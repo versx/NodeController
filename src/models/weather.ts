@@ -24,8 +24,8 @@ class Weather {
     updated: number;
 
     constructor(data: any) {
-        if (data.weather) {
-           this.id = data.id;
+        if (data.conditions) {
+           this.id = data.id.toString();
            this.level = data.level;
            this.latitude = data.latitude;
            this.longitude = data.longitude;
