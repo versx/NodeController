@@ -3,6 +3,8 @@
 const gymsPath = './data/gyms.json';
 const fs       = require('fs');
 
+// TODO: Implement mysql
+
 /**
  * Gym model class.
  */
@@ -158,7 +160,6 @@ class Gym {
     save() {
         //TODO: Check if values changed, if not skip.
         Gym.Gyms[this.id] = this;
-        save(Gym.Gyms, gymsPath);
         // TODO: Save to mysql
     }
     /**
@@ -174,15 +175,6 @@ class Gym {
         // TODO: Load from mysql
         return this.Gyms;
     }
-}
-
-/**
- * Save object as json string to file path.
- * @param {*} obj 
- * @param {*} path 
- */
-function save(obj: any, path: string) {
-    fs.writeFileSync(path, JSON.stringify(obj, null, 2), 'utf-8');
 }
 
 // Export the class

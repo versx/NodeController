@@ -1,8 +1,8 @@
 "use strict"
 
-import * as mysql from '../data/mysql';
+import { Database } from '../data/mysql';
 import config      = require('../config.json');
-const db           = new mysql.Database(config);
+const db           = new Database(config);
 
 /**
  * Assignment model class.

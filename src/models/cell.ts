@@ -175,7 +175,7 @@ class Cell {
             center_lat=VALUES(center_lat),
             center_lon=VALUES(center_lon),
             updated=VALUES(updated)
-            `
+            `;
         }
         let args = [this.id, this.level, this.centerLat, this.centerLon];
         let result = await db.query(sql, args)
@@ -184,7 +184,7 @@ class Cell {
                 console.error("[Cell] Error: " + x);
                 return null;
             });
-        console.log("[Cell] Save:", result);
+        //console.log("[Cell] Save:", result);
     }
     /**
      * Load all S2Cells.

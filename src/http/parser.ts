@@ -700,10 +700,10 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
             let wlon = ws2cell.getCapBound().getRectBound().getCenter().lngDegrees;
             let wlevel = ws2cell.level;
             let weather = new Weather({
-                id: ws2cell.id.toString(), 
+                id: ws2cell.id.id.toString(), 
                 level: wlevel,
-                lat: wlat,
-                lon: wlon,
+                latitude: wlat,
+                longitude: wlon,
                 conditions: conditions.data,
                 updated: null
             });
@@ -775,7 +775,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
     
         if (fortDetails.length > 0) {
             let startFortDetails = process.hrtime();
-            fortDetails.forEach(fort => {
+            fortDetails.forEach(async fort => {
                 switch (fort.type) {
                     case 0: // gym
                         let gym: Gym;
@@ -793,7 +793,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                     case 1: // checkpoint
                         let pokestop: Pokestop;
                         try {
-                            pokestop = Pokestop.getById(fort.id);
+                            pokestop = await Pokestop.getById(fort.id);
                         } catch (err) {
                             pokestop = null;
                         }
@@ -830,10 +830,10 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
         
         if (quests.length > 0) {
             let startQuests = process.hrtime();
-            quests.forEach(quest => {
+            quests.forEach(async quest => {
                 let pokestop: Pokestop;
                 try {
-                    pokestop = Pokestop.getById(quest.fort_id);
+                    pokestop = await Pokestop.getById(quest.fort_id);
                 } catch (err) {
                     pokestop = null;
                 }

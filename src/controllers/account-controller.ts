@@ -3,6 +3,8 @@
 import { Account } from "../models/account";
 import * as moment from 'moment';
 
+const ClearSpinsInterval: number = 60 * 1000;
+
 class AccountController {
     static instance = new AccountController();
     isSetup: boolean = false;
@@ -13,7 +15,7 @@ class AccountController {
             return;
         }
         this.isSetup = true;
-        setInterval(() => this.loopClearSpins());
+        setInterval(() => this.loopClearSpins(), ClearSpinsInterval);
     }
     loopClearSpins() {
         let date = moment(new Date(), "HH:mm:ss").toString();             

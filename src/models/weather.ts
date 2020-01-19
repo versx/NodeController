@@ -36,23 +36,17 @@ class Weather {
            this.level = data.level;
            this.latitude = data.latitude;
            this.longitude = data.longitude;
-           this.gameplayCondition = data.conditions.gameplayWeather.gameplayCondition;
-           this.windDirection = data.conditions.displayWeather.windDirection;
-           this.cloudLevel = data.conditions.displayWeather.cloudLevel;
-           this.rainLevel = data.conditions.displayWeather.rainLevel;
-           this.windLevel = data.conditions.displayWeather.windLevel;
-           this.snowLevel = data.conditions.displayWeather.snowLevel;
-           this.fogLevel = data.conditions.displayWeather.fogLevel;
-           this.seLevel = data.conditions.displayWeather.specialEffectLevel;
+           this.gameplayCondition = data.conditions.gameplay_weather.gameplay_condition;
+           this.windDirection = data.conditions.display_weather.wind_direction;
+           this.cloudLevel = data.conditions.display_weather.cloud_level;
+           this.rainLevel = data.conditions.display_weather.rain_level;
+           this.windLevel = data.conditions.display_weather.wind_level;
+           this.snowLevel = data.conditions.display_weather.snow_level;
+           this.fogLevel = data.conditions.display_weather.fog_level;
+           this.seLevel = data.conditions.display_weather.special_effect_level;
            let alerts = data.conditions.alerts;
-           this.severity = alerts[0].severity;
-           this.warnWeather = alerts[0].warnWeather;
-           /*
-           for (let severityConditions in data.conditions.alerts) {
-               this.severity = severityConditions.severity;
-               this.warnWeather = severityConditions.warnWeather
-           }
-           */
+           this.severity = alerts.length > 0 ? alerts[0].severity : 0;
+           this.warnWeather = alerts.length > 0 ? alerts[0].warn_weather : 0;
            this.updated = data.updated;
    
         } else {
@@ -194,8 +188,6 @@ class Weather {
      */
     async save(update: boolean): Promise<void> {
         //TODO: Check if values changed, if not skip.
-        Weather.Weather[this.id] = this;
-
         let sql = `
         INSERT INTO weather (id, level, latitude, longitude, gameplay_condition, wind_direction, cloud_level, rain_level, wind_level, snow_level, fog_level, special_effect_level, severity, warn_weather, updated) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP())
@@ -219,14 +211,15 @@ class Weather {
             updated=VALUES(updated)
             `;
         }
-        let args = [this.id, this.level, this.latitude, this.longitude, this.gameplayCondition, this.windDirection, this.cloudLevel, this.rainLevel,
-             this.windLevel, this.snowLevel, this.fogLevel, this.seLevel, this.severity, this.warnWeather];
+        let args = [this.id.toString(), this.level, this.latitude, this.longitude, this.gameplayCondition, this.windDirection, this.cloudLevel, this.rainLevel,
+            this.windLevel, this.snowLevel, this.fogLevel, this.seLevel, this.severity, this.warnWeather];
         let result = await db.query(sql, args)
-             .then(x => x)
-             .catch(x => {
-                 console.error("[Weather] Error: " + x);
-             });
-         console.log("[Weather] Save:", result);
+            .then(x => x)
+            .catch(x => {
+                console.error("[Weather] Error: " + x);
+            });
+        Weather.Weather[this.id.toString()] = this;
+        console.log("[Weather] Save:", result);
     }
     /**
      * 
