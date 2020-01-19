@@ -1,7 +1,7 @@
 "use strict"
 
-import { Database } from '../data/mysql';
 import { WebhookController } from '../controllers/webhook-controller';
+import { Database } from '../data/mysql';
 import { Instance } from './instance';
 //import { winston } from '../utils/logger';
 import config      = require('../config.json');

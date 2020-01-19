@@ -23,7 +23,7 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
     constructor(name: string, minLevel: number, maxLevel: number, coords: Coord[]) {
         super(name, InstanceType.SmartCircleRaid, minLevel, maxLevel, coords);
 
-        coords.forEach((point: Coord) => {
+        coords.forEach(async (point: Coord) => {
             // Get all cells rouching a 630m (-5m for error) circle at center
             let coord = new S2.S2Point(point.lat, point.lon, 0);
             let radians = 0.00009799064306948; // 625m
@@ -37,7 +37,7 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
             let loaded = false;
             while (!loaded) {
                 try {
-                    let gyms: Gym[] = Gym.getByCellIds(cellIds);
+                    let gyms: Gym[] = await Gym.getByCellIds(cellIds);
                     /* TODO: Fix Coord cannot be used as index
                     this.smartRaidGymsInPoint[point] = gyms.map(gym => gym.id);
                     this.smartRaidPointsUpdated[point] = 0;// TODO: Date(timeIntervalSince1970: 0)

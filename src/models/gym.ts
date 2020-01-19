@@ -1,15 +1,18 @@
 "use strict"
 
-const gymsPath = './data/gyms.json';
-const fs       = require('fs');
-
-// TODO: Implement mysql
+import { WebhookController } from '../controllers/webhook-controller';
+import { Database } from '../data/mysql';
+//import { winston } from '../utils/logger';
+import config      = require('../config.json');
+const db           = new Database(config);
 
 /**
  * Gym model class.
  */
 class Gym {
     static Gyms = {};
+    static exRaidBossId = 600;
+    static exRaidBossForm = 0;
 
     id: string;
     lat: number;
@@ -88,49 +91,303 @@ class Gym {
             this.lon = data.lon;
             this.name = data.name;
             this.url = data.url;
-            this.guardPokemonId = data.guardPokemonId;
+            this.guardPokemonId = data.guard_pokemon_id;
             this.enabled = data.enabled;
-            this.lastModifiedTimestamp = data.lastModifiedTimestamp;
-            this.teamId = data.teamId;
-            this.raidEndTimestamp = data.raidEndTimestamp;
-            this.raidSpawnTimestamp = data.raidSpawnTimestamp;
-            this.raidBattleTimestamp = data.raidBattleTimestamp;
-            this.raidPokemonId = data.raidPokemonId;
-            this.raidLevel = data.raidLevel;
-            this.availableSlots = data.availableSlots;
+            this.lastModifiedTimestamp = data.last_modified_timestamp;
+            this.teamId = data.team_id;
+            this.raidEndTimestamp = data.raid_end_timestamp;
+            this.raidSpawnTimestamp = data.raid_spawn_timestamp;
+            this.raidBattleTimestamp = data.raid_battle_timestamp;
+            this.raidPokemonId = data.raid_pokemon_id;
+            this.raidLevel = data.raid_level;
+            this.availableSlots = data.available_slots;
             this.updated = data.updated;
-            this.exRaidEligible = data.exRaidEligible;
-            this.inBattle = data.inBattle;
-            this.raidPokemonMove1 = data.raidPokemonMove1;
-            this.raidPokemonMove2 = data.raidPokemonMove2;
-            this.raidPokemonForm = data.raidPokemonForm;
-            this.raidPokemonCp = data.raidPokemonCp;
-            this.raidPokemonGender = data.raidPokemonGender;
-            this.raidIsExclusive = data.raidIsExclusive;
-            this.cellId = data.cellId.toString();
-            this.totalCp = data.totalCp;
-            this.sponsorId = data.sponsorId;
+            this.exRaidEligible = data.ex_raid_eligible;
+            this.inBattle = data.in_battle;
+            this.raidPokemonMove1 = data.raid_pokemon_move_1;
+            this.raidPokemonMove2 = data.raid_pokemon_move_2;
+            this.raidPokemonForm = data.raid_pokemon_form;
+            this.raidPokemonCp = data.raidPokemon_cp;
+            this.raidPokemonGender = data.raid_pokemon_gender;
+            this.raidIsExclusive = data.raid_is_exclusive;
+            this.cellId = data.cell_id.toString();
+            this.totalCp = data.total_cp;
+            this.sponsorId = data.sponsor_id;
         }
     }
     /**
      * Get all gyms.
      */
-    static getAll() {
-        return this.load();
+    static async getAll(minLat: number, maxLat: number, minLon: number, maxLon: number, updated: number): Promise<Gym[]> {
+        let sql = `
+            SELECT id, lat, lon, name, url, guarding_pokemon_id, last_modified_timestamp, team_id, raid_end_timestamp, raid_spawn_timestamp, raid_battle_timestamp, raid_pokemon_id, enabled, availble_slots, updated, raid_level, ex_raid_eligible, in_battle, raid_pokemon_move_1, raid_pokemon_move_2, raid_pokemon_form, raid_pokemon_cp, raid_pokemon_gender, raid_is_exclusive, cell_id, total_cp, sponsor_id
+            FROM gym
+            WHERE lat >= ? AND lat <= ? AND lon >= ? AND lon <= ? AND updated > ? AND deleted = false
+        `;
+        let args = [minLat, maxLat, minLon, maxLon, updated];
+        let result = await db.query(sql, args)
+            .then(x => x)
+            .catch(x => {
+                console.error("[Gym] Error: " + x);
+                return null;
+            });
+
+        let gyms: Gym[] = [];
+        let keys = Object.values(result);
+        keys.forEach(key => {
+            let gym = new Gym({
+                id: key.id,
+                lat: key.lat,
+                lon: key.lon,
+                name: key.name,
+                url: key.url,
+                guard_pokemon_id: key.guard_pokemon_id,
+                last_modified_timestamp: key.last_modified_timestamp,
+                team_id: key.team_id,
+                raid_end_timestamp: key.raid_end_timestamp,
+                raid_spawn_timestamp: key.raid_spawn_timestamp,
+                raid_battle_timestamp: key.raid_battle_timestamp,
+                raid_pokemon_id: key.raid_pokemon_id,
+                enabled: key.enabled,
+                available_slots: key.available_slots,
+                updated: key.updated,
+                raid_level: key.raid_level,
+                ex_raid_eligible: key.ex_raid_eligible,
+                in_battle: key.in_battle,
+                raid_pokemon_move_1: key.raid_pokemon_move_1,
+                raid_pokemon_move_2: key.raid_pokemon_move_2,
+                raid_pokemon_form: key.raid_pokemon_form,
+                raid_pokemon_cp: key.raid_pokemon_cp,
+                raid_pokemon_gender: key.raid_pokemon_gender,
+                raid_is_exclusive: key.raid_is_exclusive,
+                cell_id: key.cell_id,
+                total_cp: key.total_cp,
+                sponsor_id: key.sponsor_id    
+            });
+            gyms.push(gym);
+            Gym.Gyms[gym.id] = gym;
+        });
+        return gyms;
     }
     /**
      * Get gym by gym id.
      * @param gymId 
      */
-    static getById(gymId: string) {
-        return this.Gyms[gymId];
+    static async getById(gymId: string, withDeleted: boolean = false) {
+        let withDeletedSQL: string;
+        if (withDeleted) {
+            withDeletedSQL = "";
+        } else {
+            withDeletedSQL = "AND deleted = false";
+        }
+        let sql = `
+            SELECT id, lat, lon, name, url, guarding_pokemon_id, last_modified_timestamp, team_id, raid_end_timestamp, raid_spawn_timestamp, raid_battle_timestamp, raid_pokemon_id, enabled, availble_slots, updated, raid_level, ex_raid_eligible, in_battle, raid_pokemon_move_1, raid_pokemon_move_2, raid_pokemon_form, raid_pokemon_cp, raid_pokemon_gender, raid_is_exclusive, cell_id, total_cp, sponsor_id
+            FROM gym
+            WHERE id = ? ${withDeletedSQL}
+            LIMIT 1
+        `;
+        let args = gymId;
+        let result = await db.query(sql, args)
+            .then(x => x)
+            .catch(x => {
+                console.error("[Pokestop] Error: " + x);
+                return null;
+            });
+       
+        let gym: Gym;
+        let keys = Object.values(result);
+        keys.forEach(key => {
+            gym = new Gym({
+                id: key.id,
+                lat: key.lat,
+                lon: key.lon,
+                name: key.name,
+                url: key.url,
+                guard_pokemon_id: key.guard_pokemon_id,
+                last_modified_timestamp: key.last_modified_timestamp,
+                team_id: key.team_id,
+                raid_end_timestamp: key.raid_end_timestamp,
+                raid_spawn_timestamp: key.raid_spawn_timestamp,
+                raid_battle_timestamp: key.raid_battle_timestamp,
+                raid_pokemon_id: key.raid_pokemon_id,
+                enabled: key.enabled,
+                available_slots: key.available_slots,
+                updated: key.updated,
+                raid_level: key.raid_level,
+                ex_raid_eligible: key.ex_raid_eligible,
+                in_battle: key.in_battle,
+                raid_pokemon_move_1: key.raid_pokemon_move_1,
+                raid_pokemon_move_2: key.raid_pokemon_move_2,
+                raid_pokemon_form: key.raid_pokemon_form,
+                raid_pokemon_cp: key.raid_pokemon_cp,
+                raid_pokemon_gender: key.raid_pokemon_gender,
+                raid_is_exclusive: key.raid_is_exclusive,
+                cell_id: key.cell_id,
+                total_cp: key.total_cp,
+                sponsor_id: key.sponsor_id    
+            });
+            Gym.Gyms[gym.id] = gym;
+        });
+        return gym;
     }
     /**
      * Get gyms in cell ids.
      * @param cellIds 
      */
-    static getByCellIds(cellIds: string[]) {
-        return new Gym[0]; // TODO: Implement getByCellIds
+    static async getByCellIds(cellIds: string[]) {
+        if (cellIds.length > 10000) {
+            let result: Gym[] = [];
+            let count = Math.ceil(cellIds.length / 10000.0);
+            for (let i = 0; i < count; i++) {
+                let start = 10000 * i;
+                let end = Math.min(10000 * (i + 1) - 1, cellIds.length - 1);
+                let splice = cellIds.splice(start, end); // TODO: Double check
+                let spliceResult = this.getByIds(splice);
+                (await spliceResult).forEach(x => result.push(x));
+                //result.push(spliceResult); // TODO: Double check
+            }
+            return result;
+        }
+        
+        if (cellIds.length === 0) {
+            return [];
+        }
+
+        let inSQL = "(";
+        for (let i = 1; i < cellIds.length; i++) {
+            inSQL += "?, "; // TODO: Double check
+        }
+        inSQL += "?)";
+        
+        let sql = `
+            SELECT id, lat, lon, name, url, guarding_pokemon_id, last_modified_timestamp, team_id, raid_end_timestamp, raid_spawn_timestamp, raid_battle_timestamp, raid_pokemon_id, enabled, availble_slots, updated, raid_level, ex_raid_eligible, in_battle, raid_pokemon_move_1, raid_pokemon_move_2, raid_pokemon_form, raid_pokemon_cp, raid_pokemon_gender, raid_is_exclusive, cell_id, total_cp, sponsor_id
+            FROM gym
+            WHERE cell_id IN ${inSQL} AND deleted = false
+        `;
+
+        let args = cellIds;
+        let result = await db.query(sql, args)
+            .then(x => x)
+            .catch(x => {
+                console.error("[Pokestop] Error: " + x);
+                return null;
+            });
+       
+        let gyms: Gym[] = [];
+        let keys = Object.values(result);
+        keys.forEach(key => {
+            let gym = new Gym({
+                id: key.id,
+                lat: key.lat,
+                lon: key.lon,
+                name: key.name,
+                url: key.url,
+                guard_pokemon_id: key.guard_pokemon_id,
+                last_modified_timestamp: key.last_modified_timestamp,
+                team_id: key.team_id,
+                raid_end_timestamp: key.raid_end_timestamp,
+                raid_spawn_timestamp: key.raid_spawn_timestamp,
+                raid_battle_timestamp: key.raid_battle_timestamp,
+                raid_pokemon_id: key.raid_pokemon_id,
+                enabled: key.enabled,
+                available_slots: key.available_slots,
+                updated: key.updated,
+                raid_level: key.raid_level,
+                ex_raid_eligible: key.ex_raid_eligible,
+                in_battle: key.in_battle,
+                raid_pokemon_move_1: key.raid_pokemon_move_1,
+                raid_pokemon_move_2: key.raid_pokemon_move_2,
+                raid_pokemon_form: key.raid_pokemon_form,
+                raid_pokemon_cp: key.raid_pokemon_cp,
+                raid_pokemon_gender: key.raid_pokemon_gender,
+                raid_is_exclusive: key.raid_is_exclusive,
+                cell_id: key.cell_id,
+                total_cp: key.total_cp,
+                sponsor_id: key.sponsor_id    
+            });
+            gyms.push(gym);
+            Gym.Gyms[gym.id] = gym;
+        });
+        return gyms;
+    }
+    /**
+     * Get all Gyms with specific IDs.
+     * @param ids 
+     */
+    static async getByIds(ids: string[]): Promise<Gym[]> {
+        if (ids.length > 10000) {
+            let result: Gym[] = [];
+            let count = Math.ceil(ids.length / 10000.0);
+            for (let i = 0; i < count; i++) {
+                let start = 10000 * i;
+                let end = Math.min(10000 * (i + 1) - 1, ids.length - 1);
+                let splice = ids.splice(start, end); // TODO: Double check
+                let spliceResult = this.getByIds(splice);
+                (await spliceResult).forEach(x => result.push(x));
+                //result.push(spliceResult); // TODO: Double check
+            }
+            return result;
+        }
+        
+        if (ids.length === 0) {
+            return [];
+        }
+
+        let inSQL = "(";
+        for (let i = 1; i < ids.length; i++) {
+            inSQL += "?, "; // TODO: Double check
+        }
+        inSQL += "?)";
+        
+        let sql = `
+        SELECT id, lat, lon, name, url, guarding_pokemon_id, last_modified_timestamp, team_id, raid_end_timestamp, raid_spawn_timestamp, raid_battle_timestamp, raid_pokemon_id, enabled, availble_slots, updated, raid_level, ex_raid_eligible, in_battle, raid_pokemon_move_1, raid_pokemon_move_2, raid_pokemon_form, raid_pokemon_cp, raid_pokemon_gender, raid_is_exclusive, cell_id, total_cp, sponsor_id
+        FROM gym
+        WHERE id IN ${inSQL} AND deleted = false
+        `;        
+        let args = ids;
+        let result = await db.query(sql, args)
+            .then(x => x)
+            .catch(x => {
+                console.error("[Gym] Error: " + x);
+                return null;
+            });
+       
+        let gyms: Gym[] = [];
+        let keys = Object.values(result);
+        keys.forEach(key => {
+            let gym = new Gym({
+                id: key.id,
+                lat: key.lat,
+                lon: key.lon,
+                name: key.name,
+                url: key.url,
+                guard_pokemon_id: key.guard_pokemon_id,
+                last_modified_timestamp: key.last_modified_timestamp,
+                team_id: key.team_id,
+                raid_end_timestamp: key.raid_end_timestamp,
+                raid_spawn_timestamp: key.raid_spawn_timestamp,
+                raid_battle_timestamp: key.raid_battle_timestamp,
+                raid_pokemon_id: key.raid_pokemon_id,
+                enabled: key.enabled,
+                available_slots: key.available_slots,
+                updated: key.updated,
+                raid_level: key.raid_level,
+                ex_raid_eligible: key.ex_raid_eligible,
+                in_battle: key.in_battle,
+                raid_pokemon_move_1: key.raid_pokemon_move_1,
+                raid_pokemon_move_2: key.raid_pokemon_move_2,
+                raid_pokemon_form: key.raid_pokemon_form,
+                raid_pokemon_cp: key.raid_pokemon_cp,
+                raid_pokemon_gender: key.raid_pokemon_gender,
+                raid_is_exclusive: key.raid_is_exclusive,
+                cell_id: key.cell_id,
+                total_cp: key.total_cp,
+                sponsor_id: key.sponsor_id    
+            });
+            gyms.push(gym);
+            Gym.Gyms[gym.id] = gym;
+        });
+        return gyms;
     }
     /**
      * Add gym details from GetMapObjects response.
@@ -157,23 +414,173 @@ class Gym {
     /**
      * Save gym.
      */
-    save() {
+    async save() {
         //TODO: Check if values changed, if not skip.
+        let oldGym: Gym;
+        try {
+            oldGym = await Gym.getById(this.id, true);
+        } catch (err) {
+            oldGym = null;
+        }
+
+        if (this.raidIsExclusive && Gym.exRaidBossId) {
+            this.raidPokemonId = Gym.exRaidBossId;
+            this.raidPokemonForm = Gym.exRaidBossForm || 0;
+        }
+        
+        let sql: string = "";
+        let args = [];
+        this.updated = new Date().getUTCSeconds();        
+        if (oldGym === undefined || oldGym === null) {
+            WebhookController.instance.addGymEvent(this);
+            WebhookController.instance.addGymInfoEvent(this);
+            let now = new Date().getUTCSeconds();
+            let raidBattleTime = this.raidBattleTimestamp || 0;
+            let raidEndTime = this.raidEndTimestamp || 0;
+            
+            if (raidBattleTime > now && this.raidLevel || 0 !== 0) {
+                WebhookController.instance.addEggEvent(this);
+            } else if (raidEndTime > now && this.raidPokemonId || 0 !== 0) {
+                WebhookController.instance.addRaidEvent(this);
+            }            
+            sql = `
+                INSERT INTO gym (id, lat, lon, name, url, guarding_pokemon_id, last_modified_timestamp, team_id, raid_end_timestamp, raid_spawn_timestamp, raid_battle_timestamp, raid_pokemon_id, enabled, availble_slots, raid_level, ex_raid_eligible, in_battle, raid_pokemon_move_1, raid_pokemon_move_2, raid_pokemon_form, raid_pokemon_cp, raid_pokemon_gender, raid_is_exclusive, cell_id, total_cp, sponsor_id, updated, first_seen_timestamp)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP(), UNIX_TIMESTAMP())
+            `;
+            args.push(this.id);
+        } else {
+            if (oldGym.cellId && this.cellId == null) {
+                this.cellId = oldGym.cellId;
+            }
+            if (oldGym.name && (this.name === undefined || this.name === null)) {
+                this.name = oldGym.name;
+            }
+            if (oldGym.url && (this.url === undefined || this.url === null)) {
+                this.url = oldGym!.url;
+            }
+            if (oldGym.raidIsExclusive && (this.raidIsExclusive === undefined || this.raidIsExclusive === null)) {
+                this.raidIsExclusive = oldGym.raidIsExclusive;
+            }
+            if (oldGym.availableSlots !== this.availableSlots || oldGym!.teamId !== this.teamId || oldGym.inBattle !== this.inBattle) {
+                WebhookController.instance.addGymInfoEvent(this);
+            }            
+            if ((this.raidEndTimestamp === undefined || this.raidEndTimestamp === null) && oldGym.raidEndTimestamp) {
+                this.raidEndTimestamp = oldGym.raidEndTimestamp;
+            }            
+            if ((this.raidSpawnTimestamp && this.raidSpawnTimestamp !== 0) &&
+                (
+                    oldGym.raidLevel !== this.raidLevel ||
+                    oldGym.raidPokemonId !== this.raidPokemonId ||
+                    oldGym.raidSpawnTimestamp !== this.raidSpawnTimestamp
+                )) {
+                
+                let now = new Date().getUTCSeconds();
+                let raidBattleTime = this.raidBattleTimestamp || 0;
+                let raidEndTime = this.raidEndTimestamp || 0;
+                
+                if (raidBattleTime > now && this.raidLevel || 0 !== 0) {
+                    WebhookController.instance.addEggEvent(this);
+                } else if (raidEndTime > now && this.raidPokemonId || 0 !== 0) {
+                    WebhookController.instance.addRaidEvent(this);
+                }
+            }
+            
+            sql = `
+                UPDATE gym
+                SET lat = ?, lon = ? , name = ? , url = ? , guarding_pokemon_id = ? , last_modified_timestamp = ? , team_id = ? , raid_end_timestamp = ? , raid_spawn_timestamp = ? , raid_battle_timestamp = ? , raid_pokemon_id = ? , enabled = ? , availble_slots = ? , updated = UNIX_TIMESTAMP(), raid_level = ?, ex_raid_eligible = ?, in_battle = ?, raid_pokemon_move_1 = ?, raid_pokemon_move_2 = ?, raid_pokemon_form = ?, raid_pokemon_cp = ?, raid_pokemon_gender = ?, raid_is_exclusive = ?, cell_id = ?, deleted = false, total_cp = ?, sponsor_id = ?
+                WHERE id = ?
+            `;
+        }
+        
+        args.push(this.lat);
+        args.push(this.lon);
+        args.push(this.name);
+        args.push(this.url);
+        args.push(this.guardPokemonId);
+        args.push(this.lastModifiedTimestamp);
+        args.push(this.teamId);
+        args.push(this.raidEndTimestamp);
+        args.push(this.raidSpawnTimestamp);
+        args.push(this.raidBattleTimestamp);
+        args.push(this.raidPokemonId);
+        args.push(this.enabled);
+        args.push(this.availableSlots);
+        args.push(this.raidLevel);
+        args.push(this.exRaidEligible);
+        args.push(this.inBattle);
+        args.push(this.raidPokemonMove1);
+        args.push(this.raidPokemonMove2);
+        args.push(this.raidPokemonForm);
+        args.push(this.raidPokemonCp);
+        args.push(this.raidPokemonGender);
+        args.push(this.raidIsExclusive);
+        args.push(this.cellId);
+        args.push(this.totalCp);
+        args.push(this.sponsorId);
+        if (oldGym) {
+            args.push(this.id);
+        }
+
+        let result = await db.query(sql, args)
+            .then(x => x)
+            .catch(x => {
+                console.error("[Gym] Error: " + x);
+                return null;
+            });
+        console.log("[Gym] Save:", result);
         Gym.Gyms[this.id] = this;
-        // TODO: Save to mysql
     }
     /**
      * Load all gyms.
      */
-    static load() {
-        let data = fs.readFileSync(gymsPath);
-        let keys = Object.keys(data);
-        keys.forEach(function(key) {
-            this.Gyms[key] = new Gym(data[key]);
+    static async load(): Promise<Gym[]> {
+        let sql = `
+            SELECT id, lat, lon, name, url, guarding_pokemon_id, last_modified_timestamp, team_id, raid_end_timestamp, raid_spawn_timestamp, raid_battle_timestamp, raid_pokemon_id, enabled, availble_slots, updated, raid_level, ex_raid_eligible, in_battle, raid_pokemon_move_1, raid_pokemon_move_2, raid_pokemon_form, raid_pokemon_cp, raid_pokemon_gender, raid_is_exclusive, cell_id, total_cp, sponsor_id
+            FROM gym
+        `;
+        let result = await db.query(sql)
+            .then(x => x)
+            .catch(x => {
+                console.error("[Gym] Error: " + x);
+                return null;
+            });
+
+        let gyms: Gym[] = [];
+        let keys = Object.values(result);
+        keys.forEach(key => {
+            let gym = new Gym({
+                id: key.id,
+                lat: key.lat,
+                lon: key.lon,
+                name: key.name,
+                url: key.url,
+                guard_pokemon_id: key.guard_pokemon_id,
+                last_modified_timestamp: key.last_modified_timestamp,
+                team_id: key.team_id,
+                raid_end_timestamp: key.raid_end_timestamp,
+                raid_spawn_timestamp: key.raid_spawn_timestamp,
+                raid_battle_timestamp: key.raid_battle_timestamp,
+                raid_pokemon_id: key.raid_pokemon_id,
+                enabled: key.enabled,
+                available_slots: key.available_slots,
+                updated: key.updated,
+                raid_level: key.raid_level,
+                ex_raid_eligible: key.ex_raid_eligible,
+                in_battle: key.in_battle,
+                raid_pokemon_move_1: key.raid_pokemon_move_1,
+                raid_pokemon_move_2: key.raid_pokemon_move_2,
+                raid_pokemon_form: key.raid_pokemon_form,
+                raid_pokemon_cp: key.raid_pokemon_cp,
+                raid_pokemon_gender: key.raid_pokemon_gender,
+                raid_is_exclusive: key.raid_is_exclusive,
+                cell_id: key.cell_id,
+                total_cp: key.total_cp,
+                sponsor_id: key.sponsor_id    
+            });
+            gyms.push(gym);
+            Gym.Gyms[gym.id] = gym;
         });
-        //this.Gyms = JSON.parse(data);
-        // TODO: Load from mysql
-        return this.Gyms;
+        return gyms;
     }
 }
 

@@ -9,9 +9,8 @@ import { Gym } from '../models/gym';
 import { Pokestop } from '../models/pokestop';
 import { Cell } from '../models/cell';
 import { Weather } from '../models/weather';
-//import { RedisClient } from '../redis-client';
 import { InstanceController } from '../controllers/instances/instance-controller';
-import { S1Angle } from 'nodes2ts';
+//import { RedisClient } from '../redis-client';
 //import { winston } from '../utils/logger';
 
 //:haunter:
@@ -341,7 +340,7 @@ async function _handleRawData(req, res) {
                 let s2cell = new S2.S2Cell(s2cellId);
                 let center = s2cell.getCenter();
                 let coord = new S2.S2LatLng(center.x, center.y);
-                let radians: S1Angle = new S2.S1Angle(Math.max(targetMaxDistance, 100)); // REVIEW: wth is radians
+                let radians: S2.S1Angle = new S2.S1Angle(Math.max(targetMaxDistance, 100)); // REVIEW: wth is radians
                 if (coord.getDistance(targetCoord) <= radians) {
                     inArea = true;
                 }
@@ -412,7 +411,7 @@ async function _handleRawData(req, res) {
             // Only Encounter pokemon within 35m of initial pokemon scann
             let pokemonId: number = parseInt(pokemon.data.pokemon_data.pokemon_id);
             if (controller) {
-                let radians: S1Angle = new S1Angle(35); // REVIEW: wth is radians
+                let radians: S2.S1Angle = new S2.S1Angle(35); // REVIEW: wth is radians
                 /*
                 TODO: Fix scatterPokemon
                 if (distance <= radians && controller.scatterPokemon.contains(pokemonId)) {
@@ -780,7 +779,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                     case 0: // gym
                         let gym: Gym;
                         try {
-                            gym = Gym.getById(fort.id);
+                            gym = await Gym.getById(fort.id);
                         } catch (err) {
                             gym = null;
                         }
@@ -811,10 +810,10 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
         
         if (gymInfos.length > 0) {
             let startGymInfos = process.hrtime();
-            gymInfos.forEach(gymInfo => {
+            gymInfos.forEach(async gymInfo => {
                 let gym: Gym;
                 try {
-                    gym = Gym.getById(gymInfo.gym_status_and_defenders.pokemon_fort_proto.id);
+                    gym = await Gym.getById(gymInfo.gym_status_and_defenders.pokemon_fort_proto.id);
                 } catch (err) {
                     gym = null
                 }
