@@ -8,11 +8,14 @@
 
 import { AccountController } from './controllers/account-controller';
 import { AssignmentController } from './controllers/assignment-controller';
+import { DbController } from './controllers/db-controller';
 import { InstanceController } from './controllers/instances/instance-controller';
 import { WebhookController } from './controllers/webhook-controller';
 import { WebhookListener } from './http/listener';
 import config     = require('./config.json');
 
+let db = DbController.instance;
+db.migrate(0, 1);
 // Setup controllers
 InstanceController.instance.setup();
 AccountController.instance.setup();

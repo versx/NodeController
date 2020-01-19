@@ -1,5 +1,6 @@
 # Config Data
 src/config.json
+backups/*
 # Logs
 logs
 *.log

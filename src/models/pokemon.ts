@@ -221,8 +221,8 @@ class Pokemon /*extends Consumable*/ {
             WHERE id = ?
             LIMIT 1
         `;
-        
-        let results = await db.query(sql, [encounterId])
+        let args = [encounterId];
+        let results = await db.query(sql, args)
             .then(x => x)
             .catch(x => {
                 console.error("[Pokemon] Error: " + x);
