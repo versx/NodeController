@@ -136,7 +136,7 @@ class Pokemon /*extends Consumable*/ {
     static getById(encounterId: string) {
         return this.Pokemon[encounterId.toString()];
     }
-    addEncounter(encounter: any, username: string) {
+    async addEncounter(encounter: any, username: string) {
         this.pokemonId = encounter.wild_pokemon.pokemon_data.pokemon_id;
         this.cp = encounter.wild_pokemon.pokemon_data.cp;
         this.move1 = encounter.wild_pokemon.pokemon_data.move1;
@@ -181,7 +181,7 @@ class Pokemon /*extends Consumable*/ {
             if (this.expireTimestampVerified === false && this.spawnId !== undefined) {
                 let spawnpoint: Spawnpoint;
                 try {
-                    spawnpoint = Spawnpoint.getById(this.spawnId);
+                    spawnpoint = await Spawnpoint.getById(this.spawnId);
                 } catch (err) {
                     spawnpoint = null;
                 }

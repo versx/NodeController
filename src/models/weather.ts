@@ -68,7 +68,7 @@ class Weather {
         }
     }
     /**
-     * Get all Weather models.
+     * Get all Weather Cells within a minimum and maximum latitude and longitude.
      * @param minLat 
      * @param maxLat 
      * @param minLon 
@@ -183,7 +183,7 @@ class Weather {
         return weather;
     }
     /**
-     * 
+     * Save Spawnpoint model data.
      * @param update 
      */
     async save(update: boolean): Promise<void> {
@@ -222,7 +222,7 @@ class Weather {
         console.log("[Weather] Save:", result);
     }
     /**
-     * 
+     * Load all Weather Cells.
      */
     static async load(): Promise<Weather[]> {
         let sql = `
