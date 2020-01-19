@@ -124,27 +124,28 @@ class Pokemon /*extends Consumable*/ {
             this.id = data.id.toString();
             this.lat = data.lat;
             this.lon = data.lon;
-            this.pokemonId = data.pokemonId;
+            this.pokemonId = data.pokemon_id;
             this.form = data.form;
             this.level = data.level;
             this.costume = data.costume;
             this.weather = data.weather;
             this.gender = data.gender;
-            this.spawnId = data.spawnId;
-            this.cellId = data.cellId.toString();
-            this.expireTimestamp = data.expireTimestamp;
-            this.expireTimestampVerified = data.expireTimestampVerified;
+            this.spawnId = data.spawn_id;
+            this.cellId = data.cell_id.toString();
+            this.expireTimestamp = data.expire_timestamp;
+            this.expireTimestampVerified = data.expire_timestamp_verified;
             this.cp = data.cp;
-            this.move1 = data.move1;
-            this.move2 = data.move2;
+            this.move1 = data.move_1;
+            this.move2 = data.move_2;
             this.size = data.height;
             this.weight = data.weight;
-            this.atkIv = data.atkIv;
-            this.defIv = data.defIv;
-            this.staIv = data.staIv;
+            this.atkIv = data.atk_iv;
+            this.defIv = data.def_iv;
+            this.staIv = data.sta_iv;
             this.username = data.username;
             this.updated = data.updated;
             this.changed = data.changed;
+            this.displayPokemonId = data.display_pokemon_id;
         }
     }
     /**
@@ -187,8 +188,8 @@ class Pokemon /*extends Consumable*/ {
                 weather: key.weather,
                 level: key.level,
                 cp: key.cp,
-                move1: key.move1,
-                move2: key.move2,
+                move1: key.move_1,
+                move2: key.move_2,
                 size: key.size,
                 weight: key.weight,
                 spawn_id: key.spawn_id,
@@ -412,7 +413,7 @@ class Pokemon /*extends Consumable*/ {
             oldPokemon = null;
         }
         let sql: string = "";
-        let args; [];
+        let args = [];
         if (oldPokemon === null) {
             bindFirstSeen = false;
             bindChangedTimestamp = false;
@@ -430,9 +431,9 @@ class Pokemon /*extends Consumable*/ {
             this.firstSeenTimestamp = oldPokemon.firstSeenTimestamp;            
             if (this.expireTimestamp === undefined || this.expireTimestamp === null) {
                 let now = new Date().getUTCSeconds();
-                let oldExpireDate: any = {}; // TODO: Date(timeIntervalSince1970: Double(oldPokemon.expireTimestamp || 0));
-                if (oldExpireDate.timeIntervalSince(now) < Pokemon.DefaultTimeReseen) {
-                    // TODO: this.expireTimestamp = (Date().timeIntervalSince1970) + Pokemon.DefaultTimeReseen;
+                let oldExpireDate: number = oldPokemon.expireTimestamp;
+                if ((oldExpireDate - now) < Pokemon.DefaultTimeReseen) { // TODO: Check time difference is correct.
+                    this.expireTimestamp = new Date().getUTCSeconds() + Pokemon.DefaultTimeReseen;
                 } else {
                     this.expireTimestamp = oldPokemon.expireTimestamp;
                 }
@@ -622,6 +623,7 @@ class Pokemon /*extends Consumable*/ {
         }
         let pokemons: Pokemon[] = [];
         keys.forEach(key => {
+            console.log("Pokemon:", key);
             let pokemon = new Pokemon({
                 id: key.id,
                 lat: key.lat,
@@ -634,8 +636,8 @@ class Pokemon /*extends Consumable*/ {
                 weather: key.weather,
                 level: key.level,
                 cp: key.cp,
-                move1: key.move1,
-                move2: key.move2,
+                move1: key.move_1,
+                move2: key.move_2,
                 size: key.size,
                 weight: key.weight,
                 spawn_id: key.spawn_id,

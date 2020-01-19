@@ -70,21 +70,23 @@ class Device {
         let result = await db.query(sql, uuid)
             .then(x => x)
             .catch(x => { 
-                console.error("[DEVICE] Failed to get Device with uuid " + uuid);
+                console.error("[Device] Failed to get Device with uuid", uuid, "Error:", x);
             });
         let device: Device;
-        let keys = Object.values(result);
-        keys.forEach(key => {
-            device = new Device(
-                key.uuid,
-                key.instance_name,
-                key.account_username,
-                key.last_host || "",
-                key.last_seen || "",
-                key.last_lat || "",
-                key.last_lon || ""
-            );
-        })
+        if (result) {
+            let keys = Object.values(result);
+            keys.forEach(key => {
+                device = new Device(
+                    key.uuid,
+                    key.instance_name,
+                    key.account_username,
+                    key.last_host || "",
+                    key.last_seen || "",
+                    key.last_lat || "",
+                    key.last_lon || ""
+                );
+            });
+        }
         return device;
     }
     /**
@@ -103,9 +105,9 @@ class Device {
         let results = await db.query(sql, args)
             .then(x => x)
             .catch(x => {
-                console.error("[DEVICE] Error: " + x);
+                console.error("[Device] Error: " + x);
             });
-        console.debug("[DEVICE] SetLastLocation: " + results);
+        console.debug("[Device] SetLastLocation: " + results);
     }
     /**
      * Update host information for device.
@@ -122,9 +124,9 @@ class Device {
         let results = await db.query(sql, args)
             .then(x => x)
             .catch(x => {
-                console.error("[DEVICE] Error: " + x);
+                console.error("[Device] Error: " + x);
             });
-        console.debug("[DEVICE] Touch: " + results);
+        console.debug("[Device] Touch: " + results);
         //redisClient.addDevice(this);
     }
     /**
@@ -139,9 +141,9 @@ class Device {
         let results = await db.query(sql, args)
             .then(x => x)
             .catch(x => {
-                console.error("[DEVICE] Error: " + x);
+                console.error("[Device] Error: " + x);
             });
-        console.debug("[DEVICE] Insert: " + results);
+        console.debug("[Device] Insert: " + results);
         //redisClient.addDevice(this);
     }
     /**
@@ -157,10 +159,10 @@ class Device {
         let results = await db.query(sql, args)
             .then(x => x)
             .catch(x => {
-                console.error("[DEVICE] Error: " + x);
+                console.error("[Device] Error: " + x);
                 return null;
             });
-        console.debug("[DEVICE] ClearGroup: " + results);
+        console.debug("[Device] ClearGroup: " + results);
         //redisClient.addDevice(this);
     }
     /**
@@ -177,9 +179,9 @@ class Device {
        let results = await db.query(sql, args)
            .then(x => x)
            .catch(x => {
-               console.error("[DEVICE] Error: " + x);
+               console.error("[Device] Error: " + x);
            });
-        console.debug("[DEVICE] Save: " + results);
+        console.debug("[Device] Save: " + results);
        //redisClient.addDevice(this);
     }
     /**
@@ -191,7 +193,7 @@ class Device {
         /*
         client.get(DEVICE_LIST, function(err: Error, result) {
             if (err) {
-                console.error("[DEVICE] load: " + err);
+                console.error("[Device] load: " + err);
             }
             if (result) {
                 let data = JSON.parse(result);
@@ -209,7 +211,7 @@ class Device {
                         device.lastLon
                     );
                 }
-                console.log("[DEVICE] RESULT:", data);
+                console.log("[Device] RESULT:", data);
             }
         });
         */
@@ -220,7 +222,7 @@ class Device {
         let results = await db.query(sql)
             .then(x => x)
             .catch(x => {
-                console.error("[DEVICE] Error: " + x);
+                console.error("[Device] Error: " + x);
                 return null;
             });
         let devices: Device[] = [];

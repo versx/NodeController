@@ -177,7 +177,7 @@ class Instance implements IInstance {
                 let instance = new Instance(
                     key.name,
                     key.type,
-                    data // TODO: Deserialize data to InstanceData object.
+                    data
                 );
                 instances.push(instance);
                 InstanceController.instance.Instances[key.name] = instance;

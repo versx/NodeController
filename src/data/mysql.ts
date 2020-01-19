@@ -29,6 +29,8 @@ class Database {
                         console.error('[MYSQL] Database connection was refused.');
                         break;
                 }
+            } else {
+                console.log('[MYSQL] Connected to MySql host', config.db.host + ':' + config.db.port);
             }
             if (connection) {
                 connection.release();

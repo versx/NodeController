@@ -13,6 +13,8 @@ import { InstanceController } from '../controllers/instances/instance-controller
 //import { RedisClient } from '../redis-client';
 //import { winston } from '../utils/logger';
 
+// TODO: Process pool for data handlers.
+
 //:haunter:
 //const client = new RedisClient();
 
@@ -428,8 +430,14 @@ async function _handleRawData(req, res) {
         data["scatter_pokemon"] = scatterPokemon;
     }
 
-    console.debug("[Raw] Sending response to device:", data);
-    res.send(data);
+    if (data) {
+        try {
+        console.debug("[Raw] Sending response to device:", data);
+        res.send(data);
+        } catch (err) {
+            console.log("[Raw] Failed to reply to device:", err);
+        }
+    }
 
     handleConsumables(
         cells,
