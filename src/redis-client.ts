@@ -9,7 +9,7 @@ import { Gym } from './models/gym';
 import { Pokemon } from './models/pokemon';
 import { Pokestop } from './models/pokestop';
 import { Spawnpoint } from './models/spawnpoint';
-import { S2Cell } from './models/s2cell';
+import { Cell } from './models/cell';
 import { Weather } from './models/weather';
 
 const DEVICE_LIST = 'DEVICE_LIST';
@@ -169,7 +169,7 @@ class RedisClient {
      * 
      * @param cell 
      */
-    addCell(cell: S2Cell) {
+    addCell(cell: Cell) {
         cellList[cell.id] = cell;
     }
     /**
@@ -371,7 +371,7 @@ function cacheConsumables() {
             console.log("[REDIS] Cells", cellKeys.length);
             cellKeys.forEach(function(id) {
                 let cell = cellList[id];
-                if (cell instanceof S2Cell) {
+                if (cell instanceof Cell) {
                     let keys = Object.keys(cell);
                     keys.forEach(function(key) {
                         client.hset(cell.id, key, cell[key] || "");//, redis.print);

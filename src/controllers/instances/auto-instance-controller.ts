@@ -2,10 +2,12 @@
 
 import { Account } from "../../models/account";
 import { Pokestop } from "../../models/pokestop";
-import { S2Cell } from "../../models/s2cell";
+import { Cell } from "../../models/cell";
 
 import S2 = require('nodes2ts');
 import moment = require('moment');
+
+const AutoInstanceInterval: number = 2 * 1000;
 
 const cooldownDataArray = { '0.3': 0.16, '1': 1, '2': 2, '4': 3, '5': 4, '8': 5, '10': 7, '15': 9, '20': 12, '25': 15, '30': 17, '35': 18, '45': 20, '50': 20, '60': 21, '70': 23, '80': 24, '90': 25, '100': 26, '125': 29, '150': 32, '175': 34, '201': 37, '250': 41, '300': 46, '328': 48, '350': 50, '400': 54, '450': 58, '500': 62, '550': 66, '600': 70, '650': 74, '700': 77, '751': 82, '802': 84, '839': 88, '897': 90, '900': 91, '948': 95, '1007': 98, '1020': 102, '1100': 104, '1180': 109, '1200': 111, '1221': 113, '1300': 117, '1344': 119/*, TODO: number.MAX_VALUE: 120*/ };//.sorted { (lhs, rhs) -> Bool in
 //    lhs.key < rhs.key
@@ -29,7 +31,7 @@ class AutoInstanceController {
     private todayStops: Pokestop[];
     private todayStopsTries: Map<Pokestop, number>; //pokestop:tries
     private shouldExit: boolean;
-    private bootstrapCellIds: number[];
+    private bootstrapCellIds: string[];
     private bootstrapTotalCount: number = 0;
 
     constructor(name: string, area: any, type: AutoInstanceType, timeZoneOffset: number, minLevel: number, maxLevel: number, spinLimit: number) {
@@ -45,24 +47,24 @@ class AutoInstanceController {
         this.bootstrap();
 
         if (type === AutoInstanceType.Quest) {
-            setInterval(() => this.autoLoop());
+            setInterval(() => this.autoLoop(), AutoInstanceInterval);
         }
     }
     bootstrap() {
         console.info("[AutoInstanceController]", name, "Checking Bootstrap Status...");
         let start = new Date();
         let totalCount = 0;
-        let missingCellIds: [S2.S2CellId];
-        this.multiPolygon.polygons.forEach(polygon => {
+        let missingCellIds: S2.S2CellId[];
+        this.multiPolygon.polygons.forEach(async (polygon: any/*TODO: Implement polygon class*/) => {
             // TODO: actual multipolygon
             let cellIds = polygon.getS2CellIds(15, 15, Number.MAX_VALUE);
             totalCount += cellIds.length;
             let ids = cellIds.map(x => x.id);
             let done = false;
-            let cells = [S2Cell];
+            let cells: Cell[] = [];
             while (!done) {
                 try {
-                    cells = S2Cell.getInIds(ids);
+                    cells = await Cell.getInIds(ids);
                     done = true;
                 } catch (err) {
                     // TODO: sleep 1 second
@@ -71,12 +73,12 @@ class AutoInstanceController {
             for (let i = 0; i < cells.length; i++) {
                 let cell = cells[i];
                 if (cells.includes(cell)) {
-                    missingCellIds.push(new S2.S2CellId(cell.prototype.id));
+                    missingCellIds.push(new S2.S2CellId(cell.id));
                 }   
             }
         });
-        console.log("[AutoInstanceController]", name, "Bootstrap Status:", totalCount - missingCellIds.length + "/" + totalCount, "after", Math.round(new Date().getUTCSeconds() - start.getUTCSeconds()) + "s")
-        //this.bootstrapCellIds = missingCellIds; // TODO: fix
+        console.log("[AutoInstanceController]", name, "Bootstrap Status:", (totalCount - missingCellIds.length) + "/" + totalCount, "after", Math.round(new Date().getUTCSeconds() - start.getUTCSeconds()) + "s")
+        this.bootstrapCellIds = missingCellIds.map(x => x.id.toString());
         this.bootstrapTotalCount = totalCount;
     }
     update() {
@@ -85,7 +87,7 @@ class AutoInstanceController {
                 this.allStops = [];
                 this.multiPolygon.polygons.forEach(polygon => {
                     // TODO: let bounds = new S2.BoundingBox(polygon.outerRing.coordinates);
-                    let stops = Pokestop.getAll(); //minLat: bounds.southEast.latitude, maxLat: bounds.northWest.latitude, minLon: bounds.northWest.longitude, maxLon: bounds.southEast.longitude, updated: 0, questsOnly: false, showQuests: true, showLures: true, showInvasions: true) {
+                    let stops = Pokestop.getAll(0, 0, 0, 0, 0);//bounds.southEast.latitude, bounds.northWest.latitude, bounds.northWest.longitude, bounds.southEast.longitude, 0);
                     let keys = Object.keys(stops);
                     keys.forEach(key => {
                         let stop = stops[key];
@@ -116,12 +118,12 @@ class AutoInstanceController {
         });
         return 0;
     }
-    getTask(uuid: string, username: string) {
+    async getTask(uuid: string, username: string) {
         switch (this.type) {
             case AutoInstanceType.Quest:
                 if (this.bootstrapCellIds.length > 0) {
                     let target = this.bootstrapCellIds.pop();
-                    var cellId = new S2.S2CellId(target.toString());
+                    var cellId = new S2.S2CellId(target);
                     let cell = new S2.S2Cell(cellId);
                     let center = S2.S2LatLng.fromPoint(cell.getCenter());
                     
@@ -171,7 +173,7 @@ class AutoInstanceController {
                         let done = false;
                         while (!done) {
                             try {
-                                newStops = Pokestop.getIn(ids);
+                                newStops = await Pokestop.getInIds(ids);
                                 done = true;
                             } catch (err) {
                                 // TODO: sleep 1 second
@@ -234,7 +236,7 @@ class AutoInstanceController {
                     if (lastLat && lastLon) {
                         let current = { lat: lastLat, lon: lastLon };
                         let closest: Pokestop;
-                        let closestDistance: number = 10000000000000000;
+                        let closestDistance: number = 10000000000000000; // TODO: Fix numeric literals
                         let todayStopsC = this.todayStops;
                         if (!(todayStopsC.length > 0)) {
                             return { };
@@ -317,7 +319,7 @@ class AutoInstanceController {
                         let done: boolean = false;
                         while (!done) {
                             try {
-                                newStops = Pokestop.getIn(ids);
+                                newStops = await Pokestop.getInIds(ids);
                                 done = true;
                             } catch (err) {
                                 // TODO: sleep 1 second
@@ -346,7 +348,7 @@ class AutoInstanceController {
                 break;
         }
     }
-    getStatus(formatted: boolean) {
+    async getStatus(formatted: boolean) {
         switch (this.type) {
             case AutoInstanceType.Quest:
                 if (!(this.bootstrapCellIds.length > 0)) {
@@ -373,7 +375,7 @@ class AutoInstanceController {
                     let ids = this.allStops.map(function(stop) {
                         return stop.id
                     });
-                    let stops = Pokestop.getIn(ids);
+                    let stops = await Pokestop.getInIds(ids);
                     if (stops instanceof Pokestop) {
                         stops.forEach(function(stop) {
                             if (stop.questType !== undefined) {
@@ -423,7 +425,7 @@ class AutoInstanceController {
         //}
     }
     autoLoop() {
-        while (!this.shouldExit) {
+        //while (!this.shouldExit) {
             let date = moment(new Date(), 'HH:mm:ss');
             // TODO: formatter.timeZone = TimeZone(secondsFromGMT: timezoneOffset) ?? Localizer.global.timeZone;
             let split = date.toString().split(":");
@@ -433,7 +435,7 @@ class AutoInstanceController {
 
             let timeLeft = (23 - hour) * 3600 + (59 - minute) * 60 + (60 - second);
             let at = date.add(timeLeft);
-            console.log("[AutoInstanceController]", "[" + name + "]", "Clearing Quests in", timeLeft + "s", "at \(formatter.string(from: at)) (Currently: \(formatter.string(from: date)))");
+            console.log("[AutoInstanceController]", "[" + name + "]", "Clearing Quests in", timeLeft + "s", "at", "(formatter.string(from: at)) (Currently: \(formatter.string(from: date)))");
 
             if (timeLeft > 0) {
                 // TODO: sleep timeLeft
@@ -442,7 +444,8 @@ class AutoInstanceController {
                 }
                 if (this.allStops === undefined || this.allStops === null) {
                     console.log("[AutoInstanceController]", "[" + name + "]", "Tried clearing quests but no stops.");
-                    continue;
+                    //continue;
+                    return;
                 }
 
                 console.log("[AutoInstanceController]", "[" + name + "]", "Getting stop ids.");
@@ -464,7 +467,7 @@ class AutoInstanceController {
                 }
                 this.update();
             }
-        }
+        //}
     }
 }
 

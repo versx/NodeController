@@ -3,6 +3,7 @@
 const spawnpointsPath = './data/spawnpoints.json';
 const fs              = require('fs');
 
+// TODO: Implement mysql
 class Spawnpoint {
     static Spawnpoints = {};
 

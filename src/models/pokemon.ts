@@ -6,6 +6,7 @@ import * as moment from 'moment';
 const pokemonPath = './data/pokemon.json';
 const fs          = require('fs');
 
+// TODO: Implement mysql
 class Pokemon /*extends Consumable*/ {
     static Pokemon = {};
 

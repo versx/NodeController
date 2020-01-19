@@ -7,7 +7,7 @@ import { Device } from '../models/device';
 import { Pokemon } from '../models/pokemon';
 import { Gym } from '../models/gym';
 import { Pokestop } from '../models/pokestop';
-import { S2Cell } from '../models/s2cell';
+import { Cell } from '../models/cell';
 import { Weather } from '../models/weather';
 //import { RedisClient } from '../redis-client';
 import { InstanceController } from '../controllers/instances/instance-controller';
@@ -18,7 +18,6 @@ import { S1Angle } from 'nodes2ts';
 //const client = new RedisClient();
 
 let accounts = Account.getAll();
-//let devices = Device.getAll();
 
 let emptyCells = [];//[UInt64: Int]
 let levelCache = {};
@@ -56,7 +55,7 @@ class WebhookHandler {
  * @param {*} req 
  * @param {*} res 
  */
-function _handleRawData(req, res) {
+async function _handleRawData(req, res) {
     let jsonOpt: any = {};
     try {
         jsonOpt = JSON.parse(req.body);
@@ -339,8 +338,9 @@ function _handleRawData(req, res) {
         cells.forEach(cell => {
             if (inArea === false) {
                 let s2cellId = new S2.S2CellId(cell.toString());
-                let s2cell = new S2Cell(s2cellId);
-                let coord = new S2.S2LatLng(s2cell.centerLat, s2cell.centerLon);
+                let s2cell = new S2.S2Cell(s2cellId);
+                let center = s2cell.getCenter();
+                let coord = new S2.S2LatLng(center.x, center.y);
                 let radians: S1Angle = new S2.S1Angle(Math.max(targetMaxDistance, 100)); // REVIEW: wth is radians
                 if (coord.getDistance(targetCoord) <= radians) {
                     inArea = true;
@@ -471,11 +471,11 @@ function _handleControllerData(req, res) {
     let username: string = jsonO["username"];
     let minLevel: number = parseInt(jsonO["min_level"] || 0);
     let maxLevel: number = parseInt(jsonO["max_level"] || 29);
-    let device: Device = InstanceController.instance.Devices[uuid]; // TODO: Change
+    let device: Device = getDevice(uuid); //InstanceController.instance.Devices[uuid]; // TODO: Change
 
     switch (type) {
         case "init":
-            var firstWarningTimestamp = null;
+            let firstWarningTimestamp;
             if (device === undefined || device.accountUsername === undefined) {
                 firstWarningTimestamp = null;
             } else {
@@ -542,7 +542,10 @@ function _handleControllerData(req, res) {
                 }
                 if (device.accountUsername !== undefined) {
                     let oldAccount = accounts[device.accountUsername];
-                    if (oldAccount instanceof Account && oldAccount.firstWarningTimestamp === undefined && oldAccount.failed === undefined && oldAccount.failedTimestamp === undefined) {
+                    if (oldAccount instanceof Account && 
+                        oldAccount.firstWarningTimestamp === undefined && 
+                        oldAccount.failed                === undefined && 
+                        oldAccount.failedTimestamp       === undefined) {
                         res.send({
                             data: {
                                 username: oldAccount.username,
@@ -671,14 +674,14 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
             let lat = s2cell.getCapBound().getRectBound().getCenter().latDegrees;
             let lon = s2cell.getCapBound().getRectBound().getCenter().lngDegrees;
             let level = s2cell.level;
-            let cell = new S2Cell({
-                id: cellId.toString(),
-                level: level,
-                lat: lat,
-                lon: lon,
-                updated: new Date().getUTCSeconds()
-            });
-            cell.save();
+            let cell = new Cell(
+                cellId.toString(),
+                level,
+                lat,
+                lon,
+                new Date().getUTCSeconds()
+            );
+            cell.save(true); //TODO: Add check if cell already exists.
             //client.addCell(cell);
             
             if (gymIdsPerCell[cellId] === undefined) {
@@ -697,14 +700,14 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
             let wlon = ws2cell.getCapBound().getRectBound().getCenter().lngDegrees;
             let wlevel = ws2cell.level;
             let weather = new Weather({
-                id: ws2cell.id.toString(), 
+                id: ws2cell.id.id.toString(), 
                 level: wlevel,
-                lat: wlat,
-                lon: wlon,
+                latitude: wlat,
+                longitude: wlon,
                 conditions: conditions.data,
                 updated: null
             });
-            weather.save(); // TODO: update: true
+            weather.save(true);
             //client.addWeather(weather);
         });
         let endClientWeathers = process.hrtime(startClientWeathers);
@@ -772,7 +775,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
     
         if (fortDetails.length > 0) {
             let startFortDetails = process.hrtime();
-            fortDetails.forEach(fort => {
+            fortDetails.forEach(async fort => {
                 switch (fort.type) {
                     case 0: // gym
                         let gym: Gym;
@@ -790,7 +793,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                     case 1: // checkpoint
                         let pokestop: Pokestop;
                         try {
-                            pokestop = Pokestop.getById(fort.id);
+                            pokestop = await Pokestop.getById(fort.id);
                         } catch (err) {
                             pokestop = null;
                         }
@@ -827,10 +830,10 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
         
         if (quests.length > 0) {
             let startQuests = process.hrtime();
-            quests.forEach(quest => {
+            quests.forEach(async quest => {
                 let pokestop: Pokestop;
                 try {
-                    pokestop = Pokestop.getById(quest.fort_id);
+                    pokestop = await Pokestop.getById(quest.fort_id);
                 } catch (err) {
                     pokestop = null;
                 }
@@ -884,6 +887,12 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
             let endEncounters = process.hrtime(startEncounters);
             console.info("[] Encounter Count: " + encounters.length + " parsed in " + endEncounters + "s");
         }
+}
+
+function getDevice(uuid: string) {
+    let devices: Device[] = Object.values(InstanceController.instance.Devices);
+    let device = devices.find(x => x.uuid === uuid);
+    return device;
 }
 
 /**

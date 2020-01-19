@@ -7,6 +7,11 @@ import { Weather } from "src/models/weather";
 import request = require('request');
 import config = require("../config.json");
 
+const WebhookRelayInterval: number = 1 * 1000;
+
+/**
+ * WebhookController relay class.
+ */
 class WebhookController {
     static instance = new WebhookController();
     
@@ -75,86 +80,86 @@ class WebhookController {
         }
     }
     setup(): void {
-        console.trace("[WebhookController] Starting up...");
+        console.info("[WebhookController] Starting up...");
         // TODO: Background thread or event based?
         // TODO: Get webhook strings from database.
-        setInterval(() => this.loopEvents());
+        setInterval(() => this.loopEvents(), WebhookRelayInterval);
     }
     loopEvents(): void {
         this.webhookURLStrings = config.webhook.urls;
         if (this.webhookURLStrings.length > 0) {
-            let events: any;
+            let events: any[] = [];
             let pokemonKeys = Object.keys(this.pokemonEvents);
             pokemonKeys.forEach(pokemonKey => {
                 let pokemonEvent = this.pokemonEvents[pokemonKey];
-                events.append(pokemonEvent.value.getWebhookValues("pokemon"))
+                events.push(JSON.stringify(pokemonEvent));
             });
             this.pokemonEvents = {};
             
             let pokestopKeys = Object.keys(this.pokestopEvents);
             pokestopKeys.forEach(pokestopKey => {
                 let pokestopEvent = this.pokestopEvents[pokestopKey];
-                events.append(pokestopEvent.value.getWebhookValues("pokestop"))
+                events.push(JSON.stringify(pokestopEvent));
             });
             this.pokestopEvents = {};
             
             let lureKeys = Object.keys(this.lureEvents);
             lureKeys.forEach(lureKey => {
                 let lureEvent = this.lureEvents[lureKey];
-                events.append(lureEvent.value.getWebhookValues("lure"))
+                events.push(JSON.stringify(lureEvent));
             });
             this.lureEvents = {};
             
             let invasionKeys = Object.keys(this.invasionEvents);
             invasionKeys.forEach(invasionKey => {
                 let invasionEvent = this.invasionEvents[invasionKey];
-                events.append(invasionEvent.value.getWebhookValues("invasion"))
+                events.push(JSON.stringify(invasionEvent));
             });
             this.invasionEvents = {};
             
             let questKeys = Object.keys(this.questEvents);
             questKeys.forEach(questKey => {
                 let questEvent = this.questEvents[questKey];
-                events.append(questEvent.value.getWebhookValues("quest"))
+                events.push(JSON.stringify(questEvent));
             });
             this.questEvents = {};
             
             let gymKeys = Object.keys(this.gymEvents);
             gymKeys.forEach(gymKey => {
                 let gymEvent = this.gymEvents[gymKey];
-                events.append(gymEvent.value.getWebhookValues("gym"))
+                events.push(JSON.stringify(gymEvent));
             });
             this.gymEvents = {};
             
             let gymInfoKeys = Object.keys(this.gymInfoEvents);
             gymInfoKeys.forEach(gymInfoKey => {
                 let gymInfoEvent = this.gymInfoEvents[gymInfoKey];
-                events.append(gymInfoEvent.value.getWebhookValues("gym-info"))
+                events.push(JSON.stringify(gymInfoEvent));
             });
             this.gymInfoEvents = {};
             
             let raidKeys = Object.keys(this.raidEvents);
             raidKeys.forEach(raidKey => {
                 let raidEvent = this.raidEvents[raidKey];
-                events.append(raidEvent.value.getWebhookValues("raid"))
+                events.push(JSON.stringify(raidEvent));
             });
             this.raidEvents = {};
             
             let eggKeys = Object.keys(this.eggEvents);
             eggKeys.forEach(eggKey => {
                 let eggEvent = this.eggEvents[eggKey];
-                events.append(eggEvent.value.getWebhookValues("egg"))
+                events.push(JSON.stringify(eggEvent));
             });
             this.eggEvents = {};
 
             let weatherKeys = Object.keys(this.weatherEvents);
             weatherKeys.forEach(weatherKey => {
                 let weatherEvent = this.weatherEvents[weatherKey];
-                events.append(weatherEvent.value.getWebhookValues("weather"));
+                events.push(JSON.stringify(weatherEvent));
             });
             this.weatherEvents = {};
             
-            if (events) {
+            if (events && events.length > 0) {
                 this.webhookURLStrings.forEach(url => {
                     this.sendEvents(events, url);
                 });
@@ -176,7 +181,10 @@ class WebhookController {
             }
         };
         request(req.url.toString(), (err, res, body) => {
-            if (err) throw err;
+            if (err) { //throw err;
+                console.error(err);
+                return;
+            }
             let data = JSON.parse(body);
             console.log("[WEBHOOK] Response:", data);
         });
