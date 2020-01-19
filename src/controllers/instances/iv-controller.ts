@@ -26,7 +26,9 @@ class IVInstanceController {
         this.maxLevel = maxLevel;
         this.ivQueueLimit = ivQueueLimit;
         this.scatterList = scatterList;
-
+        this.init();
+    }
+    async init() {
         // TODO: new thread
         // while (!shouldExit) {
         if (this.scannedPokemon.length > 0) {
@@ -48,7 +50,7 @@ class IVInstanceController {
             while (!success) {
                 // TODO: TryCatch
                 try {
-                    pokemonReal = Pokemon.getById(first["pokemon"].id);
+                    pokemonReal = await Pokemon.getById(first["pokemon"].id);
                     success = true;
                 } catch (err) {
                     // TODO: sleep 1 second

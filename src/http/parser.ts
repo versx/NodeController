@@ -391,14 +391,14 @@ async function _handleRawData(req, res) {
         let controller = InstanceController.instance.getInstanceController(uuid); // TODO: Cast to IVInstanceController
         let scatterPokemon = [];
 
-        wildPokemons.forEach(pokemon => {
+        wildPokemons.forEach(async pokemon => {
             //Don't return the main query in the scattershot list
             if (pokemon.data.encounter_id === pokemonEncounterId) {
                 return;
             }
             
             try {
-                let oldPokemon = Pokemon.getById(pokemon.data.encounter_id);
+                let oldPokemon = await Pokemon.getById(pokemon.data.encounter_id);
                 if (oldPokemon && oldPokemon.atkIv) {
                     //Skip going to mons already with IVs.
                     return;
@@ -848,10 +848,10 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
         
         if (encounters.length > 0) {
             let startEncounters = process.hrtime();
-            encounters.forEach(encounter => {
+            encounters.forEach(async encounter => {
                 let pokemon: Pokemon;
                 try {
-                    pokemon = Pokemon.getById(encounter.wild_pokemon.encounter_id);
+                    pokemon = await Pokemon.getById(encounter.wild_pokemon.encounter_id);
                 } catch (err) {
                     pokemon = null;
                 }

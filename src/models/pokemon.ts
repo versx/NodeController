@@ -272,7 +272,7 @@ class Pokemon /*extends Consumable*/ {
      * @param encounter 
      * @param username 
      */
-    async addEncounter(encounter: any, username: string) {
+    async addEncounter(encounter: any, username: string): Promise<void> {
         this.pokemonId = encounter.wild_pokemon.pokemon_data.pokemon_id;
         this.cp = encounter.wild_pokemon.pokemon_data.cp;
         this.move1 = encounter.wild_pokemon.pokemon_data.move1;
@@ -350,7 +350,7 @@ class Pokemon /*extends Consumable*/ {
      * Set default Ditto attributes.
      * @param displayPokemonId 
      */
-    setDittoAttributes(displayPokemonId: number) {
+    setDittoAttributes(displayPokemonId: number): void {
         let moveTransformFast: number = 242;
         let moveStruggle: number = 133;
         this.displayPokemonId = displayPokemonId;
@@ -399,7 +399,7 @@ class Pokemon /*extends Consumable*/ {
      * Save Pokemon.
      * @param updateIV 
      */
-    async save(updateIV: boolean = false) {
+    async save(updateIV: boolean = false): Promise<void> {
         //TODO: Check if values changed, if not skip.
         let bindFirstSeen: boolean;
         let bindChangedTimestamp: boolean;
@@ -604,7 +604,7 @@ class Pokemon /*extends Consumable*/ {
     /**
      * Load all Pokemon.
      */
-    static async load() {
+    static async load(): Promise<Pokemon[]> {
         let sql = `
             SELECT id, pokemon_id, lat, lon, spawn_id, expire_timestamp, atk_iv, def_iv, sta_iv, move_1, move_2, gender, form, cp, level, weather, costume, weight, size, display_pokemon_id, pokestop_id, updated, first_seen_timestamp, changed, cell_id, expire_timestamp_verified, shiny, username
             FROM pokemon
