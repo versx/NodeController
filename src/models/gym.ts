@@ -11,7 +11,7 @@ const db           = new Database(config);
  */
 class Gym {
     static Gyms = {};
-    static exRaidBossId = 600;
+    static exRaidBossId = 486;
     static exRaidBossForm = 0;
 
     id: string;
