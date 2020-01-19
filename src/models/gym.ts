@@ -116,7 +116,7 @@ class Gym {
         }
     }
     /**
-     * Get all gyms.
+     * Get all Gyms within a minimum and maximum latitude and longitude.
      */
     static async getAll(minLat: number, maxLat: number, minLon: number, maxLon: number, updated: number): Promise<Gym[]> {
         let sql = `

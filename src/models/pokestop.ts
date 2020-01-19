@@ -105,7 +105,7 @@ class Pokestop {
         }
     }
     /**
-     * Get all pokestops.
+     * Get all Pokestops within a minimum and maximum latitude and longitude.
      * @param minLat 
      * @param maxLat 
      * @param minLon 
@@ -553,7 +553,7 @@ class Pokestop {
         */
     }
     /**
-     * Save Pokestop
+     * Save Pokestop.
      * @param updateQuest 
      */
     async save(updateQuest: boolean = false): Promise<void> {
