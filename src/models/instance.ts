@@ -170,17 +170,19 @@ class Instance implements IInstance {
                 return null;
             });
         let instances: Instance[] = [];
-        let keys = Object.values(results);
-        keys.forEach(key => {
-            let data = JSON.parse(key.data);
-            let instance = new Instance(
-                key.name,
-                key.type,
-                data // TODO: Deserialize data to InstanceData object.
-            );
-            instances.push(instance);
-            InstanceController.instance.Instances[key.name] = instance;
-        });
+        if (results) {
+            let keys = Object.values(results);
+            keys.forEach(key => {
+                let data = JSON.parse(key.data);
+                let instance = new Instance(
+                    key.name,
+                    key.type,
+                    data // TODO: Deserialize data to InstanceData object.
+                );
+                instances.push(instance);
+                InstanceController.instance.Instances[key.name] = instance;
+            });
+        }
         return instances;
     }
 }

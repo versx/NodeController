@@ -41,7 +41,7 @@ class Assignment {
                 return null;
             });
         let assignments: Assignment[] = [];
-        if (Object.keys(results).length > 0) { // TODO: Better way, please
+        if (results) {
             let keys = Object.values(results);
             keys.forEach(function(key) {
                 let assignment = new Assignment(

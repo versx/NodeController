@@ -224,21 +224,23 @@ class Device {
                 return null;
             });
         let devices: Device[] = [];
-        let keys = Object.values(results);
-        keys.forEach(key => {
-            let device = new Device(
-                key.uuid,
-                key.instance_name,
-                key.account_username,
-                key.last_host,
-                key.last_seen,
-                key.last_lat,
-                key.last_lon
-            );
-            //redisClient.addDevice(device);
-            devices.push(device);
-            //InstanceController.instance.Devices[key.uuid] = device;
-        });
+        if (results) {
+            let keys = Object.values(results);
+            keys.forEach(key => {
+                let device = new Device(
+                    key.uuid,
+                    key.instance_name,
+                    key.account_username,
+                    key.last_host,
+                    key.last_seen,
+                    key.last_lat,
+                    key.last_lon
+                );
+                //redisClient.addDevice(device);
+                devices.push(device);
+                //InstanceController.instance.Devices[key.uuid] = device;
+            });
+        }
         return devices;
     }
 }

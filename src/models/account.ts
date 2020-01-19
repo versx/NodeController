@@ -80,23 +80,25 @@ class Account {
                 return null;
             });
         let account: Account;
-        let keys = Object.values(result);
-        keys.forEach(key => {
-            account = new Account(
-                key.username,
-                key.password,
-                key.first_warning_timestamp,
-                key.failed_timestamp,
-                key.failed,
-                key.level,
-                key.last_encounter_lat,
-                key.last_encounter_lon,
-                key.last_encounter_time,
-                key.spins,
-                key.tutorial,
-                null//key.ptc_token
-            );
-        })
+        if (result) {
+            let keys = Object.values(result);
+            keys.forEach(key => {
+                account = new Account(
+                    key.username,
+                    key.password,
+                    key.first_warning_timestamp,
+                    key.failed_timestamp,
+                    key.failed,
+                    key.level,
+                    key.last_encounter_lat,
+                    key.last_encounter_lon,
+                    key.last_encounter_time,
+                    key.spins,
+                    key.tutorial,
+                    null//key.ptc_token
+                );
+            });
+        }
         return account;
     }
     /**
@@ -256,7 +258,7 @@ class Account {
                 return null;
             });
         let accounts: Account[] = [];
-        if (results.length > 0) {
+        if (results && results.length > 0) {
             for (let i = 0; i < results.length; i++) {
                 let row = results[i];
                 accounts.push(new Account(
