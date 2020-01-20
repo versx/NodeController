@@ -178,6 +178,15 @@ class Spawnpoint {
         }
         return spawnpoints;
     }
+    toJson() {
+        return {
+            id: this.id, // TODO: toHex()
+            lat: this.lat,
+            lon: this.lon,
+            updated: this.upda || 1,
+            despawn_second: this.despawnSecond
+        };
+    }
 }
 
 

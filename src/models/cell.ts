@@ -217,7 +217,6 @@ class Cell {
         });
         return cells;
     }
-
     toJson() {
         /*
         // TODO: Get polygon for s2cell
