@@ -18,65 +18,75 @@ class WebhookController {
     webhookURLStrings: string[];
     webhookSendDelay: number = 5.0;
     
-    private pokemonEvents = {};
-    private pokestopEvents = {};
-    private lureEvents = {};
-    private invasionEvents = {};
-    private questEvents = {};
-    private gymEvents = {};
-    private gymInfoEvents = {};
-    private eggEvents = {};
-    private raidEvents = {};
-    private weatherEvents = {};
+    private pokemonEvents: Pokemon[] = [];
+    private pokestopEvents: Pokestop[] = [];
+    private lureEvents: Pokestop[] = [];
+    private invasionEvents: Pokestop[] = [];
+    private questEvents: Pokestop[] = [];
+    private gymEvents: Gym[] = [];
+    private gymInfoEvents: Gym[] = [];
+    private eggEvents: Gym[] = [];
+    private raidEvents: Gym[] = [];
+    private weatherEvents: Weather[] = [];
 
     addPokemonEvent(pokemon: Pokemon): void {
         if (this.webhookURLStrings.length > 0) {
-            this.pokemonEvents[pokemon.id] = pokemon.toJson();
+            this.pokemonEvents.push(pokemon);
+            //this.pokemonEvents[pokemon.id] = pokemon.toJson();
         }
     }
     addPokestopEvent(pokestop: Pokestop): void {
         if (this.webhookURLStrings.length > 0) {
-            this.pokestopEvents[pokestop.id] = pokestop.toJson("pokestop");
+            this.pokestopEvents.push(pokestop);
+            //this.pokestopEvents[pokestop.id] = pokestop.toJson("pokestop");
         }
     }
     addLureEvent(pokestop: Pokestop): void {
         if (this.webhookURLStrings.length > 0) {
-            this.lureEvents[pokestop.id] = pokestop.toJson("pokestop");
+            this.lureEvents.push(pokestop);
+            //this.lureEvents[pokestop.id] = pokestop.toJson("pokestop");
         }
     }
     addInvasionEvent(pokestop: Pokestop): void {
         if (this.webhookURLStrings.length > 0) {
-            this.invasionEvents[pokestop.id] = pokestop.toJson("invasion");
+            this.invasionEvents.push(pokestop);
+            //this.invasionEvents[pokestop.id] = pokestop.toJson("invasion");
         }
     }
     addQuestEvent(pokestop: Pokestop): void {
         if (this.webhookURLStrings.length > 0) {
-            this.questEvents[pokestop.id] = pokestop.toJson("quest");
+            this.questEvents.push(pokestop);
+            //this.questEvents[pokestop.id] = pokestop.toJson("quest");
         }
     }
     addGymEvent(gym: Gym): void {
         if (this.webhookURLStrings.length > 0) {
-            this.gymEvents[gym.id] = gym.toJson("gym");
+            this.gymEvents.push(gym);
+            //this.gymEvents[gym.id] = gym.toJson("gym");
         }
     }
     addGymInfoEvent(gym: Gym): void {
         if (this.webhookURLStrings.length > 0) {
-            this.gymInfoEvents[gym.id] = gym.toJson("gym-info");
+            this.gymInfoEvents.push(gym);
+            //this.gymInfoEvents[gym.id] = gym.toJson("gym-info");
         }
     }
     addEggEvent(gym: Gym): void {
         if (this.webhookURLStrings.length > 0) {
-            this.eggEvents[gym.id] = gym.toJson("egg");
+            this.eggEvents.push(gym);
+            //this.eggEvents[gym.id] = gym.toJson("egg");
         }
     }
     addRaidEvent(gym: Gym): void {
         if (this.webhookURLStrings.length > 0) {
-            this.raidEvents[gym.id] = gym.toJson("raid");
+            this.raidEvents.push(gym);
+            //this.raidEvents[gym.id] = gym.toJson("raid");
         }
     }
     addWeatherEvent(weather: Weather): void {
         if (this.webhookURLStrings.length > 0) {
-            this.weatherEvents[weather.id] = weather.toJson();
+            this.weatherEvents.push(weather);
+            //this.weatherEvents[weather.id] = weather.toJson();
         }
     }
     setup(): void {
@@ -89,77 +99,46 @@ class WebhookController {
         this.webhookURLStrings = config.webhook.urls;
         if (this.webhookURLStrings.length > 0) {
             let events: any[] = [];
-            let pokemonKeys = Object.keys(this.pokemonEvents);
-            pokemonKeys.forEach(pokemonKey => {
-                // TODO: Remove event after added to events list.
-                let pokemonEvent = this.pokemonEvents[pokemonKey];
-                events.push(pokemonEvent);
-            });
-            this.pokemonEvents = {};
-            
-            let pokestopKeys = Object.keys(this.pokestopEvents);
-            pokestopKeys.forEach(pokestopKey => {
-                let pokestopEvent = this.pokestopEvents[pokestopKey];
-                events.push(pokestopEvent);
-            });
-            this.pokestopEvents = {};
-            
-            let lureKeys = Object.keys(this.lureEvents);
-            lureKeys.forEach(lureKey => {
-                let lureEvent = this.lureEvents[lureKey];
-                events.push(lureEvent);
-            });
-            this.lureEvents = {};
-            
-            let invasionKeys = Object.keys(this.invasionEvents);
-            invasionKeys.forEach(invasionKey => {
-                let invasionEvent = this.invasionEvents[invasionKey];
-                events.push(invasionEvent);
-            });
-            this.invasionEvents = {};
-            
-            let questKeys = Object.keys(this.questEvents);
-            questKeys.forEach(questKey => {
-                let questEvent = this.questEvents[questKey];
-                events.push(questEvent);
-            });
-            this.questEvents = {};
-            
-            let gymKeys = Object.keys(this.gymEvents);
-            gymKeys.forEach(gymKey => {
-                let gymEvent = this.gymEvents[gymKey];
-                events.push(gymEvent);
-            });
-            this.gymEvents = {};
-            
-            let gymInfoKeys = Object.keys(this.gymInfoEvents);
-            gymInfoKeys.forEach(gymInfoKey => {
-                let gymInfoEvent = this.gymInfoEvents[gymInfoKey];
-                events.push(gymInfoEvent);
-            });
-            this.gymInfoEvents = {};
-            
-            let raidKeys = Object.keys(this.raidEvents);
-            raidKeys.forEach(raidKey => {
-                let raidEvent = this.raidEvents[raidKey];
-                events.push(raidEvent);
-            });
-            this.raidEvents = {};
-            
-            let eggKeys = Object.keys(this.eggEvents);
-            eggKeys.forEach(eggKey => {
-                let eggEvent = this.eggEvents[eggKey];
-                events.push(eggEvent);
-            });
-            this.eggEvents = {};
-
-            let weatherKeys = Object.keys(this.weatherEvents);
-            weatherKeys.forEach(weatherKey => {
-                let weatherEvent = this.weatherEvents[weatherKey];
-                events.push(weatherEvent);
-            });
-            this.weatherEvents = {};
-            
+            if (this.pokemonEvents.length > 0) {
+                let pokemonEvent = this.pokemonEvents.pop()
+                events.push(pokemonEvent.toJson());
+            }
+            if (this.pokestopEvents.length > 0) {
+                let pokestopEvent = this.pokestopEvents.pop();
+                events.push(pokestopEvent.toJson("pokestop"));
+            }
+            if (this.lureEvents.length > 0) {
+                let lureEvent = this.lureEvents.pop();
+                events.push(lureEvent.toJson("pokestop"));
+            }
+            if (this.invasionEvents.length > 0) {
+                let invasionEvent = this.invasionEvents.pop();
+                events.push(invasionEvent.toJson("invasion"));
+            }
+            if (this.questEvents.length > 0) {
+                let questEvent = this.questEvents.pop();
+                events.push(questEvent.toJson("quest"));
+            }
+            if (this.gymEvents.length > 0) {
+                let gymEvent = this.gymEvents.pop();
+                events.push(gymEvent.toJson("gym"));
+            }
+            if (this.gymInfoEvents.length > 0) {
+                let gymInfoEvent = this.gymInfoEvents.pop();
+                events.push(gymInfoEvent.toJson("gym-info"));
+            }
+            if (this.raidEvents.length > 0) {
+                let raidEvent = this.raidEvents.pop();
+                events.push(raidEvent.toJson("raid"));
+            }
+            if (this.eggEvents.length > 0) {
+                let eggEvent = this.eggEvents.pop();
+                events.push(eggEvent.toJson("egg"));
+            }
+            if (this.weatherEvents.length > 0) {
+                let weatherEvent = this.weatherEvents.pop();
+                events.push(weatherEvent.toJson());
+            }
             if (events && events.length > 0) {
                 this.webhookURLStrings.forEach(url => {
                     this.sendEvents(events, url);
