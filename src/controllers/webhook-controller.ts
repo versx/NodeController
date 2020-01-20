@@ -31,52 +31,52 @@ class WebhookController {
 
     addPokemonEvent(pokemon: Pokemon): void {
         if (this.webhookURLStrings.length > 0) {
-            this.pokemonEvents[pokemon.id] = pokemon;
+            this.pokemonEvents[pokemon.id] = pokemon.toJson();
         }
     }
     addPokestopEvent(pokestop: Pokestop): void {
         if (this.webhookURLStrings.length > 0) {
-            this.pokestopEvents[pokestop.id] = pokestop;
+            this.pokestopEvents[pokestop.id] = pokestop.toJson("pokestop");
         }
     }
     addLureEvent(pokestop: Pokestop): void {
         if (this.webhookURLStrings.length > 0) {
-            this.lureEvents[pokestop.id] = pokestop;
+            this.lureEvents[pokestop.id] = pokestop.toJson("pokestop");
         }
     }
     addInvasionEvent(pokestop: Pokestop): void {
         if (this.webhookURLStrings.length > 0) {
-            this.invasionEvents[pokestop.id] = pokestop;
+            this.invasionEvents[pokestop.id] = pokestop.toJson("invasion");
         }
     }
     addQuestEvent(pokestop: Pokestop): void {
         if (this.webhookURLStrings.length > 0) {
-            this.questEvents[pokestop.id] = pokestop;
+            this.questEvents[pokestop.id] = pokestop.toJson("quest");
         }
     }
     addGymEvent(gym: Gym): void {
         if (this.webhookURLStrings.length > 0) {
-            this.gymEvents[gym.id] = gym;
+            this.gymEvents[gym.id] = gym.toJson("gym");
         }
     }
     addGymInfoEvent(gym: Gym): void {
         if (this.webhookURLStrings.length > 0) {
-            this.gymInfoEvents[gym.id] = gym;
+            this.gymInfoEvents[gym.id] = gym.toJson("gym-info");
         }
     }
     addEggEvent(gym: Gym): void {
         if (this.webhookURLStrings.length > 0) {
-            this.eggEvents[gym.id] = gym;
+            this.eggEvents[gym.id] = gym.toJson("egg");
         }
     }
     addRaidEvent(gym: Gym): void {
         if (this.webhookURLStrings.length > 0) {
-            this.raidEvents[gym.id] = gym;
+            this.raidEvents[gym.id] = gym.toJson("raid");
         }
     }
     addWeatherEvent(weather: Weather): void {
         if (this.webhookURLStrings.length > 0) {
-            this.weatherEvents[weather.id] = weather;
+            this.weatherEvents[weather.id] = weather.toJson();
         }
     }
     setup(): void {
@@ -91,6 +91,7 @@ class WebhookController {
             let events: any[] = [];
             let pokemonKeys = Object.keys(this.pokemonEvents);
             pokemonKeys.forEach(pokemonKey => {
+                // TODO: Remove event after added to events list.
                 let pokemonEvent = this.pokemonEvents[pokemonKey];
                 events.push(pokemonEvent);
             });
