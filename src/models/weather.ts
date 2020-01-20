@@ -213,13 +213,12 @@ class Weather {
         }
         let args = [this.id.toString(), this.level, this.latitude, this.longitude, this.gameplayCondition, this.windDirection, this.cloudLevel, this.rainLevel,
             this.windLevel, this.snowLevel, this.fogLevel, this.seLevel, this.severity, this.warnWeather];
-        let result = await db.query(sql, args)
+        await db.query(sql, args)
             .then(x => x)
             .catch(x => {
                 console.error("[Weather] Error: " + x);
             });
         Weather.Weather[this.id.toString()] = this;
-        console.log("[Weather] Save:", result);
     }
     /**
      * Load all Weather Cells.

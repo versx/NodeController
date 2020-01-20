@@ -77,7 +77,7 @@ class AutoInstanceController {
                 }   
             }
         });
-        console.log("[AutoInstanceController]", name, "Bootstrap Status:", (totalCount - missingCellIds.length) + "/" + totalCount, "after", Math.round(new Date().getUTCSeconds() - start.getUTCSeconds()) + "s")
+        console.log("[AutoInstanceController]", name, "Bootstrap Status:", (totalCount - missingCellIds.length) + "/" + totalCount, "after", Math.round(new Date().getTime() - start.getTime()) + "s")
         this.bootstrapCellIds = missingCellIds.map(x => x.id.toString());
         this.bootstrapTotalCount = totalCount;
     }
@@ -253,7 +253,7 @@ class AutoInstanceController {
                             newLat = closest.lat;
                             newLon = closest.lon;
                             pokestop = closest;
-                            let now = new Date().getUTCSeconds();
+                            let now = new Date().getTime();
                             if (lastTime > 0) {
                                 let encounterTimeT = lastTime + this.encounterCooldown(closestDistance);
                                 if (encounterTimeT < now) {
@@ -280,7 +280,7 @@ class AutoInstanceController {
                             newLat = stop.lat;
                             newLon = stop.lon;
                             pokestop = stop;
-                            encounterTime = new Date().getUTCSeconds();
+                            encounterTime = new Date().getTime();
                             // TODO: remove _ this.todayStops.pop(); 
                         } else {
                             return { };

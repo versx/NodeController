@@ -568,7 +568,7 @@ class Pokestop {
         
         let sql: string = "";
         let args = [];
-        this.updated = new Date().getUTCSeconds();        
+        this.updated = new Date().getTime();        
         if (oldPokestop === null) {
             WebhookController.instance.addPokestopEvent(this);
             if (this.lureExpireTimestamp || 0 > 0) {
@@ -655,7 +655,7 @@ class Pokestop {
             args.push(this.id);
         }
 
-        let results = await db.query(sql, args)
+        await db.query(sql, args)
             .then(x => x)
             .catch(x => {
                 console.error("[Pokestop] Error: " + x);

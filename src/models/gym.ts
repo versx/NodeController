@@ -430,11 +430,11 @@ class Gym {
         
         let sql: string = "";
         let args = [];
-        this.updated = new Date().getUTCSeconds();        
+        this.updated = new Date().getTime();        
         if (oldGym === undefined || oldGym === null) {
             WebhookController.instance.addGymEvent(this);
             WebhookController.instance.addGymInfoEvent(this);
-            let now = new Date().getUTCSeconds();
+            let now = new Date().getTime();
             let raidBattleTime = this.raidBattleTimestamp || 0;
             let raidEndTime = this.raidEndTimestamp || 0;
             
@@ -474,7 +474,7 @@ class Gym {
                     oldGym.raidSpawnTimestamp !== this.raidSpawnTimestamp
                 )) {
                 
-                let now = new Date().getUTCSeconds();
+                let now = new Date().getTime();
                 let raidBattleTime = this.raidBattleTimestamp || 0;
                 let raidEndTime = this.raidEndTimestamp || 0;
                 
@@ -521,13 +521,12 @@ class Gym {
             args.push(this.id);
         }
 
-        let result = await db.query(sql, args)
+        await db.query(sql, args)
             .then(x => x)
             .catch(x => {
                 console.error("[Gym] Error: " + x);
                 return null;
             });
-        console.log("[Gym] Save:", result);
         Gym.Gyms[this.id] = this;
     }
     /**

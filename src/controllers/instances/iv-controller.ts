@@ -38,7 +38,7 @@ class IVInstanceController {
             }
         } else {
             let first = this.scannedPokemon.pop();
-            let timeSince = new Date().getUTCSeconds() - first["date"]; //TODO: review
+            let timeSince = new Date().getTime() - first["date"]; //TODO: review
             if (timeSince < 120) {
                 // TODO: sleep (120 - timeSince)
                 if (this.shouldExit) {
@@ -73,7 +73,7 @@ class IVInstanceController {
             return {}; // { string: any }
         }
         let pokemon = this.pokemonQueue.pop();
-        var now = new Date().getUTCSeconds();
+        var now = new Date().getTime();
         if (now - (pokemon.firstSeenTimestamp || 1) >= 600) {
             return this.getTask(uuid, username);
         }

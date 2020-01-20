@@ -84,7 +84,7 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
         let gymsNoBoss: [Gym, Date, Coord][];
         this.smartRaidGymsInPoint.forEach(function(gymsInPoint) {
             let updated = this.smartRaidPointsUpdated.get(gymsInPoint);
-            let nowTimestamp = new Date().getUTCSeconds();
+            let nowTimestamp = new Date().getTime();
             if (updated === null || nowTimestamp >= updated + CircleSmartRaidInstanceController.ignoreTime) {
                 this.gymsInPoint.forEach(id => {
                     let gym = this.smartRaidGyms[id];
@@ -137,7 +137,7 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
     getStatus() {//formatted: boolean) {
         let scansh: number;
         if (this.startDate !== null) {
-            scansh = this.count / new Date().getUTCSeconds() - this.startDate.getUTCSeconds() * 3600;
+            scansh = this.count / new Date().getTime() - this.startDate.getTime() * 3600;
         } else {
             scansh = null;
         }

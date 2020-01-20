@@ -21,7 +21,7 @@ class Spawnpoint {
      * @param data 
      */
     constructor(data: any) {
-        this.id = data.id;
+        this.id = data.id.toString();//parseInt(data.id.toString(), 16).toString();
         this.lat = data.lat;
         this.lon = data.lon;
         this.despawnSecond = data.despawn_sec;
@@ -49,18 +49,20 @@ class Spawnpoint {
             });
         console.log("[Spawnpoint] Load:", result)
         let spawnpoints: Spawnpoint[] = [];
-        let keys = Object.values(result);
-        keys.forEach(key => {
-            let spawnpoint = new Spawnpoint({
-                id: key.id,
-                latitude: key.lat,
-                longitude: key.lon,
-                updated: key.updated,
-                despawn_sec: key.despawn_sec //despawnSecond
-    
+        if (result) {
+            let keys = Object.values(result);
+            keys.forEach(key => {
+                let spawnpoint = new Spawnpoint({
+                    id: key.id,
+                    latitude: key.lat,
+                    longitude: key.lon,
+                    updated: key.updated,
+                    despawn_sec: key.despawn_sec //despawnSecond
+        
+                });
+                spawnpoints.push(spawnpoint);
             });
-            spawnpoints.push(spawnpoint);
-        });
+        }
         return spawnpoints;
     }
     /**
@@ -78,22 +80,23 @@ class Spawnpoint {
             .catch(x => {
                 console.error("[Spawnpoint] Error:", x);
             });
-        console.log("[Spawnpoint] Save:", result);
-        let keys = Object.values(result);
-        if (keys.length === 0) {
-            return null;
-        }
         let spawnpoint: Spawnpoint;
-        keys.forEach(key => {
-            spawnpoint = new Spawnpoint({
-                id: key.id,
-                latitude: key.lat,
-                longitude: key.lon,
-                updated: key.updated,
-                despawn_sec: key.despawn_sec //despawnSecond
+        if (result) {
+            let keys = Object.values(result);
+            if (keys.length === 0) {
+                return null;
+            }
+            keys.forEach(key => {
+                spawnpoint = new Spawnpoint({
+                    id: key.id,
+                    latitude: key.lat,
+                    longitude: key.lon,
+                    updated: key.updated,
+                    despawn_sec: key.despawn_sec
+                });
             });
-        });
-        return spawnpoint        ;
+        }
+        return spawnpoint;
     }
     /**
      * Save Spawnpoint model data.
@@ -106,7 +109,7 @@ class Spawnpoint {
         } catch (err) {
             oldSpawnpoint = null;
         }
-        this.updated = new Date().getUTCSeconds();
+        this.updated = new Date().getTime();
         
         if (!update && oldSpawnpoint) {
             return;
@@ -116,9 +119,9 @@ class Spawnpoint {
             if ((this.despawnSecond === undefined || this.despawnSecond === null) && oldSpawnpoint.despawnSecond) {
                 this.despawnSecond = oldSpawnpoint.despawnSecond;
             }            
-            if (this.lat == oldSpawnpoint.lat &&
-                this.lon == oldSpawnpoint.lon &&
-                this.despawnSecond == oldSpawnpoint.despawnSecond) {
+            if (this.lat === oldSpawnpoint.lat &&
+                this.lon === oldSpawnpoint.lon &&
+                this.despawnSecond === oldSpawnpoint.despawnSecond) {
                 return;
             }
         }
@@ -137,12 +140,11 @@ class Spawnpoint {
             `;
         }
         let args = [this.id, this.lat, this.lon, this.despawnSecond];
-        let result = await db.query(sql, args)
+        await db.query(sql, args)
             .then(x => x)
             .catch(x => {
                 console.error("[Spawnpoint] Error:", x);
             });
-        console.log("[Spawnpoint] Save:", result);
         Spawnpoint.Spawnpoints[this.id] = this;        
     }
     /**
@@ -160,18 +162,20 @@ class Spawnpoint {
             });
         console.log("[Spawnpoint] Load:", result)
         let spawnpoints: Spawnpoint[] = [];
-        let keys = Object.values(result);
-        keys.forEach(key => {
-            let spawnpoint = new Spawnpoint({
-                id: key.id,
-                latitude: key.lat,
-                longitude: key.lon,
-                updated: key.updated,
-                despawn_sec: key.despawn_sec //despawnSecond
-    
+        if (result) {
+            let keys = Object.values(result);
+            keys.forEach(key => {
+                let spawnpoint = new Spawnpoint({
+                    id: key.id,
+                    latitude: key.lat,
+                    longitude: key.lon,
+                    updated: key.updated,
+                    despawn_sec: key.despawn_sec
+        
+                });
+                spawnpoints.push(spawnpoint);
             });
-            spawnpoints.push(spawnpoint);
-        });
+        }
         return spawnpoints;
     }
 }

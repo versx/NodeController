@@ -50,24 +50,25 @@ class Cell {
         WHERE center_lat >= ? AND center_lat <= ? AND center_lon >= ? AND center_lon <= ? AND updated > ?
         `;
         let args = [minLatReal, maxLatReal, minLonReal, maxLonReal];
-        let result = await db.query(sql, args)
+        let results = await db.query(sql, args)
             .then(x => x)
             .catch(x => {
                 console.error("[Cell] Error:", x);
             });
-        console.log("[Cell] GetAll:", result)
         let cells: Cell[] = [];
-        let keys = Object.values(result);
-        keys.forEach(key => {
-            let cell = new Cell(
-                key.id,
-                key.level,
-                key.center_lat,
-                key.center_lon,
-                key.updated
-            );
-            cells.push(cell);
-        });
+        if (results) {
+            let keys = Object.values(results);
+            keys.forEach(key => {
+                let cell = new Cell(
+                    key.id,
+                    key.level,
+                    key.center_lat,
+                    key.center_lon,
+                    key.updated
+                );
+                cells.push(cell);
+            });
+        }
         return cells;
     }
     /**
@@ -87,18 +88,19 @@ class Cell {
             .catch(x => {
                 console.error("[Cell] Error:", x);
             });
-        console.log("[Cell] GetById:", result)
         let cell: Cell;
-        let keys = Object.values(result);
-        keys.forEach(key => {
-            cell = new Cell(
-                key.id,
-                key.level,
-                key.center_lat,
-                key.center_lon,
-                key.updated
-            );
-        });
+        if (result) {
+            let keys = Object.values(result);
+            keys.forEach(key => {
+                cell = new Cell(
+                    key.id,
+                    key.level,
+                    key.center_lat,
+                    key.center_lon,
+                    key.updated
+                );
+            });
+        }
         return cell;
     }
     /**
@@ -178,13 +180,13 @@ class Cell {
             `;
         }
         let args = [this.id, this.level, this.centerLat, this.centerLon];
-        let result = await db.query(sql, args)
+        await db.query(sql, args)
             .then(x => x)
             .catch(x => {
                 console.error("[Cell] Error: " + x);
                 return null;
             });
-        //console.log("[Cell] Save:", result);
+        Cell.Cells[this.id] = this;
     }
     /**
      * Load all S2Cells.

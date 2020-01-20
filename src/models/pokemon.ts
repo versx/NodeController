@@ -7,6 +7,7 @@ import { Spawnpoint } from "./spawnpoint";
 import * as moment from 'moment';
 //import { winston } from '../utils/logger';
 import config      = require('../config.json');
+import { Pokestop } from './pokestop';
 const db           = new Database(config);
 
 /**
@@ -25,7 +26,7 @@ class Pokemon /*extends Consumable*/ {
     lat: number;
     lon: number;
     pokemonId: number;
-    form: number;
+    form: number = 0;
     gender: number;
     costume: number;
     shiny: boolean;
@@ -38,7 +39,7 @@ class Pokemon /*extends Consumable*/ {
     weight: number;
     spawnId: string;
     expireTimestamp: number;
-    expireTimestampVerified: boolean;
+    expireTimestampVerified: boolean = false;
     firstSeenTimestamp: number;
     pokestopId: string;
     atkIv: number;
@@ -58,68 +59,9 @@ class Pokemon /*extends Consumable*/ {
     constructor(data: any) {
         /*super(id, lat, lon);*/
         if (data.wild !== undefined) {
-            this.id = data.wild.encounter_id.toString();
-            this.pokemonId = data.wild.pokemon_data.pokemon_id;
-            this.lat = data.wild.latitude;
-            this.lon = data.wild.longitude;
-            let spawnId = data.wild.spawn_point_id; //radix: 16);
-            this.gender = data.wild.pokemon_data.pokemon_display.gender;
-            this.form = data.wild.pokemon_data.pokemon_display.form;
-            if (data.wild.pokemon_data.pokemon_display !== undefined) {
-                this.costume = data.wild.pokemon_data.pokemon_display.costume;
-                this.weather = data.wild.pokemon_data.pokemon_display.weather_boosted_condition;
-            }
-            this.username = data.username;
-            if (data.wild.time_till_hidden_ms > 0 && data.wild.time_till_hidden_ms <= 90000) {
-                this.expireTimestamp = (data.timestamp_ms + data.wild.time_till_hidden_ms) / 1000;
-                this.expireTimestampVerified = true;
-            } else {
-                this.expireTimestampVerified = false;
-            }
-            if (this.expireTimestampVerified === false && spawnId !== undefined) {
-                // Spawnpoint not verified, check if we have the tth.
-                let spawnpoint = {};
-                try {
-                    spawnpoint = Spawnpoint.getById(spawnId);
-                } catch (err) {
-                    spawnpoint = null;
-                }
-                if (spawnpoint instanceof Spawnpoint && spawnpoint !== null) {
-                    let despawnSecond = spawnpoint.despawnSecond;
-                    if (despawnSecond !== undefined && despawnSecond !== null) {
-                        let date = moment().format('mm:ss');
-                        let split = date.split(':');
-                        let minute = parseInt(split[0]);
-                        let second = parseInt(split[1]);
-                        let secondOfHour = second + minute * 60;
-                    
-                        let despawnOffset;
-                        if (despawnSecond < secondOfHour) {
-                            despawnOffset = 3600 + despawnSecond - secondOfHour;
-                        } else {
-                            despawnOffset = despawnSecond - secondOfHour;
-                        }
-                        this.expireTimestamp = parseInt(moment(date).format('x')) + despawnOffset;
-                        this.expireTimestampVerified = true;
-                    }
-                }
-            }
-            this.spawnId = spawnId;
-            this.cellId = data.cellId.toString();
+            this.initWild(data);
         } else if (data.nearby !== undefined) {
-            this.id = data.nearby.encounter_id.toString();
-            this.pokemonId = data.nearby.pokemon_id;
-            this.pokestopId = data.nearby.fort_id;
-            this.gender = data.nearby.pokemon_display.gender;
-            this.form = data.nearby.pokemon_display.form;
-            if (data.nearby.pokemon_display !== undefined) {
-                this.costume = data.nearby.pokemon_display.costume;
-                this.weather = data.nearby.pokemon_display.weather_boosted_condition;
-            }
-            this.username = data.username;
-            // TODO: Lookup pokestop_id for lat/lon
-            this.cellId = data.cellId.toString();
-            this.expireTimestampVerified = false;
+            this.initNearby(data);
         } else {
             this.id = data.id.toString();
             this.lat = data.lat;
@@ -132,6 +74,7 @@ class Pokemon /*extends Consumable*/ {
             this.gender = data.gender;
             this.spawnId = data.spawn_id;
             this.cellId = data.cell_id.toString();
+            this.firstSeenTimestamp = data.first_seen_timestamp;
             this.expireTimestamp = data.expire_timestamp;
             this.expireTimestampVerified = data.expire_timestamp_verified;
             this.cp = data.cp;
@@ -147,6 +90,85 @@ class Pokemon /*extends Consumable*/ {
             this.changed = data.changed;
             this.displayPokemonId = data.display_pokemon_id;
         }
+    }
+    private initWild(data: any) {
+        this.id = data.wild.encounter_id.toString();
+        this.pokemonId = data.wild.pokemon_data.pokemon_id;
+        if (data.wild.latitude === undefined || data.wild.latitude === null) {
+            console.log("Wild Pokemon null lat/lon!");
+        }
+        this.lat = data.wild.latitude;
+        this.lon = data.wild.longitude;
+        let spawnId = parseInt(data.wild.spawn_point_id, 16).toString();
+        this.gender = data.wild.pokemon_data.pokemon_display.gender;
+        this.form = data.wild.pokemon_data.pokemon_display.form;
+        if (data.wild.pokemon_data.pokemon_display !== undefined) {
+            this.costume = data.wild.pokemon_data.pokemon_display.costume;
+            this.weather = data.wild.pokemon_data.pokemon_display.weather_boosted_condition;
+        }
+        this.username = data.username;
+        if (data.wild.time_till_hidden_ms > 0 && data.wild.time_till_hidden_ms <= 90000) {
+            this.expireTimestamp = (data.timestamp_ms + data.wild.time_till_hidden_ms) / 1000;
+            this.expireTimestampVerified = true;
+        } else {
+            this.expireTimestampVerified = false;
+        }
+        if (this.expireTimestampVerified === false && spawnId) {
+            // Spawnpoint not verified, check if we have the tth.
+            let spawnpoint = {};
+            try {
+                spawnpoint = Spawnpoint.getById(spawnId);
+            } catch (err) {
+                spawnpoint = null;
+            }
+            if (spawnpoint instanceof Spawnpoint) {
+                let despawnSecond = spawnpoint.despawnSecond;
+                if (despawnSecond && despawnSecond) {
+                    let date = moment().format('mm:ss');
+                    let split = date.split(':');
+                    let minute = parseInt(split[0]);
+                    let second = parseInt(split[1]);
+                    let secondOfHour = second + minute * 60;
+                
+                    let despawnOffset;
+                    if (despawnSecond < secondOfHour) {
+                        despawnOffset = 3600 + despawnSecond - secondOfHour;
+                    } else {
+                        despawnOffset = despawnSecond - secondOfHour;
+                    }
+                    this.expireTimestamp = parseInt(moment(date).format('x')) + despawnOffset;
+                    this.expireTimestampVerified = true;
+                }
+            }
+        }
+        this.spawnId = spawnId;
+        this.cellId = data.cellId.toString();
+    }
+    private async initNearby(data: any) {
+        this.id = data.nearby.encounter_id.toString();
+        this.pokemonId = data.nearby.pokemon_id;
+        this.pokestopId = data.nearby.fort_id;
+        this.gender = data.nearby.pokemon_display.gender;
+        this.form = data.nearby.pokemon_display.form;
+        if (data.nearby.pokemon_display) {
+            this.costume = data.nearby.pokemon_display.costume;
+            this.weather = data.nearby.pokemon_display.weather_boosted_condition;
+        }
+        this.username = data.username;
+        let pokestop: Pokestop;
+        try {
+            pokestop = await Pokestop.getById(data.pokestop_id);
+        } catch (err) {
+            pokestop = null;
+            console.error(err);
+        }
+        if (pokestop) {
+            this.lat = pokestop.lat;
+            this.lon = pokestop.lon;
+            this.pokestopId = pokestop.id;
+        }
+        this.cellId = data.cellId.toString();
+        this.expireTimestampVerified = false;
     }
     /**
      * Get all Pokemon within a minimum and maximum latitude and longitude.
@@ -221,7 +243,7 @@ class Pokemon /*extends Consumable*/ {
             WHERE id = ?
             LIMIT 1
         `;
-        let args = [encounterId];
+        let args = [encounterId.toString()];
         let results = await db.query(sql, args)
             .then(x => x)
             .catch(x => {
@@ -324,7 +346,7 @@ class Pokemon /*extends Consumable*/ {
                 }
                 if (spawnpoint instanceof Spawnpoint && spawnpoint !== null) {
                     let despawnSecond = spawnpoint.despawnSecond;
-                    if (despawnSecond !== undefined && despawnSecond !== null) {
+                    if (despawnSecond) {
                         let date = moment().format('mm:ss');
                         let split = date.split(':');
                         let minute = parseInt(split[0]);
@@ -344,7 +366,7 @@ class Pokemon /*extends Consumable*/ {
             }            
         }
         
-        this.updated = new Date().getUTCSeconds();
+        this.updated = new Date().getTime();
         this.changed = this.updated;
     }
     /**
@@ -381,7 +403,7 @@ class Pokemon /*extends Consumable*/ {
      * @param newPokemon 
      */
     static shouldUpdate(oldPokemon: Pokemon, newPokemon: Pokemon): boolean {
-        let now = new Date().getUTCSeconds();        
+        let now = new Date().getTime();        
         if (oldPokemon.pokemonId !== newPokemon.pokemonId && oldPokemon.pokemonId !== Pokemon.DittoPokemonId) {
             return true;
         } else if (((oldPokemon.spawnId === undefined || oldPokemon.spawnId == null) && newPokemon.spawnId) || ((oldPokemon.pokestopId === undefined || oldPokemon.pokestopId === null) && newPokemon.pokestopId)) {
@@ -405,11 +427,11 @@ class Pokemon /*extends Consumable*/ {
         let bindFirstSeen: boolean;
         let bindChangedTimestamp: boolean;
         
-        this.updated = new Date().getUTCSeconds();        
+        this.updated = new Date().getTime();        
         let oldPokemon: Pokemon;
         try {
             oldPokemon = await Pokemon.getById(this.id);
-        } catch {
+        } catch (err) {
             oldPokemon = null;
         }
         let sql: string = "";
@@ -418,7 +440,7 @@ class Pokemon /*extends Consumable*/ {
             bindFirstSeen = false;
             bindChangedTimestamp = false;
             if (this.expireTimestamp === undefined || this.expireTimestamp === null) {
-                this.expireTimestamp = new Date().getUTCSeconds() + Pokemon.DefaultTimeUnseen;
+                this.expireTimestamp = new Date().getTime() + Pokemon.DefaultTimeUnseen;
             }
             this.firstSeenTimestamp = this.updated;
             sql = `
@@ -427,25 +449,25 @@ class Pokemon /*extends Consumable*/ {
             `;
             args.push(this.id);
         } else {
-            bindFirstSeen = true;            
-            this.firstSeenTimestamp = oldPokemon.firstSeenTimestamp;            
+            bindFirstSeen = true;   
+            this.firstSeenTimestamp = oldPokemon.firstSeenTimestamp;
             if (this.expireTimestamp === undefined || this.expireTimestamp === null) {
-                let now = new Date().getUTCSeconds();
+                let now = new Date().getTime();
                 let oldExpireDate: number = oldPokemon.expireTimestamp;
                 if ((oldExpireDate - now) < Pokemon.DefaultTimeReseen) { // TODO: Check time difference is correct.
-                    this.expireTimestamp = new Date().getUTCSeconds() + Pokemon.DefaultTimeReseen;
+                    this.expireTimestamp = new Date().getTime() + Pokemon.DefaultTimeReseen;
                 } else {
                     this.expireTimestamp = oldPokemon.expireTimestamp;
                 }
             }
-            if (!this.expireTimestampVerified && oldPokemon.expireTimestampVerified) {
+            if (this.expireTimestampVerified === false && oldPokemon.expireTimestampVerified) {
                 this.expireTimestampVerified = oldPokemon.expireTimestampVerified;
                 this.expireTimestamp = oldPokemon.expireTimestamp;
             }
             if (oldPokemon.pokemonId !== this.pokemonId) {
                 if (oldPokemon.pokemonId !== Pokemon.DittoPokemonId) {
                     console.log("[POKEMON] Pokemon", this.id, "changed from", oldPokemon.pokemonId, "to", this.pokemonId);
-                } else if (oldPokemon.displayPokemonId ?? 0 !== this.pokemonId) {
+                } else if (oldPokemon.displayPokemonId || 0 !== this.pokemonId) {
                     console.log("[POKEMON] Pokemon", this.id, "Ditto diguised as", oldPokemon.displayPokemonId || 0, "now seen as", this.pokemonId);
                 }
             }
@@ -522,7 +544,7 @@ class Pokemon /*extends Consumable*/ {
         args.push(this.lat);
         args.push(this.lon);
         args.push(this.spawnId);
-        args.push(this.expireTimestamp);
+        args.push(this.expireTimestamp ? (this.expireTimestamp / 1000) : this.expireTimestamp);
         if (updateIV || (oldPokemon === undefined || oldPokemon === null)) {
             args.push(this.atkIv);
             args.push(this.defIv);
@@ -549,14 +571,14 @@ class Pokemon /*extends Consumable*/ {
             args.push(this.changed);
         }
         args.push(this.cellId);
-        args.push(this.expireTimestampVerified);        
+        args.push(this.expireTimestampVerified);
         if (oldPokemon) {
             args.push(this.id);
         }
         if (this.spawnId) {
             let spawnpoint: Spawnpoint;
             if (this.expireTimestampVerified && this.expireTimestamp) {                
-                let date = new Date(this.expireTimestamp).toTimeString(); // TODO: Check
+                let date = new Date(this.expireTimestamp).toTimeString(); // TODO: Use moment
                 //formatter.dateFormat = "mm:ss"
                 let split = date.toString().split(':');
                 let minute = parseInt(split[0]);
@@ -585,13 +607,21 @@ class Pokemon /*extends Consumable*/ {
             }
         }
 
-        let result = await db.query(sql, args)
+        if (this.lat === undefined) {
+            console.log("Lat is null");
+            return;
+        }
+
+        // TODO: Error: ER_BAD_NULL_ERROR: Column 'lat' cannot be null
+        // TODO: Error: ER_NO_REFERENCED_ROW_2: Cannot add or update a child row: a foreign key constraint fails (`rdmdb`.`pokemon`, CONSTRAINT `fk_pokemon_cell_id` FOREIGN KEY (`cell_id`) REFERENCES `s2cell` (`id`) ON DELETE CASCADE ON UPDATE CASCADE)
+        await db.query(sql, args)
             .then(x => x)
             .catch(x => {
-                console.error("[Pokemon] Error: " + x);
+                console.log("SQL:", sql);
+                console.log("Arguments:", args);
+                console.error("[Pokemon] Error: " + x.message);
                 return null;
             });
-        console.log("[Pokemon] Save:", result);
 
         if (oldPokemon === undefined || oldPokemon === null) {
             WebhookController.instance.addPokemonEvent(this)

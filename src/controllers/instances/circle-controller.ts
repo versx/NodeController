@@ -23,7 +23,7 @@ class CircleInstanceController {
         this.minLevel = minLevel;
         this.maxLevel = maxLevel;
         this.coords = coords;
-        this.lastCompletedTime = new Date().getUTCSeconds();
+        this.lastCompletedTime = new Date().getTime();
         this.lastIndex = 0;
     }
     getTask(uuid: string, username: string) {
@@ -32,7 +32,7 @@ class CircleInstanceController {
            currentIndex = this.lastIndex;
             if (this.lastIndex + 1 === this.coords.length) {
                 this.lastLastCompletedTime = this.lastCompletedTime;
-                this.lastCompletedTime = new Date().getUTCSeconds();
+                this.lastCompletedTime = new Date().getTime();
                 this.lastIndex = 0;
             } else {
                 this.lastIndex = this.lastIndex + 1
@@ -103,7 +103,7 @@ class CircleInstanceController {
     }
     queryLiveDevices(uuid: string, index: number) {
         // In seconds
-        let deadDeviceCutoff = new Date().getUTCSeconds() - 60 * 1000;
+        let deadDeviceCutoff = new Date().getTime() - 60 * 1000;
         // Include the querying device in the count
         let numLiveDevices = 1;
         let distanceToNext = this.coords.length;

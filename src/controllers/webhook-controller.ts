@@ -92,70 +92,70 @@ class WebhookController {
             let pokemonKeys = Object.keys(this.pokemonEvents);
             pokemonKeys.forEach(pokemonKey => {
                 let pokemonEvent = this.pokemonEvents[pokemonKey];
-                events.push(JSON.stringify(pokemonEvent));
+                events.push(pokemonEvent);
             });
             this.pokemonEvents = {};
             
             let pokestopKeys = Object.keys(this.pokestopEvents);
             pokestopKeys.forEach(pokestopKey => {
                 let pokestopEvent = this.pokestopEvents[pokestopKey];
-                events.push(JSON.stringify(pokestopEvent));
+                events.push(pokestopEvent);
             });
             this.pokestopEvents = {};
             
             let lureKeys = Object.keys(this.lureEvents);
             lureKeys.forEach(lureKey => {
                 let lureEvent = this.lureEvents[lureKey];
-                events.push(JSON.stringify(lureEvent));
+                events.push(lureEvent);
             });
             this.lureEvents = {};
             
             let invasionKeys = Object.keys(this.invasionEvents);
             invasionKeys.forEach(invasionKey => {
                 let invasionEvent = this.invasionEvents[invasionKey];
-                events.push(JSON.stringify(invasionEvent));
+                events.push(invasionEvent);
             });
             this.invasionEvents = {};
             
             let questKeys = Object.keys(this.questEvents);
             questKeys.forEach(questKey => {
                 let questEvent = this.questEvents[questKey];
-                events.push(JSON.stringify(questEvent));
+                events.push(questEvent);
             });
             this.questEvents = {};
             
             let gymKeys = Object.keys(this.gymEvents);
             gymKeys.forEach(gymKey => {
                 let gymEvent = this.gymEvents[gymKey];
-                events.push(JSON.stringify(gymEvent));
+                events.push(gymEvent);
             });
             this.gymEvents = {};
             
             let gymInfoKeys = Object.keys(this.gymInfoEvents);
             gymInfoKeys.forEach(gymInfoKey => {
                 let gymInfoEvent = this.gymInfoEvents[gymInfoKey];
-                events.push(JSON.stringify(gymInfoEvent));
+                events.push(gymInfoEvent);
             });
             this.gymInfoEvents = {};
             
             let raidKeys = Object.keys(this.raidEvents);
             raidKeys.forEach(raidKey => {
                 let raidEvent = this.raidEvents[raidKey];
-                events.push(JSON.stringify(raidEvent));
+                events.push(raidEvent);
             });
             this.raidEvents = {};
             
             let eggKeys = Object.keys(this.eggEvents);
             eggKeys.forEach(eggKey => {
                 let eggEvent = this.eggEvents[eggKey];
-                events.push(JSON.stringify(eggEvent));
+                events.push(eggEvent);
             });
             this.eggEvents = {};
 
             let weatherKeys = Object.keys(this.weatherEvents);
             weatherKeys.forEach(weatherKey => {
                 let weatherEvent = this.weatherEvents[weatherKey];
-                events.push(JSON.stringify(weatherEvent));
+                events.push(weatherEvent);
             });
             this.weatherEvents = {};
             
@@ -166,28 +166,29 @@ class WebhookController {
             }
         }
     }
-    sendEvents(events: any, url: String): void {
-        let data = JSON.stringify(events);
-        let req = {
+    sendEvents(events: any, url: string): void {
+        if (events === undefined || events === null) {
+            return;
+        }
+        let options = {
             url: url,
             method: 'POST',
-            data: data,
+            json: true,
+            body: events,
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
-                'Content-Length': data.length,
                 'Cache-Control': 'no-cache',
                 'User-Agent': 'Nodedradamus'
             }
         };
-        request(req.url.toString(), (err, res, body) => {
+        request(options, (err, res, body) => {
             if (err) { //throw err;
                 console.error(err);
                 return;
             }
-            let data = JSON.parse(body);
-            console.log("[WEBHOOK] Response:", data);
-        });
+            console.log("[WEBHOOK] Response:", body);
+    });
     }
 }
 

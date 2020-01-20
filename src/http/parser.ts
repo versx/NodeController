@@ -96,7 +96,7 @@ async function _handleRawData(req, res) {
     let latTarget: number = json["lat_target"];
     let lonTarget: number = json["lon_target"];
     if (uuid !== undefined && latTarget !== undefined && lonTarget !== undefined) {
-        var newDevice = new Device(uuid, null, username, "127.0.0.1", new Date().getUTCSeconds(), latTarget, lonTarget);
+        var newDevice = new Device(uuid, null, username, "127.0.0.1", new Date().getTime(), latTarget, lonTarget);
         newDevice.save();
     }
 
@@ -597,7 +597,7 @@ function _handleControllerData(req, res) {
                     return res.status(400).end();
                 }
                 if (account.failedTimestamp === undefined || account.failed === undefined) {
-                    account.failedTimestamp = new Date().getUTCSeconds();
+                    account.failedTimestamp = new Date().getTime();
                     account.failed = "banned";
                     account.save(true);
                     res.send('OK');
@@ -611,7 +611,7 @@ function _handleControllerData(req, res) {
                     return res.status(400).end();
                 }
                 if (account.firstWarningTimestamp === undefined) {
-                    account.firstWarningTimestamp = new Date().getUTCSeconds();
+                    account.firstWarningTimestamp = new Date().getTime();
                     account.save(true);
                     res.send('OK');
                 }
@@ -624,7 +624,7 @@ function _handleControllerData(req, res) {
                     return res.status(400).end();
                 }
                 if (account.failedTimestamp === undefined || account.failed === undefined) {
-                    account.failedTimestamp = new Date().getUTCSeconds();
+                    account.failedTimestamp = new Date().getTime();
                     account.failed = "invalid_credentials";
                     account.save(true);
                     res.send('OK');
@@ -638,7 +638,7 @@ function _handleControllerData(req, res) {
                     return res.status(400).end();
                 }
                 if (account.failedTimestamp === undefined || account.failed === undefined) {
-                    account.failedTimestamp = new Date().getUTCSeconds();
+                    account.failedTimestamp = new Date().getTime();
                     account.failed = "error_26";
                     account.save(true);
                     res.send('OK');
@@ -686,7 +686,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                 level,
                 lat,
                 lon,
-                new Date().getUTCSeconds()
+                new Date().getTime()
             );
             cell.save(true); //TODO: Add check if cell already exists.
             //client.addCell(cell);
@@ -718,7 +718,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
             //client.addWeather(weather);
         });
         let endClientWeathers = process.hrtime(startClientWeathers);
-        console.info("[]  Weather Detail Count: " + clientWeathers.length + " parsed in " + endClientWeathers + "s");
+        console.info("[] Weather Detail Count: " + clientWeathers.length + " parsed in " + endClientWeathers + "s");
     
         let startWildPokemon = process.hrtime();
         wildPokemons.forEach(wildPokemon => {
@@ -865,7 +865,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                 }
                 if (pokemon) {
                     pokemon.addEncounter(encounter, username);
-                    pokemon.save();
+                    pokemon.save(true);
                     //client.addPokemon(pokemon);
                 } else {
                     let centerCoord = new S2.S2Point(encounter.wild_pokemon.latitude, encounter.wild_pokemon.longitude, 0);
@@ -887,7 +887,7 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                             timestampMs: encounter.wild_pokemon.timestamp_ms
                         });
                         newPokemon.addEncounter(encounter, username);
-                        newPokemon.save(); // TODO: UpdateIV true
+                        newPokemon.save(true);
                     }
                 }
             });
