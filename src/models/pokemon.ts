@@ -157,7 +157,7 @@ class Pokemon /*extends Consumable*/ {
         this.username = data.username;
         let pokestop: Pokestop;
         try {
-            pokestop = await Pokestop.getById(data.pokestop_id);
+            pokestop = await Pokestop.getById(data.nearby.fort_id);
         } catch (err) {
             pokestop = null;
             console.error(err);
@@ -165,7 +165,6 @@ class Pokemon /*extends Consumable*/ {
         if (pokestop) {
             this.lat = pokestop.lat;
             this.lon = pokestop.lon;
-            this.pokestopId = pokestop.id;
         }
         this.cellId = data.cellId.toString();
         this.expireTimestampVerified = false;
