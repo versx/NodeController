@@ -180,11 +180,14 @@ class Spawnpoint {
     }
     toJson() {
         return {
-            id: this.id, // TODO: toHex()
-            lat: this.lat,
-            lon: this.lon,
-            updated: this.upda || 1,
-            despawn_second: this.despawnSecond
+            type: "spawnpoint",
+            message: {
+                id: this.id, // TODO: toHex()
+                lat: this.lat,
+                lon: this.lon,
+                updated: this.updated || 1,
+                despawn_second: this.despawnSecond
+            }
         };
     }
 }

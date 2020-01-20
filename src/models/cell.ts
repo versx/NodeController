@@ -232,10 +232,13 @@ class Cell {
         */
         let polygon = [];
         return {
-            id: this.id,
-            level: this.level,
-            updated: this.updated ?? 1,
-            polygon: polygon
+            type: "s2cell",
+            message: {
+                id: this.id,
+                level: this.level,
+                updated: this.updated ?? 1,
+                polygon: polygon
+            }
         };
     }
 }
