@@ -432,8 +432,8 @@ async function _handleRawData(req, res) {
 
     if (data) {
         try {
-        console.debug("[Raw] Sending response to device:", data);
-        res.send(data);
+            console.debug("[Raw] Sending response to device:", data);
+            res.send(data);
         } catch (err) {
             console.log("[Raw] Failed to reply to device:", err);
         }

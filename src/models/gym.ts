@@ -588,7 +588,7 @@ class Gym {
                     type: "gym",
                     message: {
                         gym_id: this.id,
-                        gym_name: name || "Unknown",
+                        gym_name: this.name || "Unknown",
                         latitude: this.lat,
                         longitude: this.lon,
                         url: this.url || "",

@@ -42,6 +42,46 @@ class CircleInstanceController {
         let currentCoord = this.coords[currentIndex]; //TODO: Fix coords, add individually not full array, or find addRange method
         switch (this.type) {
             case InstanceType.CirclePokemon:
+                let currentUuidIndex = {};
+                currentUuidIndex[uuid] = (this.lastUuidIndex[uuid] || Math.round(Math.random() % this.coords.length)); // TODO: UInt16.random
+                let shouldAdvance = true
+                if ((Math.random() % 100) < 5) {
+                    //Use a light hand and 5% of the time try to space out devices
+                    //This ensures average round time decreases by at most 10% using this
+                    //approach
+                    let data = this.queryLiveDevices(uuid, currentUuidIndex[uuid]);
+                    let numLiveDevices = data[0];
+                    let distanceToNextLiveDevice = data[1];
+                    //let (numLiveDevices, distanceToNextLiveDevice) = this.queryLiveDevices(uuid, currentUuidIndex[uuid]);
+                    if ((distanceToNextLiveDevice * (numLiveDevices + 0.5)) < this.coords.length) {
+                        //We're too close to the next device in the route.
+                        shouldAdvance = false;
+                    }
+                }
+                if (currentUuidIndex[uuid] === 0){
+                    //Don't back up past 0 to avoid round time inaccuracy
+                    shouldAdvance = true;
+                }
+                if (shouldAdvance) {
+                    currentUuidIndex[uuid] = currentUuidIndex[uuid] + 1;
+                    if (currentUuidIndex[uuid] >= this.coords.length) {
+                        currentUuidIndex[uuid] = 0;
+                        //This is an approximation of round time.
+                        this.lastLastCompletedTime = this.lastCompletedTime;
+                        this.lastCompletedTime = new Date().getTime();
+                    }
+                } else {
+                    //Back up!
+                    currentUuidIndex[uuid] = currentUuidIndex[uuid] - 1;
+                    if (currentUuidIndex[uuid] < 0) {
+                        currentUuidIndex[uuid] = this.coords.length - 1;
+                    }
+                }
+                //This is the only place either of these dicts are modified:
+                this.lastUuidIndex[uuid] = currentUuidIndex[uuid];
+                this.lastUuidSeenTime[uuid] = new Date().getTime();
+                currentCoord = this.coords[currentUuidIndex[uuid] || 0];
+
                 return {
                     area: this.name,
                     action: "scan_pokemon",
@@ -95,19 +135,37 @@ class CircleInstanceController {
         this.lastIndex = 0;
     }
     stop() {}
-    routeDistance(x: number, y: number) {
+    routeDistance(x: number, y: number): number {
         if (x < y ) {
             return y - x;
         }
         return y + (this.coords.length - x);
     }
-    queryLiveDevices(uuid: string, index: number) {
+    queryLiveDevices(uuid: string, index: number): [number, number] {
         // In seconds
         let deadDeviceCutoff = new Date().getTime() - 60 * 1000;
         // Include the querying device in the count
         let numLiveDevices = 1;
         let distanceToNext = this.coords.length;
         var keys = Object.keys(this.lastUuidIndex);
+        keys.forEach((uuid, oindex) => {
+            console.log(uuid);
+            console.log(oindex);
+            let ouuid: string = keys[oindex];
+            let index: number = this.lastUuidIndex[uuid];
+            // Skip the querying device
+            if (ouuid !== uuid) {
+                let lastSeen = this.lastUuidSeenTime[ouuid];
+                if (lastSeen > deadDeviceCutoff) {
+                    numLiveDevices++;
+                    let dist = this.routeDistance(index, oindex);
+                    if (dist < distanceToNext) {
+                        distanceToNext = dist;
+                    }
+                }
+            }
+        });
+        /*
         for (let i = 0; i < keys.length; i++) {
             let ouuid = this.lastUuidIndex[i];
             // Skip the querying device
@@ -123,6 +181,7 @@ class CircleInstanceController {
                 }
             }
         }
+        */
         return [numLiveDevices, distanceToNext];
     }
 }
