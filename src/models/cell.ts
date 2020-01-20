@@ -217,6 +217,28 @@ class Cell {
         });
         return cells;
     }
+
+    toJson() {
+        /*
+        // TODO: Get polygon for s2cell
+        let s2cell = S2Cell(cellId: S2CellId(uid: id))
+        var polygon =  [[Double]]()
+        for i in 0...3 {
+            let coord = S2LatLng(point: s2cell.getVertex(i)).coord
+            polygon.append([
+                coord.latitude,
+                coord.longitude
+            ])
+        }
+        */
+        let polygon = [];
+        return {
+            id: this.id,
+            level: this.level,
+            updated: this.updated ?? 1,
+            polygon: polygon
+        };
+    }
 }
 
 // Export the class
