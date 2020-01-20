@@ -14,9 +14,8 @@ import { WebhookController } from './controllers/webhook-controller';
 import { WebhookListener } from './http/listener';
 import config     = require('./config.json');
 
-let db = DbController.instance;
-db.migrate(0, 1);
 // Setup controllers
+//DbController.instance.setup();
 InstanceController.instance.setup();
 AccountController.instance.setup();
 AssignmentController.instance.setup();

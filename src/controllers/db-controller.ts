@@ -3,6 +3,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as uuid from 'uuid';
+import { spawn } from 'child_process';
 
 import { Database } from '../data/mysql';
 import config      = require('../config.json');
@@ -18,6 +19,14 @@ class DbController {
     private asRoot: boolean = false;
     private migrationsRoot: string = path.resolve('./migrations/');
     private backupsRoot: string = path.resolve('./backups/');
+    private database: string;
+    private host: string;
+    private port: number;
+    private username: string;
+    private password: string;
+    private rootUsername: string;
+    private rootPassword: string;
+
     getNewestVersion() {
         let current: number = 0;
         let keepChecking: boolean = true;
@@ -70,10 +79,101 @@ class DbController {
         });
         console.log("[DbController] SetValueForKey:", results);
     }
+    setup() {
+        // TODO: Testing purposes
+        this.migrate(0, 1);
+        this.asRoot = true;
+        this.multiStatement = true;
+        
+        let count = 1;
+        let done = false;
+        //var mysql: MySQL!
+        while (!done) {
+            /*
+            guard let mysqlTemp = self.mysql else {
+                let message = `Failed to connect to database (as ${this.rootUsername}) while initializing. Try: ${count}/10`;
+                if (count === 10) {
+                    console.error"[DBController]", message);
+                    fatalError(message)
+                } else {
+                    console.log("[DBController]", message);
+                }
+                count++;
+                // TODO: Threading.sleep(seconds: 2.5)
+                continue;
+            }
+            */
+            done = true;
+            this.asRoot = false;
+            /*
+            guard self.mysql != nil else {
+                let message = "Failed to connect to database (as \(self.username)) while initializing."
+                Log.critical(message: "[DBController] " + message)
+                fatalError(message)
+            }
+            */
+            this.asRoot = true
+            //mysql = mysqlTemp
+        }
+        
+        let version = 0;
+        let createMetadataTableSQL = `
+            CREATE TABLE IF NOT EXISTS metadata (
+                \key\` VARCHAR(50) PRIMARY KEY NOT NULL,
+                \`value\` VARCHAR(50) DEFAULT NULL
+            );
+        `;
+        
+        /*
+        guard mysql.query(statement: createMetadataTableSQL) else {
+            let message = "Failed to create metadata table: (\(mysql.errorMessage())"
+            Log.critical(message: "[DBController] " + message)
+            fatalError(message)
+        }
+        */
+        
+        let getDBVersionSQL = `
+            SELECT \`value\`
+            FROM metadata
+            WHERE \`key\` = "DB_VERSION"
+            LIMIT 1;
+        `;
+        
+        /*
+        guard mysql.query(statement: getDBVersionSQL) else {
+            let message = "Failed to get current database version: (\(mysql.errorMessage())"
+            Log.critical(message: "[DBController] " + message)
+            fatalError(message)
+        }
+        
+        let getDBVersionResult = mysql.storeResults();
+        if (getDBVersionResult !== null) {
+            let element = getDBVersionResult!.next()
+            if (element !== null) {
+                version = parseInt(String(element[0]));
+            }
+        }
+        
+        this.migrate(version, newestDBVersion);
+        */
+        this.multiStatement = false;
+        this.asRoot = false;
 
+    }
     constructor() {
         fs.mkdirSync(this.migrationsRoot, { recursive: true });
         fs.mkdirSync(this.backupsRoot, { recursive: true });
+
+        console.log("[DBController] Initializing database");
+        
+        let enviroment = process.env;
+        this.database = enviroment["DB_DATABASE"] ?? "rdmdb";
+        this.host = enviroment["DB_HOST"] ?? "127.0.0.1";
+        this.port = parseInt(enviroment["DB_PORT"] ?? "") ?? 3306;
+        this.username = enviroment["DB_USERNAME"] ?? "rdmuser";
+        this.password = enviroment["DB_PASSWORD"];
+        this.rootUsername = enviroment["DB_ROOT_USERNAME"] ?? "root";
+        this.rootPassword = enviroment["DB_ROOT_PASSWORD"];
     }
     async migrate(fromVersion: number, toVersion: number) {
         if (fromVersion < toVersion) {
@@ -149,65 +249,60 @@ class DbController {
                 #else
                 let mysqldumpCommand = "/usr/bin/mysqldump"
                 #endif
+                */
+               let mysqldumpCommand = "/usr/bin/mysqldump";
                 
                 // Schema
-                let commandSchema = Shell("bash", "-c", mysqldumpCommand + " --set-gtid-purged=OFF --skip-triggers --add-drop-table --skip-routines --no-data \(self.database) \(tablesShema) -h \(self.host) -P \(self.port) -u \(self.rootUsername) -p\(self.rootPassword?.stringByReplacing(string: "\"", withString: "\\\"") ?? "") > \(backupFileSchema.path)")
-                let resultSchema = commandSchema.runError()
-                if (resultSchema == nil || resultSchema!.stringByReplacing(string: "mysqldump: [Warning] Using a password on the command line interface can be insecure.", withString: "").trimmingCharacters(in: .whitespacesAndNewlines) != "") {
-                    let message = "Failed to create Command Backup: \(resultSchema as Any)"
-                    Log.critical(message: "[DBController] " + message)
-                    fatalError(message)
+                let args = ["-c", mysqldumpCommand + ` --set-gtid-purged=OFF --skip-triggers --add-drop-table --skip-routines --no-data ${this.database} ${tablesShema} -h ${this.host} -P ${this.port} -u ${this.rootUsername} -p${this.rootPassword.replace("\"", "\\\"") || ""} > ${backupFileSchema.path}`];
+                let cmd = executeCommand("bash", args);
+                if (cmd) {
+                    let message = `Failed to create Command Backup: ${cmd}`;
+                    console.error("[DBController]", message);
+                    // TODO: fatalError(message);
                 }
-                
                 // Trigger
-                let commandTrigger = Shell("bash", "-c", mysqldumpCommand + " --set-gtid-purged=OFF --triggers --no-create-info --no-data --skip-routines \(self.database) \(tablesShema)  -h \(self.host) -P \(self.port) -u \(self.rootUsername) -p\(self.rootPassword?.stringByReplacing(string: "\"", withString: "\\\"") ?? "") > \(backupFileTrigger.path)")
-                let resultTrigger = commandTrigger.runError()
-                if (resultTrigger == nil || resultTrigger!.stringByReplacing(string: "mysqldump: [Warning] Using a password on the command line interface can be insecure.", withString: "").trimmingCharacters(in: .whitespacesAndNewlines) != "") {
-                    let message = "Failed to create Command Backup \(resultTrigger as Any)"
-                    Log.critical(message: "[DBController] " + message)
-                    fatalError(message)
+                args = ["-c", mysqldumpCommand + ` --set-gtid-purged=OFF --triggers --no-create-info --no-data --skip-routines ${this.database} ${tablesShema}  -h ${this.host} -P ${this.port} -u ${this.rootUsername} -p${this.rootPassword.replace("\"", "\\\"") || ""} > ${backupFileTrigger.path}`];
+                cmd = executeCommand("bash", args);
+                if (cmd) {
+                    let message = `Failed to create Command Backup ${cmd}`;
+                    console.error("[DBController]", message);
+                    // TODO: fatalError(message);
                 }
-     
                 // Data
-                let commandData = Shell("bash", "-c", mysqldumpCommand + " --set-gtid-purged=OFF --skip-triggers --skip-routines --no-create-info --skip-routines \(self.database) \(tablesData)  -h \(self.host) -P \(self.port) -u \(self.rootUsername) -p\(self.rootPassword?.stringByReplacing(string: "\"", withString: "\\\"") ?? "") > \(backupFileData.path)")
-                let resultData = commandData.runError()
-                if (resultData == nil || resultData!.stringByReplacing(string: "mysqldump: [Warning] Using a password on the command line interface can be insecure.", withString: "").trimmingCharacters(in: .whitespacesAndNewlines) != "") {
-                    let message = "Failed to create Data Backup \(resultData as Any)"
-                    Log.critical(message: "[DBController] " + message)
-                    fatalError(message)
+                args = ["-c", mysqldumpCommand + ` --set-gtid-purged=OFF --skip-triggers --skip-routines --no-create-info --skip-routines ${this.database} ${tablesData}  -h ${this.host} -P ${this.port} -u ${this.rootUsername} -p${this.rootPassword.replace("\"", "\\\"") || ""} > ${backupFileData.path}`];
+                cmd = executeCommand("bash", args);
+                if (cmd) {
+                    let message = `Failed to create Data Backup ${cmd}`;
+                    console.error("[DBController]", message);
+                    // TODO: fatalError(message);
                 }
-                */
             }
             
             console.log("[DBController] Migrating...");
 
-            var migrateSQL: String
-            let sqlFile = fs.openSync(`${this.migrationsRoot}${path.sep}${fromVersion + 1}.sql`, fs.constants.F_OK);
-            /*
-            do {
-                try sqlFile.open(.read)
-                try migrateSQL = sqlFile.readString()
-                sqlFile.close()
-            } catch {
-                sqlFile.close()
-                let message = "Migration failed: (\(error.localizedDescription))"
-                Log.critical(message: "[DBController] " + message)
-                fatalError(message)
+            let migrateSQL: string
+            try {
+                let sqlFile = `${this.migrationsRoot}${path.sep}${fromVersion + 1}.sql`;
+                migrateSQL = readFile(sqlFile);
+            } catch (err) {
+                let message = `Migration failed: (${err})`;
+                console.error("[DBController]", message);
+                // TODO: fatalError(message);
             }
-            
+            /*
             for sql in migrateSQL.split(separator: ";") {
                 let sql = sql.replacingOccurrences(of: "&semi", with: ";").trimmingCharacters(in: .whitespacesAndNewlines)
                 if sql != "" {
                     guard mysql.query(statement: sql) else {
-                        let message = "Migration Failed: (\(mysql.errorMessage()))"
-                        Log.critical(message: "[DBController] " + message)
-                        if ProcessInfo.processInfo.environment["NO_BACKUP"] == nil {
-                            for i in 0...10 {
-                                Log.info(message: "[DBController] Rolling back migration in \(10 - i) seconds")
-                                Threading.sleep(seconds: 1)
+                        let message = "Migration Failed: (\(mysql.errorMessage()))";
+                        console.error("[DBController]", message);
+                        if (process.env["NO_BACKUP"] === undefined || process.env["NO_BACKUP"] === null) {
+                            for (let i = 0; i < 10; i++) {
+                                console.log(`[DBController] Rolling back migration in ${10 - i} seconds`);
+                                // TODO: Threading.sleep(seconds: 1)
                             }
-                            Log.info(message: "[DBController] Rolling back migration now. Do not kill RDM!")
-                            rollback(backupFileSchema: backupFileSchema, backupFileTrigger: backupFileTrigger, backupFileData: backupFileData)
+                            console.log("[DBController] Rolling back migration now. Do not kill RDM!");
+                            this.rollback(backupFileSchema, backupFileTrigger, backupFileData);
                         }
                         fatalError(message)
                     }
@@ -217,26 +312,85 @@ class DbController {
             while mysql.moreResults() {
                 _ = mysql.nextResult()
             }
+            */
             
             let updateVersionSQL: string = `
                 INSERT INTO metadata (\`key\`, \`value\`)
-                VALUES("DB_VERSION", \(fromVersion + 1))
-                ON DUPLICATE KEY UPDATE \`value\` = \(fromVersion + 1);
-            `;            
+                VALUES("DB_VERSION", ${fromVersion + 1})
+                ON DUPLICATE KEY UPDATE \`value\` = ${fromVersion + 1};
+            `;
+            /*
             guard mysql.query(statement: updateVersionSQL) else {
-                let message: string = "Migration Failed: (\(mysql.errorMessage()))";
-                console.error("[DBController] ", message);
+                let message = "Migration Failed: (\(mysql.errorMessage()))";
+                console.error("[DBController]", message);
                 fatalError(message);
             }
-            
+            */
             console.log("[DBController] Migration successful");
             this.migrate(fromVersion + 1, toVersion);
-            */
         }
     }
     rollback(backupFileSchema: string, backupFileTrigger: string, backupFileData: string) {
+        /*
+        TODO: #if os(macOS)
+        let mysqlCommand = "/usr/local/opt/mysql@5.7/bin/mysql"
+        #else
+        let mysqlCommand = "/usr/bin/mysql"
+        #endif
+        */
+        let mysqlCommand = "/usr/bin/mysql";
 
+        console.log("[DBController] Executing Schema backup...");
+        let args = ["-c", mysqlCommand + ` ${this.database} -h ${this.host} -P ${this.port} -u ${this.rootUsername} -p${this.rootPassword.replace("\"", "\\\"") || ""} < ${backupFileSchema}`];
+        let cmd = executeCommand("bash", args);
+        if (cmd) {
+            console.log("[DBController] Executing Schema backup failed:", cmd);
+        } else {
+            console.log("[DBController] Executing Schema backup done.");
+        }
+        console.log("[DBController] Executing Trigger backup...");
+        args = ["-c", mysqlCommand + ` ${this.database} -h ${this.host} -P ${this.port} -u ${this.rootUsername} -p${this.rootPassword.replace("\"", "\\\"") || ""} < ${backupFileTrigger}`];
+        cmd = executeCommand("bash", args);
+        if (cmd) {
+            console.log("[DBController] Executing Trigger backup failed:", cmd);
+        } else {
+            console.log("[DBController] Executing Trigger backup done.");
+        }
+        
+        console.log("[DBController] Executing Data backup...");
+        args = ["-c", mysqlCommand + ` ${this.database} -h ${this.host} -P ${this.port} -u ${this.rootUsername} -p${this.rootPassword.replace("\"", "\\\"") || ""} < ${backupFileData}`];
+        cmd = executeCommand("bash", args);
+        if (cmd) {
+            console.log("[DBController] Executing Data backup failed:", cmd);
+        } else {
+            console.log("[DBController] Executing Data backup done.");
+        }
+
+        console.log("[DBController] Database restored successfully!");
+        console.log("[DBController] Sleeping for 60s before restarting again. (Save to kill now)");
+        // TODO: Threading.sleep(seconds: 60)
     }
+}
+
+function readFile(path: string) {
+    let data = fs.readFileSync(path);
+    return data.toString('utf8');
+}
+
+function executeCommand(command: string, args?: string[]) {
+    let commandData = spawn(command, args);
+    process.stdin.pipe(commandData.stdin);
+    commandData.stdout.on('data', (data) => {
+        let result = data;
+        result = result.replace('mysql: [Warning] Using a password on the command line interface can be insecure.', '');
+        return result;
+        //if (result) {
+        //    console.log("[DBController] Executing Data backup failed:", result);
+        //} else {
+        //    console.log("[DBController] Executing Data backup done.");
+        //}
+    });
+    return null;
 }
 
 export { DbController };
