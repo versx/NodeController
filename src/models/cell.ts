@@ -165,7 +165,6 @@ class Cell {
      */
     async save(update: boolean): Promise<void> {
         //TODO: Check if values changed, if not skip.
-        Cell.Cells[this.id] = this;
         let sql = `
         INSERT INTO s2cell (id, level, center_lat, center_lon, updated)
         VALUES (?, ?, ?, ?, UNIX_TIMESTAMP())
@@ -217,6 +216,9 @@ class Cell {
         });
         return cells;
     }
+    /**
+     * 
+     */
     toJson() {
         /*
         // TODO: Get polygon for s2cell

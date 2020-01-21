@@ -709,6 +709,10 @@ class Pokestop {
         })
         return pokestops;
     }
+    /**
+     * 
+     * @param type 
+     */
     toJson(type: string) {
         switch (type) {
             case "quest": // Quest
