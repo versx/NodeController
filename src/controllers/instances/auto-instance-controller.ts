@@ -6,10 +6,11 @@ import { Cell } from "../../models/cell";
 
 import S2 = require('nodes2ts');
 import moment = require('moment');
+import { getCurrentTimestamp } from "../../utils/util";
 
 const AutoInstanceInterval: number = 2 * 1000;
 
-const cooldownDataArray = { '0.3': 0.16, '1': 1, '2': 2, '4': 3, '5': 4, '8': 5, '10': 7, '15': 9, '20': 12, '25': 15, '30': 17, '35': 18, '45': 20, '50': 20, '60': 21, '70': 23, '80': 24, '90': 25, '100': 26, '125': 29, '150': 32, '175': 34, '201': 37, '250': 41, '300': 46, '328': 48, '350': 50, '400': 54, '450': 58, '500': 62, '550': 66, '600': 70, '650': 74, '700': 77, '751': 82, '802': 84, '839': 88, '897': 90, '900': 91, '948': 95, '1007': 98, '1020': 102, '1100': 104, '1180': 109, '1200': 111, '1221': 113, '1300': 117, '1344': 119/*, TODO: number.MAX_VALUE: 120*/ };//.sorted { (lhs, rhs) -> Bool in
+const cooldownDataArray = { '0.3': 0.16, '1': 1, '2': 2, '4': 3, '5': 4, '8': 5, '10': 7, '15': 9, '20': 12, '25': 15, '30': 17, '35': 18, '45': 20, '50': 20, '60': 21, '70': 23, '80': 24, '90': 25, '100': 26, '125': 29, '150': 32, '175': 34, '201': 37, '250': 41, '300': 46, '328': 48, '350': 50, '400': 54, '450': 58, '500': 62, '550': 66, '600': 70, '650': 74, '700': 77, '751': 82, '802': 84, '839': 88, '897': 90, '900': 91, '948': 95, '1007': 98, '1020': 102, '1100': 104, '1180': 109, '1200': 111, '1221': 113, '1300': 117, '1344': 119/*, TODO: Number.MAX_VALUE: 120*/ };//.sorted { (lhs, rhs) -> Bool in
 //    lhs.key < rhs.key
 //}
 
@@ -56,7 +57,6 @@ class AutoInstanceController {
         let totalCount = 0;
         let missingCellIds: S2.S2CellId[];
         this.multiPolygon.polygons.forEach(async (polygon: any/*TODO: Implement polygon class*/) => {
-            // TODO: actual multipolygon
             let cellIds = polygon.getS2CellIds(15, 15, Number.MAX_VALUE);
             totalCount += cellIds.length;
             let ids = cellIds.map(x => x.id);
@@ -77,7 +77,8 @@ class AutoInstanceController {
                 }   
             }
         });
-        console.log("[AutoInstanceController]", name, "Bootstrap Status:", (totalCount - missingCellIds.length) + "/" + totalCount, "after", Math.round(new Date().getTime() - start.getTime()) + "s")
+
+        console.log("[AutoInstanceController]", name, "Bootstrap Status:", (totalCount - missingCellIds.length) + "/" + totalCount, "after", Math.round(getCurrentTimestamp() - (start.getTime() / 1000)) + "s")
         this.bootstrapCellIds = missingCellIds.map(x => x.id.toString());
         this.bootstrapTotalCount = totalCount;
     }
@@ -138,10 +139,10 @@ class AutoInstanceController {
                     coverer.setMaxLevel(15);
                     let cellIds = coverer.getCoveringCells(circle);
                     cellIds.forEach(cellId => {
-                        // TODO: let index = this.bootstrapCellIds.indexOf(cellId);
-                        //if (index !== undefined) {
-                        //    this.bootstrapCellIds.remove(index); // TODO: redo
-                        //}
+                        let index = this.bootstrapCellIds.indexOf(cellId.id.toString());
+                        if (index !== undefined) {
+                            //TODO: this.bootstrapCellIds.remove(index);
+                        }
                     });
                     if (!(this.bootstrapCellIds.length > 0)) {
                         this.bootstrap();
@@ -253,7 +254,7 @@ class AutoInstanceController {
                             newLat = closest.lat;
                             newLon = closest.lon;
                             pokestop = closest;
-                            let now = new Date().getTime();
+                            let now = getCurrentTimestamp();
                             if (lastTime > 0) {
                                 let encounterTimeT = lastTime + this.encounterCooldown(closestDistance);
                                 if (encounterTimeT < now) {
@@ -280,7 +281,7 @@ class AutoInstanceController {
                             newLat = stop.lat;
                             newLon = stop.lon;
                             pokestop = stop;
-                            encounterTime = new Date().getTime();
+                            encounterTime = getCurrentTimestamp();
                             // TODO: remove _ this.todayStops.pop(); 
                         } else {
                             return { };

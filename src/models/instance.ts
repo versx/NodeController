@@ -136,7 +136,6 @@ class Instance implements IInstance {
     static async load(): Promise<Instance[]> {
         // TODO: Load instances from cache and mysql, check diff, add new/changes to cache.
         //let data = redisClient.get(INSTANCE_LIST);
-        // TODO: Someone else do redis, I'm good.
         /*
         client.get(INSTANCE_LIST, function(err: Error, result) {
             if (err) {

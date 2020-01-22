@@ -164,7 +164,6 @@ class Cell {
      * @param update 
      */
     async save(update: boolean): Promise<void> {
-        //TODO: Check if values changed, if not skip.
         let sql = `
         INSERT INTO s2cell (id, level, center_lat, center_lon, updated)
         VALUES (?, ?, ?, ?, UNIX_TIMESTAMP())

@@ -10,6 +10,7 @@ import { Pokestop } from '../models/pokestop';
 import { Cell } from '../models/cell';
 import { Weather } from '../models/weather';
 import { InstanceController } from '../controllers/instances/instance-controller';
+import { getCurrentTimestamp } from '../utils/util';
 //import { RedisClient } from '../redis-client';
 //import { winston } from '../utils/logger';
 
@@ -96,7 +97,7 @@ async function _handleRawData(req, res) {
     let latTarget: number = json["lat_target"];
     let lonTarget: number = json["lon_target"];
     if (uuid !== undefined && latTarget !== undefined && lonTarget !== undefined) {
-        var newDevice = new Device(uuid, null, username, "127.0.0.1", new Date().getTime(), latTarget, lonTarget);
+        var newDevice = new Device(uuid, null, username, "127.0.0.1", getCurrentTimestamp(), latTarget, lonTarget);
         newDevice.save();
     }
 
@@ -382,8 +383,8 @@ async function _handleRawData(req, res) {
     }
     if (pokemonCoords && pokemonEncounterId) {
         let point = pokemonCoords.toPoint();
-        data["pokemon_lat"] = point.x; // TODO: pokemonCoords.latitude?
-        data["pokemon_lon"] = point.y; // TODO: pokemonCoords.longitude?
+        data["pokemon_lat"] = pokemonCoords.latDegrees; // TODO: Verify this is correct
+        data["pokemon_lon"] = pokemonCoords.lngDegrees; // TODO: Verify this is correct
         data["pokemon_encounter_id"] = pokemonEncounterId;
     }
 
@@ -435,6 +436,7 @@ async function _handleRawData(req, res) {
             console.debug("[Raw] Sending response to device:", data);
             res.send(data);
         } catch (err) {
+            // TODO: ERR_HTTP_HEADERS_SENT: Cannot set headers after they are sent to the client
             console.log("[Raw] Failed to reply to device:", err);
         }
     }
@@ -478,11 +480,11 @@ function _handleControllerData(req, res) {
     let username: string = jsonO["username"];
     let minLevel: number = parseInt(jsonO["min_level"] || 0);
     let maxLevel: number = parseInt(jsonO["max_level"] || 29);
-    let device: Device = getDevice(uuid); //InstanceController.instance.Devices[uuid]; // TODO: Change
+    let device: Device = getDevice(uuid);
 
     switch (type) {
         case "init":
-            let firstWarningTimestamp;
+            let firstWarningTimestamp: number;
             if (device === undefined || device.accountUsername === undefined) {
                 firstWarningTimestamp = null;
             } else {
@@ -507,7 +509,6 @@ function _handleControllerData(req, res) {
                 console.debug("[Controller] Registering device");
                 let newDevice = new Device(uuid, null, null, null, 0, 0.0, 0.0);
                 newDevice.create();
-                //devices[uuid] = newDevice;
                 res.send({ 
                     data: { 
                         assigned: false,
@@ -517,8 +518,19 @@ function _handleControllerData(req, res) {
             }
             break;
         case "heartbeat":
-            // TODO: heartbeat
-            res.send('OK');
+            let host: string;
+            let remoteAddress = req.client.remoteAddress;
+            if (remoteAddress) {
+                host = remoteAddress.host + ":" + remoteAddress.port;
+            } else {
+                host = "?";
+            }
+            try {
+                Device.touch(uuid, host);
+                res.send('OK');
+            } catch (err) {
+                res.send(err);
+            }
             break;
         case "get_job":
             let controller = InstanceController.instance.getInstanceController(uuid);
@@ -539,7 +551,7 @@ function _handleControllerData(req, res) {
             }
             break;
         case "get_account":
-            var account = Account.getNewAccount(minLevel, maxLevel);// randomValue(accounts); // TODO: Get new account from level restrictions
+            var account = Account.getNewAccount(minLevel, maxLevel);
             console.debug("[Controller] GetAccount: " + account);
             account.then(x => {
                 console.debug("[Controller] Random Account: " + x);
@@ -597,7 +609,7 @@ function _handleControllerData(req, res) {
                     return res.status(400).end();
                 }
                 if (account.failedTimestamp === undefined || account.failed === undefined) {
-                    account.failedTimestamp = new Date().getTime();
+                    account.failedTimestamp = getCurrentTimestamp();
                     account.failed = "banned";
                     account.save(true);
                     res.send('OK');
@@ -611,7 +623,7 @@ function _handleControllerData(req, res) {
                     return res.status(400).end();
                 }
                 if (account.firstWarningTimestamp === undefined) {
-                    account.firstWarningTimestamp = new Date().getTime();
+                    account.firstWarningTimestamp = getCurrentTimestamp();
                     account.save(true);
                     res.send('OK');
                 }
@@ -624,7 +636,7 @@ function _handleControllerData(req, res) {
                     return res.status(400).end();
                 }
                 if (account.failedTimestamp === undefined || account.failed === undefined) {
-                    account.failedTimestamp = new Date().getTime();
+                    account.failedTimestamp = getCurrentTimestamp();
                     account.failed = "invalid_credentials";
                     account.save(true);
                     res.send('OK');
@@ -638,7 +650,7 @@ function _handleControllerData(req, res) {
                     return res.status(400).end();
                 }
                 if (account.failedTimestamp === undefined || account.failed === undefined) {
-                    account.failedTimestamp = new Date().getTime();
+                    account.failedTimestamp = getCurrentTimestamp();
                     account.failed = "error_26";
                     account.save(true);
                     res.send('OK');
@@ -673,9 +685,10 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
     //let queue = Threading.getQueue(name: Foundation.UUID().uuidString, type: .serial)
     //queue.dispatch {
 
-        let gymIdsPerCell = []; //[UInt64: [String]]
-        let stopsIdsPerCell = []; //[UInt64: [String]]
+    let gymIdsPerCell = []; //[UInt64: [String]]
+    let stopsIdsPerCell = []; //[UInt64: [String]]
 
+    if (cells.length > 0) {
         cells.forEach(cellId => {
             try {
                 let s2cell = new S2.S2Cell(new S2.S2CellId(cellId.toString()));
@@ -690,9 +703,13 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                     level,
                     lat,
                     lon,
-                    new Date().getTime()
+                    getCurrentTimestamp()
                 );
-                cell.save(true);
+                cell.save(true).then(x => {
+                    //console.log("[Cell] Updated:", cell.id);
+                }).catch(err => {
+                    console.error("[Cell] Error:", err);
+                });
             } catch (err) {
                 console.error(err);
             }
@@ -705,7 +722,9 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
                 stopsIdsPerCell[cellId] = [];
             } 
         });
+    }
 
+    if (clientWeathers.lengths > 0) {
         let startClientWeathers = process.hrtime();
         clientWeathers.forEach(conditions => {
             try {
@@ -730,7 +749,9 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
         });
         let endClientWeathers = process.hrtime(startClientWeathers);
         console.info("[] Weather Detail Count: " + clientWeathers.length + " parsed in " + endClientWeathers + "s");
-    
+    }
+
+    if (forts.length > 0) {
         let startForts = process.hrtime();
         forts.forEach(fort => {
             try {
@@ -766,62 +787,64 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
         });
         let endForts = process.hrtime(startForts);
         console.info("[] Forts Count: " + forts.length + " parsed in " + endForts + "s");
-    
-        if (fortDetails.length > 0) {
-            let startFortDetails = process.hrtime();
-            fortDetails.forEach(async fort => {
-                switch (fort.type) {
-                    case 0: // gym
-                        let gym: Gym;
-                        try {
-                            gym = await Gym.getById(fort.id);
-                        } catch (err) {
-                            gym = null;
-                        }
-                        if (gym) {
-                            gym.addDetails(fort);
-                            gym.save();
-                            //client.addGym(gym);
-                        }
-                        break;
-                    case 1: // checkpoint
-                        let pokestop: Pokestop;
-                        try {
-                            pokestop = await Pokestop.getById(fort.id);
-                        } catch (err) {
-                            pokestop = null;
-                        }
-                        if (pokestop) {
-                            pokestop.addDetails(fort);
-                            pokestop.save();
-                            //client.addPokestop(pokestop);
-                        }
-                        break;
-                }
-            });
-            let endFortDetails = process.hrtime(startFortDetails);
-            console.info("[] Forts Detail Count: " + fortDetails.length + " parsed in " + endFortDetails + "s");
-        }
-        
-        if (gymInfos.length > 0) {
-            let startGymInfos = process.hrtime();
-            gymInfos.forEach(async gymInfo => {
-                let gym: Gym;
-                try {
-                    gym = await Gym.getById(gymInfo.gym_status_and_defenders.pokemon_fort_proto.id);
-                } catch (err) {
-                    gym = null
-                }
-                if (gym) {
-                    gym.addGymInfo(gymInfo);
-                    gym.save();
-                    //client.addGym(gym);
-                }
-            });
-            let endGymInfos = process.hrtime(startGymInfos);
-            console.info("[] Forts Detail Count: " + gymInfos.length + " parsed in " + endGymInfos + "s");
-        }
+    }
 
+    if (fortDetails.length > 0) {
+        let startFortDetails = process.hrtime();
+        fortDetails.forEach(async fort => {
+            switch (fort.type) {
+                case 0: // gym
+                    let gym: Gym;
+                    try {
+                        gym = await Gym.getById(fort.id);
+                    } catch (err) {
+                        gym = null;
+                    }
+                    if (gym) {
+                        gym.addDetails(fort);
+                        gym.save();
+                        //client.addGym(gym);
+                    }
+                    break;
+                case 1: // checkpoint
+                    let pokestop: Pokestop;
+                    try {
+                        pokestop = await Pokestop.getById(fort.id);
+                    } catch (err) {
+                        pokestop = null;
+                    }
+                    if (pokestop) {
+                        pokestop.addDetails(fort);
+                        pokestop.save();
+                        //client.addPokestop(pokestop);
+                    }
+                    break;
+            }
+        });
+        let endFortDetails = process.hrtime(startFortDetails);
+        console.info("[] Forts Detail Count: " + fortDetails.length + " parsed in " + endFortDetails + "s");
+    }
+
+    if (gymInfos.length > 0) {
+        let startGymInfos = process.hrtime();
+        gymInfos.forEach(async gymInfo => {
+            let gym: Gym;
+            try {
+                gym = await Gym.getById(gymInfo.gym_status_and_defenders.pokemon_fort_proto.id);
+            } catch (err) {
+                gym = null
+            }
+            if (gym) {
+                gym.addGymInfo(gymInfo);
+                gym.save();
+                //client.addGym(gym);
+            }
+        });
+        let endGymInfos = process.hrtime(startGymInfos);
+        console.info("[] Forts Detail Count: " + gymInfos.length + " parsed in " + endGymInfos + "s");
+    }
+
+    if (wildPokemons.length > 0) {
         let startWildPokemon = process.hrtime();
         wildPokemons.forEach(wildPokemon => {
             try {
@@ -839,7 +862,9 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
         });
         let endWildPokemon = process.hrtime(startWildPokemon);
         console.info("[] Pokemon Count: " + wildPokemons.length + " parsed in " + endWildPokemon + "s");
-    
+    }
+
+    if (nearbyPokemons.length > 0) {
         let startNearbyPokemon = process.hrtime();
         nearbyPokemons.forEach(nearbyPokemon => {
             try {
@@ -857,66 +882,67 @@ function handleConsumables(cells, clientWeathers, wildPokemons, nearbyPokemons, 
         });
         let endNearbyPokemon = process.hrtime(startNearbyPokemon);
         console.info("[] NearbyPokemon Count: " + nearbyPokemons.length + " parsed in " + endNearbyPokemon + "s");
-        
-        if (quests.length > 0) {
-            let startQuests = process.hrtime();
-            quests.forEach(async quest => {
-                let pokestop: Pokestop;
-                try {
-                    pokestop = await Pokestop.getById(quest.fort_id);
-                } catch (err) {
-                    pokestop = null;
+    }
+
+    if (quests.length > 0) {
+        let startQuests = process.hrtime();
+        quests.forEach(async quest => {
+            let pokestop: Pokestop;
+            try {
+                pokestop = await Pokestop.getById(quest.fort_id);
+            } catch (err) {
+                pokestop = null;
+            }
+            if (pokestop) {
+                pokestop.addQuest(quest);
+                pokestop.save();
+                //client.addQuest(quest);
+            }
+        });
+        let endQuests = process.hrtime(startQuests);
+        console.info("[] Quest Count: " + quests.length + " parsed in " + endQuests + "s");
+    }
+
+    if (encounters.length > 0) {
+        let startEncounters = process.hrtime();
+        encounters.forEach(async encounter => {
+            let pokemon: Pokemon;
+            try {
+                pokemon = await Pokemon.getById(encounter.wild_pokemon.encounter_id);
+            } catch (err) {
+                pokemon = null;
+            }
+            if (pokemon) {
+                pokemon.addEncounter(encounter, username);
+                pokemon.save(true);
+                //client.addPokemon(pokemon);
+            } else {
+                let centerCoord = new S2.S2Point(encounter.wild_pokemon.latitude, encounter.wild_pokemon.longitude, 0);
+                let center = S2.S2LatLng.fromPoint(centerCoord);
+                let centerNormalized = center.normalized();
+                let centerNormalizedPoint = centerNormalized.toPoint();
+                let circle = new S2.S2Cap(centerNormalizedPoint, 0.0);
+                let coverer = new S2.S2RegionCoverer();
+                coverer.setMaxCells(1);
+                coverer.setMinLevel(15);
+                coverer.setMaxLevel(15);
+                let cellIds = coverer.getCoveringCells(circle);
+                let cellId = cellIds.pop();
+                if (cellId) {
+                    let newPokemon = new Pokemon({
+                        wild: encounter.wild_pokemon.data,
+                        username: username,
+                        cellId: cellId,
+                        timestampMs: encounter.wild_pokemon.timestamp_ms
+                    });
+                    newPokemon.addEncounter(encounter, username);
+                    newPokemon.save(true);
                 }
-                if (pokestop) {
-                    pokestop.addQuest(quest);
-                    pokestop.save();
-                    //client.addQuest(quest);
-                }
-            });
-            let endQuests = process.hrtime(startQuests);
-            console.info("[] Quest Count: " + quests.length + " parsed in " + endQuests + "s");
-        }
-        
-        if (encounters.length > 0) {
-            let startEncounters = process.hrtime();
-            encounters.forEach(async encounter => {
-                let pokemon: Pokemon;
-                try {
-                    pokemon = await Pokemon.getById(encounter.wild_pokemon.encounter_id);
-                } catch (err) {
-                    pokemon = null;
-                }
-                if (pokemon) {
-                    pokemon.addEncounter(encounter, username);
-                    pokemon.save(true);
-                    //client.addPokemon(pokemon);
-                } else {
-                    let centerCoord = new S2.S2Point(encounter.wild_pokemon.latitude, encounter.wild_pokemon.longitude, 0);
-                    let center = S2.S2LatLng.fromPoint(centerCoord);
-                    let centerNormalized = center.normalized();
-                    let centerNormalizedPoint = centerNormalized.toPoint();
-                    let circle = new S2.S2Cap(centerNormalizedPoint, 0.0);
-                    let coverer = new S2.S2RegionCoverer();
-                    coverer.setMaxCells(1);
-                    coverer.setMinLevel(15);
-                    coverer.setMaxLevel(15);
-                    let cellIds = coverer.getCoveringCells(circle);
-                    let cellId = cellIds.pop();
-                    if (cellId) {
-                        let newPokemon = new Pokemon({
-                            wild: encounter.wild_pokemon.data,
-                            username: username,
-                            cellId: cellId,
-                            timestampMs: encounter.wild_pokemon.timestamp_ms
-                        });
-                        newPokemon.addEncounter(encounter, username);
-                        newPokemon.save(true);
-                    }
-                }
-            });
-            let endEncounters = process.hrtime(startEncounters);
-            console.info("[] Encounter Count: " + encounters.length + " parsed in " + endEncounters + "s");
-        }
+            }
+        });
+        let endEncounters = process.hrtime(startEncounters);
+        console.info("[] Encounter Count: " + encounters.length + " parsed in " + endEncounters + "s");
+    }
 }
 
 function getDevice(uuid: string) {

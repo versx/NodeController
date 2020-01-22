@@ -1,6 +1,7 @@
 "use strict"
 
 import { Pokemon } from "../../models/pokemon";
+import { getCurrentTimestamp } from "../../utils/util"
 
 class IVInstanceController {
     private multiPolygon: any[];
@@ -38,7 +39,7 @@ class IVInstanceController {
             }
         } else {
             let first = this.scannedPokemon.pop();
-            let timeSince = new Date().getTime() - first["date"]; //TODO: review
+            let timeSince = getCurrentTimestamp() - (first["date"].getTime() / 1000); //TODO: review
             if (timeSince < 120) {
                 // TODO: sleep (120 - timeSince)
                 if (this.shouldExit) {
@@ -48,7 +49,6 @@ class IVInstanceController {
             let success = false;
             let pokemonReal: Pokemon;
             while (!success) {
-                // TODO: TryCatch
                 try {
                     pokemonReal = await Pokemon.getById(first["pokemon"].id);
                     success = true;
@@ -69,11 +69,11 @@ class IVInstanceController {
         }
     }
     getTask(uuid: string, username: string) {
-        if (!(this.pokemonQueue.length > 0)) {
+        if (this.pokemonQueue.length === 0) {
             return {}; // { string: any }
         }
         let pokemon = this.pokemonQueue.pop();
-        var now = new Date().getTime();
+        var now = getCurrentTimestamp();
         if (now - (pokemon.firstSeenTimestamp || 1) >= 600) {
             return this.getTask(uuid, username);
         }
@@ -122,7 +122,7 @@ class IVInstanceController {
                 this.pokemonQueue.splice(0, 0, pokemon);
                 // Remove last pokemon.
                 this.pokemonQueue.splice(index, 1);
-                //_ = this.pokemonQueue.popLast()?
+                // TODO: _ = this.pokemonQueue.popLast()?
             } else if (index >= 0) {
                 this.pokemonQueue.splice(index, 0, pokemon);
             } else {

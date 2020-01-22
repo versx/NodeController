@@ -3,6 +3,7 @@
 import { WebhookController } from '../controllers/webhook-controller';
 import { Database } from '../data/mysql';
 import { Instance } from './instance';
+import { getCurrentTimestamp } from '../utils/util';
 //import { winston } from '../utils/logger';
 import config      = require('../config.json');
 const db           = new Database(config);
@@ -382,19 +383,18 @@ class Pokestop {
      */
     addQuest(quest: any): void {
         //TODO: Add quest
-        /*
-        self.questType = questData.questType.rawValue.toUInt32()
-        self.questTarget = UInt16(questData.goal.target)
-        self.questTemplate = questData.templateID.lowercased()
+        this.questType = parseInt(quest.quest_type);
+        this.questTarget = parseInt(quest.goal.target);
+        this.questTemplate = quest.template_id.toLowerCase();
         
-        var conditions = [[String: Any]]()
-        var rewards = [[String: Any]]()
-        
-        for conditionData in questData.goal.condition {
-            var condition = [String: Any]()
-            var infoData = [String: Any]()
-            condition["type"] = conditionData.type.rawValue
-            
+        let conditions = [{}]; //[[String: Any]]()
+        let rewards = [{}];//[[String: Any]]()
+        quest.goal.condition.forEach(condition => {
+            let conditionData = {};
+            let infoData = {};
+            conditionData["type"] = condition.type;
+            switch (condition.type) {
+                /*
             switch conditionData.type {
             case .withBadgeType:
                 let info = conditionData.withBadgeType
@@ -497,18 +497,19 @@ class Pokestop {
             case .unset: break
             case .UNRECOGNIZED(_): break
             }
-            
-            if !infoData.isEmpty {
-                condition["info"] = infoData
+                */
             }
-            conditions.append(condition)
-        }
-        
-        for rewardData in questData.questRewards {
-            var reward = [String: Any]()
-            var infoData = [String: Any]()
-            reward["type"] = rewardData.type.rawValue
-            
+            if (infoData) {
+                conditionData["info"] = infoData;
+            }
+            conditions.push(conditionData);
+        });
+        quest.questRewards.forEach(reward => {
+            let rewardData = {};
+            let infoData = {};
+            rewardData["type"] = reward.type;
+            switch (reward.type) {
+                /*
             switch rewardData.type {
                 
             case .experience:
@@ -542,22 +543,20 @@ class Pokestop {
             case .unset: break
             case .UNRECOGNIZED(_): break
             }
-            
-            reward["info"] = infoData
-            rewards.append(reward)
-        }
-        
-        self.questConditions = conditions
-        self.questRewards = rewards
-        self.questTimestamp = UInt32(Date().timeIntervalSince1970)
-        */
+                */
+            }
+            rewardData["info"] = infoData;
+            rewards.push(rewardData);
+        });
+        this.questConditions = conditions;
+        this.questRewards = rewards;
+        this.questTimestamp = getCurrentTimestamp();
     }
     /**
      * Save Pokestop.
      * @param updateQuest 
      */
     async save(updateQuest: boolean = false): Promise<void> {
-        //TODO: Check if values changed, if not skip.
         let oldPokestop: Pokestop;
         try {
             oldPokestop = await Pokestop.getById(this.id, true);
@@ -568,7 +567,7 @@ class Pokestop {
         
         let sql: string = "";
         let args = [];
-        this.updated = new Date().getTime();        
+        this.updated = getCurrentTimestamp();
         if (oldPokestop === null) {
             WebhookController.instance.addPokestopEvent(this);
             if (this.lureExpireTimestamp || 0 > 0) {
@@ -793,7 +792,6 @@ function flattenCoords(area: string): string {
     });
     return `${coords}${firstCoord}`;
 }
-
 
 // Export the class
 export { Pokestop };

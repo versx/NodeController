@@ -187,7 +187,6 @@ class Weather {
      * @param update 
      */
     async save(update: boolean): Promise<void> {
-        //TODO: Check if values changed, if not skip.
         let sql = `
         INSERT INTO weather (id, level, latitude, longitude, gameplay_condition, wind_direction, cloud_level, rain_level, wind_level, snow_level, fog_level, special_effect_level, severity, warn_weather, updated) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP())

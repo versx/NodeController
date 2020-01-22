@@ -5,6 +5,7 @@ import { InstanceType } from "./instance-controller";
 import { CircleInstanceController } from "./circle-controller";
 import S2 = require("nodes2ts");
 import { Coord } from "../../coord";
+import { getCurrentTimestamp } from "../../utils/util";
 
 class CircleSmartRaidInstanceController extends CircleInstanceController {
     private smartRaidInterval: number = 30 * 1000; // 30 seconds
@@ -38,10 +39,15 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
             while (!loaded) {
                 try {
                     let gyms: Gym[] = await Gym.getByCellIds(cellIds);
-                    /* TODO: Fix Coord cannot be used as index
-                    this.smartRaidGymsInPoint[point] = gyms.map(gym => gym.id);
-                    this.smartRaidPointsUpdated[point] = 0;// TODO: Date(timeIntervalSince1970: 0)
-                    */
+                    if (this.smartRaidGymsInPoint.has(point)) {
+                        let gym = gyms.map(gym => gym.id.toString());
+                        if (gym.length > 0) {
+                            this.smartRaidGymsInPoint.set(point, gym[0]);
+                        }
+                    }
+                    if (this.smartRaidPointsUpdated.has(point)) {
+                        this.smartRaidPointsUpdated.set(point, new Date(0));
+                    }
                     gyms.forEach(gym => {
                         if (this.smartRaidGyms[gym.id] === null) {
                             this.smartRaidGyms[gym.id] = gym
@@ -56,10 +62,10 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
         
         setInterval(() => this.raidUpdaterRun(), this.smartRaidInterval);
     }
-    raidUpdaterRun() {
+    async raidUpdaterRun() {
         while (!this.shouldExit) {
-            /*
-            let gyms = Gym.getWithIds(smartRaidGyms.keys);
+            let ids: string[] = Array.from(this.smartRaidGyms.keys());
+            let gyms = await Gym.getByIds(ids);
             if (gyms === null) {
                 // TODO: sleep 5 seconds
                 continue;
@@ -67,7 +73,6 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
             gyms.forEach(gym => {
                 this.smartRaidGyms[gym.id] = gym;
             });
-            */
             // TODO: sleep 30 seconds
         }
     }
@@ -84,7 +89,7 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
         let gymsNoBoss: [Gym, Date, Coord][];
         this.smartRaidGymsInPoint.forEach(function(gymsInPoint) {
             let updated = this.smartRaidPointsUpdated.get(gymsInPoint);
-            let nowTimestamp = new Date().getTime();
+            let nowTimestamp = getCurrentTimestamp();
             if (updated === null || nowTimestamp >= updated + CircleSmartRaidInstanceController.ignoreTime) {
                 this.gymsInPoint.forEach(id => {
                     let gym = this.smartRaidGyms[id];
@@ -136,8 +141,8 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
     }
     getStatus() {//formatted: boolean) {
         let scansh: number;
-        if (this.startDate !== null) {
-            scansh = this.count / new Date().getTime() - this.startDate.getTime() * 3600;
+        if (this.startDate !== undefined && this.startDate !== null) {
+            scansh = this.count / getCurrentTimestamp() - (this.startDate.getTime() / 1000) * 3600;
         } else {
             scansh = null;
         }

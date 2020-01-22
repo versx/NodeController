@@ -98,7 +98,6 @@ class InstanceController implements IInstanceController {
                         });
                         i++;
                     });
-                    //TODO: Cast instance to AutoQuestController and get timeZoneOffset property
                     let timeZoneOffset = instance.data.timeZoneOffset || 0;
                     let areaArrayEmptyInner = [];
                     areaArray.forEach((coords: any) => {
