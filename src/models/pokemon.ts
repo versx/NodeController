@@ -654,7 +654,7 @@ class Pokemon /*extends Consumable*/ {
             });
 
         if (oldPokemon === undefined || oldPokemon === null) {
-            WebhookController.instance.addPokemonEvent(this)
+            WebhookController.instance.addPokemonEvent(this);
             InstanceController.instance.gotPokemon(this);
             if (this.atkIv) {
                 InstanceController.instance.gotIV(this);
