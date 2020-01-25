@@ -106,7 +106,7 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
         });
 
         // Get coord to scan
-        var coord: Coord;
+        let coord: Coord;
         if (!(gymsNoBoss.length > 0)) {
             // TODO: gymsNoBoss.sort((lhs, rhs) => lhs.1 < rhs.1);
             let first = gymsNoBoss.pop();

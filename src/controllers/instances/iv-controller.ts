@@ -73,7 +73,7 @@ class IVInstanceController {
             return {}; // { string: any }
         }
         let pokemon = this.pokemonQueue.pop();
-        var now = getCurrentTimestamp();
+        let now = getCurrentTimestamp();
         if (now - (pokemon.firstSeenTimestamp || 1) >= 600) {
             return this.getTask(uuid, username);
         }

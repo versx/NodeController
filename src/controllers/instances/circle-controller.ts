@@ -148,7 +148,7 @@ class CircleInstanceController {
         // Include the querying device in the count
         let numLiveDevices = 1;
         let distanceToNext = this.coords.length;
-        var keys = Object.keys(this.lastUuidIndex);
+        let keys = Object.keys(this.lastUuidIndex);
         keys.forEach((uuid, oindex) => {
             console.log(uuid);
             console.log(oindex);

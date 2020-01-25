@@ -124,7 +124,7 @@ class AutoInstanceController {
             case AutoInstanceType.Quest:
                 if (this.bootstrapCellIds.length > 0) {
                     let target = this.bootstrapCellIds.pop();
-                    var cellId = new S2.S2CellId(target);
+                    let cellId = new S2.S2CellId(target);
                     let cell = new S2.S2Cell(cellId);
                     let center = S2.S2LatLng.fromPoint(cell.getCenter());
                     

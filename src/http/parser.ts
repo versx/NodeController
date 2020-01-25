@@ -545,7 +545,7 @@ function _handleControllerData(req, res) {
             }
             break;
         case "get_account":
-            var account = Account.getNewAccount(minLevel, maxLevel);
+            let account = Account.getNewAccount(minLevel, maxLevel);
             console.debug("[Controller] GetAccount: " + account);
             account.then(x => {
                 console.debug("[Controller] Random Account: " + x);

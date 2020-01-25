@@ -1,5 +1,7 @@
 "use strict"
 
+import * as S2 from 'nodes2ts';
+import { Coord } from '../coord';
 import { Database } from '../data/mysql';
 import config = require('../config.json');
 const db = new Database(config);
@@ -10,7 +12,7 @@ const db = new Database(config);
 class Weather {
     static Weather = {};
 
-    id: number;
+    id: string;
     level: number;
     latitude: number;
     longitude: number;
@@ -139,7 +141,7 @@ class Weather {
             return [];
         }
 
-        var inSQL = "(";
+        let inSQL = "(";
         for (let i = 1; i < ids.length; i++) {
             inSQL += "?, ";
         }
@@ -258,6 +260,13 @@ class Weather {
         return weather;
     }
     toJson() {
+        let s2cell = new S2.S2Cell(new S2.S2CellId(this.id));
+        let polygon: Coord[] = [];
+        for (let i = 0; i <= 3; i++) {
+            let vertex = s2cell.getVertex(i);
+            //let coord = new S2.S2LatLng(vertex);
+            polygon.push(new Coord(vertex.x, vertex.y));
+        }
         /*
         let s2cell = S2Cell(cellId: S2CellId(id: id))
         var polygon =  [[Double]]()
@@ -269,7 +278,6 @@ class Weather {
                 ])
         }
         */
-        let polygon = [];
         return {
             type: "weather",
             message: {

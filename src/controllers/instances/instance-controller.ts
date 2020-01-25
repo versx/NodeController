@@ -151,9 +151,9 @@ class InstanceController implements IInstanceController {
     removeInstance(instance: Instance) {
         this.instancesByInstanceName[instance.name].stop();
         this.instancesByInstanceName[instance.name] = null;
-        var keys = Object.keys(this.devicesByDeviceUUID);
+        let keys = Object.keys(this.devicesByDeviceUUID);
         keys.forEach(deviceUUID => {
-            var device = this.devicesByDeviceUUID[deviceUUID];
+            let device = this.devicesByDeviceUUID[deviceUUID];
             if (device.instanceName === instance.name) {
                 this.devicesByDeviceUUID[deviceUUID] = null;
             }
@@ -164,9 +164,9 @@ class InstanceController implements IInstanceController {
     removeInstanceByName(instanceName: string) {
         this.instancesByInstanceName[instanceName].stop();
         this.instancesByInstanceName[instanceName] = null;
-        var keys = Object.keys(this.devicesByDeviceUUID);
+        let keys = Object.keys(this.devicesByDeviceUUID);
         keys.forEach(deviceUUID => {
-            var device = this.devicesByDeviceUUID[deviceUUID];
+            let device = this.devicesByDeviceUUID[deviceUUID];
             if (device.instanceName === instanceName) {
                 this.devicesByDeviceUUID[device] = null;
             }
@@ -229,7 +229,7 @@ class InstanceController implements IInstanceController {
         });
     }
     getIVQueue(name: string): Pokemon[] {
-        var instance = this.instancesByInstanceName[name];
+        let instance = this.instancesByInstanceName[name];
         if (instance instanceof IVInstanceController) {
             return instance.getQueue();
         }

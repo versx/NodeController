@@ -1,5 +1,7 @@
 "use strict"
 
+import * as S2 from 'nodes2ts';
+import { Coord } from '../coord';
 import { Database } from '../data/mysql';
 import config = require('../config.json');
 const db = new Database(config);
@@ -219,6 +221,13 @@ class Cell {
      * 
      */
     toJson() {
+        let s2cell = new S2.S2Cell(new S2.S2CellId(this.id));
+        let polygon: Coord[] = [];
+        for (let i = 0; i <= 3; i++) {
+            let vertex = s2cell.getVertex(i);
+            //let coord = new S2.S2LatLng(vertex);
+            polygon.push(new Coord(vertex.x, vertex.y));
+        }
         /*
         // TODO: Get polygon for s2cell
         let s2cell = S2Cell(cellId: S2CellId(uid: id))
@@ -231,7 +240,6 @@ class Cell {
             ])
         }
         */
-        let polygon = [];
         return {
             type: "s2cell",
             message: {
