@@ -1,5 +1,6 @@
 "use strict"
 
+import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as uuid from 'uuid';
@@ -27,7 +28,7 @@ class DbController {
     private rootUsername: string;
     private rootPassword: string;
 
-    getNewestVersion() {
+    getNewestDbVersion() {
         let current: number = 0;
         let keepChecking: boolean = true;
         while (keepChecking) {
@@ -79,7 +80,7 @@ class DbController {
         });
         console.log("[DbController] SetValueForKey:", results);
     }
-    setup() {
+    async setup() {
         // TODO: Testing purposes
         this.migrate(0, 1);
         this.asRoot = true;
@@ -87,14 +88,12 @@ class DbController {
         
         let count = 1;
         let done = false;
-        //var mysql: MySQL!
         while (!done) {
-            /*
-            guard let mysqlTemp = self.mysql else {
+            if (db === undefined || db === null) {
                 let message = `Failed to connect to database (as ${this.rootUsername}) while initializing. Try: ${count}/10`;
                 if (count === 10) {
-                    console.error"[DBController]", message);
-                    fatalError(message)
+                    console.error("[DBController]", message);
+                    //fatalError(message);
                 } else {
                     console.log("[DBController]", message);
                 }
@@ -102,18 +101,14 @@ class DbController {
                 // TODO: Threading.sleep(seconds: 2.5)
                 continue;
             }
-            */
             done = true;
             this.asRoot = false;
-            /*
-            guard self.mysql != nil else {
-                let message = "Failed to connect to database (as \(self.username)) while initializing."
-                Log.critical(message: "[DBController] " + message)
-                fatalError(message)
+            if (db === undefined || db === null) {
+                let message = `Failed to connect to database (as ${this.username}) while initializing.`;
+                console.error("[DBController] ", message);
+                //fatalError(message);
             }
-            */
             this.asRoot = true
-            //mysql = mysqlTemp
         }
         
         let version = 0;
@@ -124,13 +119,13 @@ class DbController {
             );
         `;
         
-        /*
-        guard mysql.query(statement: createMetadataTableSQL) else {
-            let message = "Failed to create metadata table: (\(mysql.errorMessage())"
-            Log.critical(message: "[DBController] " + message)
-            fatalError(message)
-        }
-        */
+        await db.query(createMetadataTableSQL)
+            .then(x => x)
+            .catch(err => {
+                let message = `Failed to create metadata table: (\(mysql.errorMessage())`;
+                console.error("[DBController]", message);
+                //fatalError(message);
+            });
         
         let getDBVersionSQL = `
             SELECT \`value\`
@@ -139,23 +134,20 @@ class DbController {
             LIMIT 1;
         `;
         
-        /*
-        guard mysql.query(statement: getDBVersionSQL) else {
-            let message = "Failed to get current database version: (\(mysql.errorMessage())"
-            Log.critical(message: "[DBController] " + message)
-            fatalError(message)
+        let results = await db.query(getDBVersionSQL)
+            .then(x => x)
+            .catch(err => {
+                let message = `Failed to get current database version: (${err})`;
+                console.error("[DBController]", message);
+                //fatalError(message);
+            });
+        if (results) {
+            Object.keys(results).forEach(x => { //TODO: Confirm Object.keys/values works
+                version = parseInt(x);
+            })
         }
-        
-        let getDBVersionResult = mysql.storeResults();
-        if (getDBVersionResult !== null) {
-            let element = getDBVersionResult!.next()
-            if (element !== null) {
-                version = parseInt(String(element[0]));
-            }
-        }
-        
-        this.migrate(version, newestDBVersion);
-        */
+
+        this.migrate(version, this.getNewestDbVersion());
         this.multiStatement = false;
         this.asRoot = false;
 
@@ -176,14 +168,17 @@ class DbController {
         this.rootPassword = enviroment["DB_ROOT_PASSWORD"];
     }
     async migrate(fromVersion: number, toVersion: number) {
+        let backupFileSchema: fs.WriteStream;
+        let backupFileTrigger: fs.WriteStream;
+        let backupFileData: fs.WriteStream;
         if (fromVersion < toVersion) {
             console.log("[DBController] Migrating database to version", fromVersion + 1);
             
             let uuidString = uuid.v4();
             let backupsDir = fs.opendirSync(this.backupsRoot);
-            let backupFileSchema = fs.createWriteStream(backupsDir.path + path.sep + uuidString + ".schema.sql");
-            let backupFileTrigger = fs.createWriteStream(backupsDir.path + path.sep + uuidString + ".trigger.sql");
-            let backupFileData = fs.createWriteStream(backupsDir.path + path.sep + uuidString + ".data.sql");
+            backupFileSchema = fs.createWriteStream(backupsDir.path + path.sep + uuidString + ".schema.sql");
+            backupFileTrigger = fs.createWriteStream(backupsDir.path + path.sep + uuidString + ".trigger.sql");
+            backupFileData = fs.createWriteStream(backupsDir.path + path.sep + uuidString + ".data.sql");
             if (process.env["NO_BACKUP"] === undefined || process.env["NO_BACKUP"] === null) {
                 let allTables = {
                     account: true,
@@ -216,41 +211,28 @@ class DbController {
                 `;
                 let results = await db.query(allTablesSQL)
                 .then(x => x)
-                .catch(x => {
-                    console.error("[DbController] Error: " + x);
-                    return null;
+                .catch(err => {
+                    let message = `Failed to execute query. (${err})`
+                    console.error("[DBController]", message);
+                    //fatalError(message);
                 });
-                let tableKeys = Object.values(results);
+                let tableKeys = Object.keys(results);
                 console.log("TABLE KEYS:", tableKeys);
-                tableKeys.forEach(x => {
+                tableKeys.forEach(key => {
+                    let withData = allTables[key];
+                    tablesShema += ` ${key}`;
+                    if (withData) {
+                        tablesData += ` ${key}`;
+                    }
                 });
 
-                /*
-                guard mysqlStmtTables.execute() else {
-                    let message = "Failed to execute query. (\(mysqlStmtTables.errorMessage())"
-                    Log.critical(message: "[DBController] " + message)
-                    fatalError(message)
-                }
-                let results = mysqlStmtTables.results()
-                while let result = results.next() {
-                    if let name = result[0] as? String {
-                        if let withData = allTables[name] {
-                            tablesShema += " \(name)"
-                            if withData {
-                                tablesData += " \(name)"
-                            }
-                        }
-                    }
-                }
-                
                 console.log("[DBController] Creating backup", uuidString);
-                #if os(macOS)
-                let mysqldumpCommand = "/usr/local/opt/mysql@5.7/bin/mysqldump"
-                #else
-                let mysqldumpCommand = "/usr/bin/mysqldump"
-                #endif
-                */
-               let mysqldumpCommand = "/usr/bin/mysqldump";
+                let mysqldumpCommand: string;
+                if (os.type().toLowerCase() === "darwin") {
+                    mysqldumpCommand = "/usr/local/opt/mysql@5.7/bin/mysqldump"
+                } else {
+                    mysqldumpCommand = "/usr/bin/mysqldump"
+                }
                 
                 // Schema
                 let args = ["-c", mysqldumpCommand + ` --set-gtid-purged=OFF --skip-triggers --add-drop-table --skip-routines --no-data ${this.database} ${tablesShema} -h ${this.host} -P ${this.port} -u ${this.rootUsername} -p${this.rootPassword.replace("\"", "\\\"") || ""} > ${backupFileSchema.path}`];
@@ -258,7 +240,7 @@ class DbController {
                 if (cmd) {
                     let message = `Failed to create Command Backup: ${cmd}`;
                     console.error("[DBController]", message);
-                    // TODO: fatalError(message);
+                    //fatalError(message);
                 }
                 // Trigger
                 args = ["-c", mysqldumpCommand + ` --set-gtid-purged=OFF --triggers --no-create-info --no-data --skip-routines ${this.database} ${tablesShema}  -h ${this.host} -P ${this.port} -u ${this.rootUsername} -p${this.rootPassword.replace("\"", "\\\"") || ""} > ${backupFileTrigger.path}`];
@@ -266,7 +248,7 @@ class DbController {
                 if (cmd) {
                     let message = `Failed to create Command Backup ${cmd}`;
                     console.error("[DBController]", message);
-                    // TODO: fatalError(message);
+                    //fatalError(message);
                 }
                 // Data
                 args = ["-c", mysqldumpCommand + ` --set-gtid-purged=OFF --skip-triggers --skip-routines --no-create-info --skip-routines ${this.database} ${tablesData}  -h ${this.host} -P ${this.port} -u ${this.rootUsername} -p${this.rootPassword.replace("\"", "\\\"") || ""} > ${backupFileData.path}`];
@@ -274,7 +256,7 @@ class DbController {
                 if (cmd) {
                     let message = `Failed to create Data Backup ${cmd}`;
                     console.error("[DBController]", message);
-                    // TODO: fatalError(message);
+                    //fatalError(message);
                 }
             }
             
@@ -289,12 +271,14 @@ class DbController {
                 console.error("[DBController]", message);
                 // TODO: fatalError(message);
             }
-            /*
-            for sql in migrateSQL.split(separator: ";") {
-                let sql = sql.replacingOccurrences(of: "&semi", with: ";").trimmingCharacters(in: .whitespacesAndNewlines)
-                if sql != "" {
-                    guard mysql.query(statement: sql) else {
-                        let message = "Migration Failed: (\(mysql.errorMessage()))";
+            let sqlSplit = migrateSQL.split(';');
+            sqlSplit.forEach(async sql => {
+                let msql = sql.replace('&semi', ';').trim();
+                if (msql !== "") {
+                    let results = await db.query(msql)
+                    .then(x => x)
+                    .catch(x => {
+                        let message = `Migration Failed: (${x})`;
                         console.error("[DBController]", message);
                         if (process.env["NO_BACKUP"] === undefined || process.env["NO_BACKUP"] === null) {
                             for (let i = 0; i < 10; i++) {
@@ -302,43 +286,41 @@ class DbController {
                                 // TODO: Threading.sleep(seconds: 1)
                             }
                             console.log("[DBController] Rolling back migration now. Do not kill RDM!");
-                            this.rollback(backupFileSchema, backupFileTrigger, backupFileData);
+                            this.rollback(
+                                backupFileSchema.path.toString(), 
+                                backupFileTrigger.path.toString(), 
+                                backupFileData.path.toString());
                         }
-                        fatalError(message)
-                    }
+                        //fatalError(message);
+                        return null;
+                    });
                 }
-            }
-
-            while mysql.moreResults() {
-                _ = mysql.nextResult()
-            }
-            */
+                
+            })
             
             let updateVersionSQL: string = `
                 INSERT INTO metadata (\`key\`, \`value\`)
                 VALUES("DB_VERSION", ${fromVersion + 1})
                 ON DUPLICATE KEY UPDATE \`value\` = ${fromVersion + 1};
             `;
-            /*
-            guard mysql.query(statement: updateVersionSQL) else {
-                let message = "Migration Failed: (\(mysql.errorMessage()))";
-                console.error("[DBController]", message);
-                fatalError(message);
-            }
-            */
+            await db.query(updateVersionSQL)
+                .then(x => x)
+                .catch(err => {
+                    let message = `Migration Failed: ${err}`;
+                    console.error("[DBController]", message);
+                    //fatalError(message);
+                });
             console.log("[DBController] Migration successful");
             this.migrate(fromVersion + 1, toVersion);
         }
     }
     rollback(backupFileSchema: string, backupFileTrigger: string, backupFileData: string) {
-        /*
-        TODO: #if os(macOS)
-        let mysqlCommand = "/usr/local/opt/mysql@5.7/bin/mysql"
-        #else
-        let mysqlCommand = "/usr/bin/mysql"
-        #endif
-        */
-        let mysqlCommand = "/usr/bin/mysql";
+        let mysqlCommand: string;
+        if (os.type().toLowerCase() === "darwin") {
+            mysqlCommand = "/usr/local/opt/mysql@5.7/bin/mysql";
+        } else {
+            mysqlCommand = "/usr/bin/mysql";
+        }
 
         console.log("[DBController] Executing Schema backup...");
         let args = ["-c", mysqlCommand + ` ${this.database} -h ${this.host} -P ${this.port} -u ${this.rootUsername} -p${this.rootPassword.replace("\"", "\\\"") || ""} < ${backupFileSchema}`];

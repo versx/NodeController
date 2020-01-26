@@ -27,13 +27,17 @@ class InstanceController implements IInstanceController {
         this.Instances = await Instance.load();
 
         let keys = Object.keys(this.Devices);
-        keys.forEach((uuid: string) => {
-            this.addDevice(this.Devices[uuid]);
-        });
-        keys = Object.keys(this.Instances);
-        keys.forEach((name: string) => {
-            this.addInstance(this.Instances[name]);
-        });
+        if (keys) {
+            keys.forEach((uuid: string) => {
+                this.addDevice(this.Devices[uuid]);
+            });
+        }
+        if (keys) {
+            keys = Object.keys(this.Instances);
+            keys.forEach((name: string) => {
+                this.addInstance(this.Instances[name]);
+            });
+        }
     }
     getInstanceControllerByInstanceName(instanceName: string) {
         if (this.instancesByInstanceName[instanceName]) {
