@@ -82,8 +82,6 @@ class DbController {
         console.log("[DbController] SetValueForKey:", results);
     }
     async setup() {
-        // TODO: Testing purposes
-        this.migrate(0, 1);
         this.asRoot = true;
         this.multiStatement = true;
         
@@ -106,7 +104,7 @@ class DbController {
             this.asRoot = false;
             if (db === undefined || db === null) {
                 let message = `Failed to connect to database (as ${this.username}) while initializing.`;
-                console.error("[DBController] ", message);
+                console.error("[DBController]", message);
                 //fatalError(message);
             }
             this.asRoot = true
@@ -123,9 +121,9 @@ class DbController {
         await db.query(createMetadataTableSQL)
             .then(x => x)
             .catch(err => {
-                let message = `Failed to create metadata table: (\(mysql.errorMessage())`;
+                let message = `Failed to create metadata table: (${err})`;
                 console.error("[DBController]", message);
-                //fatalError(message);
+                process.exit(-1);
             });
         
         let getDBVersionSQL = `
@@ -140,7 +138,7 @@ class DbController {
             .catch(err => {
                 let message = `Failed to get current database version: (${err})`;
                 console.error("[DBController]", message);
-                //fatalError(message);
+                process.exit(-1);
             });
         if (results) {
             Object.keys(results).forEach(x => { //TODO: Confirm Object.keys/values works
@@ -215,7 +213,7 @@ class DbController {
                 .catch(err => {
                     let message = `Failed to execute query. (${err})`
                     console.error("[DBController]", message);
-                    //fatalError(message);
+                    process.exit(-1);
                 });
                 let tableKeys = Object.keys(results);
                 console.log("TABLE KEYS:", tableKeys);
@@ -241,7 +239,7 @@ class DbController {
                 if (cmd) {
                     let message = `Failed to create Command Backup: ${cmd}`;
                     console.error("[DBController]", message);
-                    //fatalError(message);
+                    process.exit(-1);
                 }
                 // Trigger
                 args = ["-c", mysqldumpCommand + ` --set-gtid-purged=OFF --triggers --no-create-info --no-data --skip-routines ${this.database} ${tablesShema}  -h ${this.host} -P ${this.port} -u ${this.rootUsername} -p${this.rootPassword.replace("\"", "\\\"") || ""} > ${backupFileTrigger.path}`];
@@ -249,7 +247,7 @@ class DbController {
                 if (cmd) {
                     let message = `Failed to create Command Backup ${cmd}`;
                     console.error("[DBController]", message);
-                    //fatalError(message);
+                    process.exit(-1);
                 }
                 // Data
                 args = ["-c", mysqldumpCommand + ` --set-gtid-purged=OFF --skip-triggers --skip-routines --no-create-info --skip-routines ${this.database} ${tablesData}  -h ${this.host} -P ${this.port} -u ${this.rootUsername} -p${this.rootPassword.replace("\"", "\\\"") || ""} > ${backupFileData.path}`];
@@ -257,7 +255,7 @@ class DbController {
                 if (cmd) {
                     let message = `Failed to create Data Backup ${cmd}`;
                     console.error("[DBController]", message);
-                    //fatalError(message);
+                    process.exit(-1);
                 }
             }
             
@@ -270,7 +268,7 @@ class DbController {
             } catch (err) {
                 let message = `Migration failed: (${err})`;
                 console.error("[DBController]", message);
-                // TODO: fatalError(message);
+                process.exit(-1);
             }
             let sqlSplit = migrateSQL.split(';');
             sqlSplit.forEach(async sql => {
@@ -309,7 +307,7 @@ class DbController {
                 .catch(err => {
                     let message = `Migration Failed: ${err}`;
                     console.error("[DBController]", message);
-                    //fatalError(message);
+                    process.exit(-1);
                 });
             console.log("[DBController] Migration successful");
             this.migrate(fromVersion + 1, toVersion);
