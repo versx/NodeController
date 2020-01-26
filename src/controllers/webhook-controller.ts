@@ -29,6 +29,10 @@ class WebhookController {
     private raidEvents: Gym[] = [];
     private weatherEvents: Weather[] = [];
 
+    constructor() {
+        this.webhookURLStrings = config.webhook.urls;
+    }
+
     addPokemonEvent(pokemon: Pokemon): void {
         if (this.webhookURLStrings.length > 0) {
             this.pokemonEvents.push(pokemon);
@@ -96,7 +100,6 @@ class WebhookController {
         setInterval(() => this.loopEvents(), WebhookRelayInterval);
     }
     loopEvents(): void {
-        this.webhookURLStrings = config.webhook.urls;
         if (this.webhookURLStrings.length > 0) {
             let events: any[] = [];
             if (this.pokemonEvents.length > 0) {

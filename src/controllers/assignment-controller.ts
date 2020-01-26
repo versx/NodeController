@@ -1,8 +1,9 @@
 "use strict"
 
-import { Assignment } from "../models/assignment";
-import { Device } from "../models/device";
-import { InstanceController } from "./instances/instance-controller";
+import { Assignment } from '../models/assignment';
+import { Device } from '../models/device';
+import { InstanceController } from './instances/instance-controller';
+import { snooze } from '../utils/util';
 import * as moment from 'moment';
 
 class AssignmentController /*InstanceControllerDelegate?*/ {
@@ -27,7 +28,7 @@ class AssignmentController /*InstanceControllerDelegate?*/ {
                 //while (true) {
                     let now = todaySeconds();
                     if (lastUpdate === -2) {
-                        // TODO: sleep 5 seconds
+                        snooze(5000);
                         lastUpdate = now;
                         //continue;
                         return;
@@ -41,7 +42,7 @@ class AssignmentController /*InstanceControllerDelegate?*/ {
                         }
                     });
                     
-                    // TODO: sleep 5 seconds
+                    snooze(5000);
                     lastUpdate = now;
                 //}
             //}
@@ -72,7 +73,7 @@ class AssignmentController /*InstanceControllerDelegate?*/ {
                 device = await Device.getById(assignment.deviceUUID);
                 done = true;
             } catch (err) {
-                // TODO: sleep 1 second
+                snooze(1000);
             }
         }
         if (device instanceof Device && device.instanceName !== assignment.instanceName) {
@@ -85,7 +86,7 @@ class AssignmentController /*InstanceControllerDelegate?*/ {
                     device.save(device.uuid);
                     done = true;
                 } catch (err) {
-                    // TODO: sleep 1 second
+                    snooze(1000);
                 }
             }
             InstanceController.instance.addDevice(device);

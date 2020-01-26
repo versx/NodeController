@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/versx/NodeController#readme",
   "dependencies": {
+    "@turf/turf": "^5.1.6",
     "@types/request": "^2.48.4",
     "express": "^4.17.1",
     "fs": "0.0.1-security",

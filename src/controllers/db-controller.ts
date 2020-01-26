@@ -6,6 +6,7 @@ import * as uuid from 'uuid';
 import { spawn } from 'child_process';
 
 import { Database } from '../data/mysql';
+import { snooze } from '../utils/util';
 import config      = require('../config.json');
 const db           = new Database(config);
 
@@ -99,7 +100,7 @@ class DbController {
                     console.log("[DBController]", message);
                 }
                 count++;
-                // TODO: Threading.sleep(seconds: 2.5)
+                snooze(2500);
                 continue;
             }
             */
@@ -299,7 +300,7 @@ class DbController {
                         if (process.env["NO_BACKUP"] === undefined || process.env["NO_BACKUP"] === null) {
                             for (let i = 0; i < 10; i++) {
                                 console.log(`[DBController] Rolling back migration in ${10 - i} seconds`);
-                                // TODO: Threading.sleep(seconds: 1)
+                                snooze(1000);
                             }
                             console.log("[DBController] Rolling back migration now. Do not kill RDM!");
                             this.rollback(backupFileSchema, backupFileTrigger, backupFileData);
@@ -368,7 +369,7 @@ class DbController {
 
         console.log("[DBController] Database restored successfully!");
         console.log("[DBController] Sleeping for 60s before restarting again. (Save to kill now)");
-        // TODO: Threading.sleep(seconds: 60)
+        snooze(60 * 1000);
     }
 }
 

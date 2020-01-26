@@ -2,6 +2,7 @@
 
 import { WebhookController } from '../controllers/webhook-controller';
 import { Database } from '../data/mysql';
+import { getCurrentTimestamp } from '../utils/util';
 //import { winston } from '../utils/logger';
 import config      = require('../config.json');
 const db           = new Database(config);
@@ -415,7 +416,6 @@ class Gym {
      * Save gym.
      */
     async save() {
-        //TODO: Check if values changed, if not skip.
         let oldGym: Gym;
         try {
             oldGym = await Gym.getById(this.id, true);
@@ -430,11 +430,11 @@ class Gym {
         
         let sql: string = "";
         let args = [];
-        this.updated = new Date().getTime();        
+        this.updated = getCurrentTimestamp();       
         if (oldGym === undefined || oldGym === null) {
             WebhookController.instance.addGymEvent(this);
             WebhookController.instance.addGymInfoEvent(this);
-            let now = new Date().getTime();
+            let now = getCurrentTimestamp();
             let raidBattleTime = this.raidBattleTimestamp || 0;
             let raidEndTime = this.raidEndTimestamp || 0;
             
@@ -474,7 +474,7 @@ class Gym {
                     oldGym.raidSpawnTimestamp !== this.raidSpawnTimestamp
                 )) {
                 
-                let now = new Date().getTime();
+                let now = getCurrentTimestamp();
                 let raidBattleTime = this.raidBattleTimestamp || 0;
                 let raidEndTime = this.raidEndTimestamp || 0;
                 

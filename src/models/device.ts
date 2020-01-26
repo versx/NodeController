@@ -114,7 +114,7 @@ class Device {
      * @param uuid 
      * @param host 
      */
-    async touch(uuid: string, host: string): Promise<void> {
+    static async touch(uuid: string, host: string): Promise<void> {
         let sql = `
         UPDATE device
         SET last_host = ?

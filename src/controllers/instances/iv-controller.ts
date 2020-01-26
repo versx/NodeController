@@ -1,9 +1,11 @@
 "use strict"
 
+import * as turf from '@turf/turf'
 import { Pokemon } from "../../models/pokemon";
+import { getCurrentTimestamp, snooze } from "../../utils/util"
 
 class IVInstanceController {
-    private multiPolygon: any[];
+    private multiPolygon: turf.MultiPolygon;
     private pokemonQueue: Pokemon[];
     private scannedPokemon = []; // { date: "", pokemon: {} }
     private startDate: Date;
@@ -11,16 +13,16 @@ class IVInstanceController {
     private shouldExit = false;
 
     name: string;
-    area: any;
     pokemonList: number[];
     minLevel: number = 0;
     maxLevel: number = 29;
     ivQueueLimit: number =  100;
     scatterList: number[];
 
-    constructor(name: string, area: any, pokemonList: number[], minLevel: number, maxLevel: number, ivQueueLimit: number, scatterList: number[]) {
+    constructor(name: string, multiPolygon: turf.MultiPolygon, pokemonList: number[], 
+        minLevel: number, maxLevel: number, ivQueueLimit: number, scatterList: number[]) {
         this.name = name;
-        this.area = area;
+        this.multiPolygon = multiPolygon;
         this.pokemonList = pokemonList;
         this.minLevel = minLevel;
         this.maxLevel = maxLevel;
@@ -32,15 +34,15 @@ class IVInstanceController {
         // TODO: new thread
         // while (!shouldExit) {
         if (this.scannedPokemon.length > 0) {
-            // TODO: sleep 5 seconds
+            snooze(5000);
             if (this.shouldExit) {
                 return;
             }
         } else {
             let first = this.scannedPokemon.pop();
-            let timeSince = new Date().getTime() - first["date"]; //TODO: review
+            let timeSince = getCurrentTimestamp() - (first["date"].getTime() / 1000); //TODO: review
             if (timeSince < 120) {
-                // TODO: sleep (120 - timeSince)
+                snooze((120 - timeSince) * 1000);
                 if (this.shouldExit) {
                     return;
                 }
@@ -48,12 +50,11 @@ class IVInstanceController {
             let success = false;
             let pokemonReal: Pokemon;
             while (!success) {
-                // TODO: TryCatch
                 try {
                     pokemonReal = await Pokemon.getById(first["pokemon"].id);
                     success = true;
                 } catch (err) {
-                    // TODO: sleep 1 second
+                    snooze(1000);
                     if (this.shouldExit) {
                         return;
                     }
@@ -69,11 +70,11 @@ class IVInstanceController {
         }
     }
     getTask(uuid: string, username: string) {
-        if (!(this.pokemonQueue.length > 0)) {
-            return {}; // { string: any }
+        if (this.pokemonQueue.length === 0) {
+            return {};
         }
         let pokemon = this.pokemonQueue.pop();
-        var now = new Date().getTime();
+        let now = getCurrentTimestamp();
         if (now - (pokemon.firstSeenTimestamp || 1) >= 600) {
             return this.getTask(uuid, username);
         }
@@ -95,7 +96,7 @@ class IVInstanceController {
             // TODO: ivh = parseInt(this.count / parseInt(new Date() - this.startDate) * 3600);
         }
         if (formatted) {
-            let ivhString = ivh === null ? "-" : ivh;
+            let ivhString = ivh || "-";
             return "";//"<a href=\"/dashboard/instance/ivqueue/\(name.encodeUrl() ?? "")\">Queue</a>: \(pokemonQueue.count), IV/h: \(ivhString)";
         } else {
             return {
@@ -110,7 +111,10 @@ class IVInstanceController {
         return pokemon;
     }
     addPokemon(pokemon: Pokemon) {
-        if (this.pokemonList.includes(pokemon.pokemonId) && this.multiPolygon.includes({ lat: pokemon.lat, lon: pokemon.lon })) {
+        let point = turf.point([pokemon.lat, pokemon.lon]);
+        let coord = turf.getCoord(point);
+        if (this.pokemonList.includes(pokemon.pokemonId) && 
+            this.multiPolygon.coordinates.includes(coord[0][0])) { // REVIEW: Make sure this doesn't fail
             if (this.pokemonQueue.includes(pokemon)) {
                 return;
             }
@@ -119,10 +123,9 @@ class IVInstanceController {
                 console.log("[IVInstanceController] Queue is full!");
             } else if (this.pokemonQueue.length >= this.ivQueueLimit) {
                 // Insert pokemon at top of queue.
-                this.pokemonQueue.splice(0, 0, pokemon);
+                this.pokemonQueue.unshift(pokemon);
                 // Remove last pokemon.
-                this.pokemonQueue.splice(index, 1);
-                //_ = this.pokemonQueue.popLast()?
+                this.pokemonQueue.pop();
             } else if (index >= 0) {
                 this.pokemonQueue.splice(index, 0, pokemon);
             } else {
@@ -131,7 +134,8 @@ class IVInstanceController {
         }
     }
     gotIV(pokemon: Pokemon) {
-        if (this.multiPolygon.includes({})) {
+        let coord = turf.getCoord([pokemon.lat, pokemon.lon]);
+        if (this.multiPolygon.coordinates.includes(coord[0][0])) { // REVIEW: Make sure this doesn't fail
             let index = this.pokemonQueue.indexOf(pokemon, 0);
             if (index > -1) {
                 this.pokemonQueue.splice(index, 1);

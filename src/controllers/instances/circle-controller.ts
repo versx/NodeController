@@ -2,6 +2,7 @@
 
 import { InstanceType } from "./instance-controller"
 import { Coord } from "../../coord";
+import { getCurrentTimestamp } from "../../utils/util";
 
 class CircleInstanceController {
     lastUuidIndex = {};
@@ -23,7 +24,7 @@ class CircleInstanceController {
         this.minLevel = minLevel;
         this.maxLevel = maxLevel;
         this.coords = coords;
-        this.lastCompletedTime = new Date().getTime();
+        this.lastCompletedTime = getCurrentTimestamp();
         this.lastIndex = 0;
     }
     getTask(uuid: string, username: string) {
@@ -32,7 +33,7 @@ class CircleInstanceController {
            currentIndex = this.lastIndex;
             if (this.lastIndex + 1 === this.coords.length) {
                 this.lastLastCompletedTime = this.lastCompletedTime;
-                this.lastCompletedTime = new Date().getTime();
+                this.lastCompletedTime = getCurrentTimestamp();
                 this.lastIndex = 0;
             } else {
                 this.lastIndex = this.lastIndex + 1
@@ -68,7 +69,7 @@ class CircleInstanceController {
                         currentUuidIndex[uuid] = 0;
                         //This is an approximation of round time.
                         this.lastLastCompletedTime = this.lastCompletedTime;
-                        this.lastCompletedTime = new Date().getTime();
+                        this.lastCompletedTime = getCurrentTimestamp();
                     }
                 } else {
                     //Back up!
@@ -79,7 +80,7 @@ class CircleInstanceController {
                 }
                 //This is the only place either of these dicts are modified:
                 this.lastUuidIndex[uuid] = currentUuidIndex[uuid];
-                this.lastUuidSeenTime[uuid] = new Date().getTime();
+                this.lastUuidSeenTime[uuid] = getCurrentTimestamp();
                 currentCoord = this.coords[currentUuidIndex[uuid] || 0];
 
                 return {
@@ -143,11 +144,11 @@ class CircleInstanceController {
     }
     queryLiveDevices(uuid: string, index: number): [number, number] {
         // In seconds
-        let deadDeviceCutoff = new Date().getTime() - 60 * 1000;
+        let deadDeviceCutoff = getCurrentTimestamp() - 60 * 1000;
         // Include the querying device in the count
         let numLiveDevices = 1;
         let distanceToNext = this.coords.length;
-        var keys = Object.keys(this.lastUuidIndex);
+        let keys = Object.keys(this.lastUuidIndex);
         keys.forEach((uuid, oindex) => {
             console.log(uuid);
             console.log(oindex);

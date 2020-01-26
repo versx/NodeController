@@ -1,6 +1,7 @@
 "use strict"
 
 import { Database } from '../data/mysql';
+import { getCurrentTimestamp } from '../utils/util';
 import config = require('../config.json');
 const db = new Database(config);
 
@@ -102,14 +103,13 @@ class Spawnpoint {
      * Save Spawnpoint model data.
      */
     async save(update: boolean = false): Promise<void> {
-        //TODO: Check if values changed, if not skip.
         let oldSpawnpoint: Spawnpoint;
         try {
             oldSpawnpoint = await Spawnpoint.getById(this.id);
         } catch (err) {
             oldSpawnpoint = null;
         }
-        this.updated = new Date().getTime();
+        this.updated = getCurrentTimestamp();
         
         if (!update && oldSpawnpoint) {
             return;
@@ -182,7 +182,7 @@ class Spawnpoint {
         return {
             type: "spawnpoint",
             message: {
-                id: this.id, // TODO: toHex()
+                id: parseInt(this.id).toString(16),
                 lat: this.lat,
                 lon: this.lon,
                 updated: this.updated || 1,
