@@ -1,12 +1,12 @@
 "use strict"
 
 import { Account } from "../../models/account";
-import { Pokestop } from "../../models/pokestop";
 import { Cell } from "../../models/cell";
-
-import S2 = require('nodes2ts');
+import { Pokestop } from "../../models/pokestop";
+import * as turf from '@turf/turf';
+import * as S2 from "nodes2ts";
 import moment = require('moment');
-import { getCurrentTimestamp } from "../../utils/util";
+import { getCurrentTimestamp, snooze } from "../../utils/util";
 
 const AutoInstanceInterval: number = 2 * 1000;
 
@@ -20,13 +20,12 @@ enum AutoInstanceType {
 
 class AutoInstanceController {
     name: string;
-    area: any;
     timeZoneOffset: number;
     minLevel: number;
     maxLevel: number;
     spinLimit: number;
     type: AutoInstanceType;
-    multiPolygon: any;
+    multiPolygon: turf.MultiPolygon;
 
     private allStops: Pokestop[];
     private todayStops: Pokestop[];
@@ -35,9 +34,10 @@ class AutoInstanceController {
     private bootstrapCellIds: string[];
     private bootstrapTotalCount: number = 0;
 
-    constructor(name: string, area: any, type: AutoInstanceType, timeZoneOffset: number, minLevel: number, maxLevel: number, spinLimit: number) {
+    constructor(name: string, multiPolygon: turf.MultiPolygon, type: AutoInstanceType, 
+        timeZoneOffset: number, minLevel: number, maxLevel: number, spinLimit: number) {
         this.name = name;
-        this.area = area;
+        this.multiPolygon = multiPolygon;
         this.type = type;
         this.timeZoneOffset = timeZoneOffset;
         this.minLevel = minLevel;
@@ -56,18 +56,19 @@ class AutoInstanceController {
         let start = new Date();
         let totalCount = 0;
         let missingCellIds: S2.S2CellId[];
-        this.multiPolygon.polygons.forEach(async (polygon: any/*TODO: Implement polygon class*/) => {
-            let cellIds = polygon.getS2CellIds(15, 15, Number.MAX_VALUE);
+        this.multiPolygon.coordinates.forEach(async (pos: turf.helpers.Position[][], index: number, array: turf.helpers.Position[][][]) => {
+            let polygon = turf.polygon(this.multiPolygon.coordinates[0]);
+            let cellIds = this.getS2CellIds(polygon.geometry, 15, 15, Number.MAX_VALUE);
             totalCount += cellIds.length;
             let ids = cellIds.map(x => x.id);
             let done = false;
             let cells: Cell[] = [];
             while (!done) {
                 try {
-                    cells = await Cell.getInIds(ids);
+                    cells = await Cell.getInIds(ids.map(x => x.toString()));
                     done = true;
                 } catch (err) {
-                    // TODO: sleep 1 second
+                    snooze(1000);
                 }
             }
             for (let i = 0; i < cells.length; i++) {
@@ -86,16 +87,20 @@ class AutoInstanceController {
         switch (this.type) {
             case AutoInstanceType.Quest:
                 this.allStops = [];
-                this.multiPolygon.polygons.forEach(polygon => {
-                    // TODO: let bounds = new S2.BoundingBox(polygon.outerRing.coordinates);
-                    let stops = Pokestop.getAll(0, 0, 0, 0, 0);//bounds.southEast.latitude, bounds.northWest.latitude, bounds.northWest.longitude, bounds.southEast.longitude, 0);
+                this.multiPolygon.coordinates.forEach(async (pos: turf.helpers.Position[][], index: number, array: turf.helpers.Position[][][]) => {
+                    let polygon = turf.polygon(pos);
+                    let bounds = turf.bbox(polygon);
+                    //minX, minY, maxX, maxY
+                    //bounds.southEast.latitude, bounds.northWest.latitude, bounds.northWest.longitude, bounds.southEast.longitude, 0);
+                    let stops = Pokestop.getAll(bounds[0], bounds[1], bounds[2], bounds[3], 0);
                     let keys = Object.keys(stops);
                     keys.forEach(key => {
                         let stop = stops[key];
-                        let coord = { lat: stop.lat, lon: stop.lon };
-                        if (polygon.includes(coord, /*IgnoreBoundary*/ false)) {
+                        let position = turf.point([stop.lat, stop.lon]);
+                        let coord = turf.getCoord(position);
+                        if (polygon.geometry.coordinates.includes([coord])) {
                             this.allStops.push(stop);
-                        }                        
+                        }
                     });
                 });
                 this.todayStops = [];
@@ -140,8 +145,8 @@ class AutoInstanceController {
                     let cellIds = coverer.getCoveringCells(circle);
                     cellIds.forEach(cellId => {
                         let index = this.bootstrapCellIds.indexOf(cellId.id.toString());
-                        if (index !== undefined) {
-                            //TODO: this.bootstrapCellIds.remove(index);
+                        if (index) {
+                            this.bootstrapCellIds.splice(index, 1);
                         }
                     });
                     if (!(this.bootstrapCellIds.length > 0)) {
@@ -177,7 +182,7 @@ class AutoInstanceController {
                                 newStops = await Pokestop.getInIds(ids);
                                 done = true;
                             } catch (err) {
-                                // TODO: sleep 1 second
+                                snooze(1000);
                             }
                         }
                         newStops.forEach(stop => {
@@ -235,7 +240,7 @@ class AutoInstanceController {
                     let encounterTime: number;
                     let pokestop: Pokestop;
                     if (lastLat && lastLon) {
-                        let current = { lat: lastLat, lon: lastLon };
+                        let current = turf.point([lastLat, lastLon]);
                         let closest: Pokestop;
                         let closestDistance: number = 10000000000000000; // TODO: Fix numeric literals
                         let todayStopsC = this.todayStops;
@@ -243,8 +248,8 @@ class AutoInstanceController {
                             return { };
                         }
                         todayStopsC.forEach(function(stop) {
-                            let coord = { lat: stop.lat, lon: stop.lon };
-                            let dist = 0; // TODO: current.getDistance(coord);
+                            let coord = turf.point([stop.lat, stop.lon]);
+                            let dist = turf.distance(current, coord, { units: "kilometers" });
                             if (dist < closestDistance) {
                                 closest = stop;
                                 closestDistance = dist;
@@ -273,7 +278,7 @@ class AutoInstanceController {
                         }
                         let index = this.todayStops.indexOf(pokestop);
                         if (index >= 0) {
-                            // TODO: this.todayStops.remove(index);
+                            this.todayStops.splice(index, 1);
                         }
                     } else {
                         let stop = this.todayStops.pop();
@@ -282,7 +287,7 @@ class AutoInstanceController {
                             newLon = stop.lon;
                             pokestop = stop;
                             encounterTime = getCurrentTimestamp();
-                            // TODO: remove _ this.todayStops.pop(); 
+                            this.todayStops.pop();
                         } else {
                             return { };
                         }
@@ -305,7 +310,7 @@ class AutoInstanceController {
                         try? DBController.global.setValueForKey(key: "AIC_\(uuid)_last_time", value: encounterTime.description)
                         */
                     }
-                    let delayT = 0; // TODO: Int(Date(timeIntervalSince1970: Double(encounterTime)).timeIntervalSinceNow);
+                    let delayT = getCurrentTimestamp() - encounterTime;
                     let delay = 0;
                     if (delayT < 0) {
                         delay = 0;
@@ -323,7 +328,7 @@ class AutoInstanceController {
                                 newStops = await Pokestop.getInIds(ids);
                                 done = true;
                             } catch (err) {
-                                // TODO: sleep 1 second
+                                snooze(1000);
                             }
                         }
                         newStops.forEach(function(stop) {
@@ -387,7 +392,8 @@ class AutoInstanceController {
     
                     let maxCount = this.allStops.length || 0;
                     let currentCount = maxCount - (this.todayStops.length || 0);
-    
+
+                    /*
                     let percentage: number;
                     if (maxCount > 0) {
                         percentage = currentCount / maxCount * 100;
@@ -400,6 +406,7 @@ class AutoInstanceController {
                     } else {
                         percentageReal = 100;
                     }
+                    */
                     if (formatted) {
                         return ""; //"Done: \(currentCountDb)|\(currentCount)/\(maxCount) (\(percentageReal.rounded(toStringWithDecimals: 1))|\(percentage.rounded(toStringWithDecimals: 1))%)"
                     } else {
@@ -436,10 +443,10 @@ class AutoInstanceController {
 
             let timeLeft = (23 - hour) * 3600 + (59 - minute) * 60 + (60 - second);
             let at = date.add(timeLeft);
-            console.log("[AutoInstanceController]", "[" + name + "]", "Clearing Quests in", timeLeft + "s", "at", "(formatter.string(from: at)) (Currently: \(formatter.string(from: date)))");
+            console.log("[AutoInstanceController]", "[" + name + "]", "Clearing Quests in", timeLeft + "s", "at", at, "(Currently:", date, ")");
 
             if (timeLeft > 0) {
-                // TODO: sleep timeLeft
+                snooze(timeLeft * 1000);
                 if (this.shouldExit) {
                     return;
                 }
@@ -460,7 +467,7 @@ class AutoInstanceController {
                         Pokestop.clearQuests(ids);
                         done = true;
                     } catch (err) {
-                        // TODO: sleep 5 seconds
+                        snooze(5000);
                         if (this.shouldExit) {
                             return;
                         }
@@ -469,6 +476,46 @@ class AutoInstanceController {
                 this.update();
             }
         //}
+    }
+    getS2CellIds(polygon: turf.Polygon, minLevel: number, maxLevel: number, maxCells: number): S2.S2CellId[] {
+        let bbox = polygon.bbox;//new S2.BoundingBox(polygon.coordinates[0])
+        let region = S2.S2LatLngRect.fromLatLng(
+            S2.S2LatLng.fromDegrees(
+                new S2.S1Angle(bbox[0]/*southEast.latitude*/).degrees(),
+                new S2.S1Angle(bbox[1]/*northWest.longitude*/).degrees()
+            ),
+            new S2.S2LatLng(
+                new S2.S1Angle(bbox[2]/*northWest.latitude*/).degrees(),
+                new S2.S1Angle(bbox[3]/*southEast.longitude*/).degrees()
+            )
+        );
+        let regionCoverer = new S2.S2RegionCoverer();
+        regionCoverer.setMaxCells(maxCells);
+        regionCoverer.setMinLevel(minLevel);
+        regionCoverer.setMaxLevel(maxLevel);
+        let cellIdsBBox = regionCoverer.getInteriorCoveringCells(region);
+
+        let cellIds: S2.S2CellId[] = [];
+        cellIdsBBox.forEach(cellId => {
+            let cell = new S2.S2Cell(cellId);
+            let vertex0 = cell.getVertex(0);
+            let vertex1 = cell.getVertex(1);
+            let vertex2 = cell.getVertex(2);
+            let vertex3 = cell.getVertex(3);
+            //init(lat: S1Angle(degrees: coord.latitude), lng: S1Angle(degrees: coord.longitude)
+            let coord0 = S2.S2LatLng.fromPoint(new S2.S2Point(vertex0.x, vertex0.y, vertex0.z));
+            let coord1 = S2.S2LatLng.fromPoint(new S2.S2Point(vertex1.x, vertex1.y, vertex1.z));
+            let coord2 = S2.S2LatLng.fromPoint(new S2.S2Point(vertex2.x, vertex2.y, vertex2.z));
+            let coord3 = S2.S2LatLng.fromPoint(new S2.S2Point(vertex3.x, vertex3.y, vertex3.z));
+            //REVIEW: Make sure this works.
+            if (polygon.coordinates.includes(turf.point([coord0.latDegrees, coord0.lngDegrees])[0]) || 
+                polygon.coordinates.includes(turf.point([coord1.latDegrees, coord1.lngDegrees])[0]) || 
+                polygon.coordinates.includes(turf.point([coord2.latDegrees, coord2.lngDegrees])[0]) || 
+                polygon.coordinates.includes(turf.point([coord3.latDegrees, coord3.lngDegrees])[0])) {
+                cellIds.push(cellId);
+            }
+        });
+        return cellIds;
     }
 }
 

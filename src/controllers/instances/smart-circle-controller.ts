@@ -1,11 +1,11 @@
 "use strict"
 
-import { Gym } from "../../models/gym";
-import { InstanceType } from "./instance-controller";
-import { CircleInstanceController } from "./circle-controller";
-import S2 = require("nodes2ts");
-import { Coord } from "../../coord";
-import { getCurrentTimestamp } from "../../utils/util";
+import * as S2 from 'nodes2ts';
+import { Gym } from '../../models/gym';
+import { InstanceType } from './instance-controller';
+import { CircleInstanceController } from './circle-controller';
+import { Coord } from '../../coord';
+import { getCurrentTimestamp, snooze } from '../../utils/util';
 
 class CircleSmartRaidInstanceController extends CircleInstanceController {
     private smartRaidInterval: number = 30 * 1000; // 30 seconds
@@ -55,7 +55,7 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
                     });
                     loaded = true;
                 } catch (err) {
-                    // TODO: Sleep 5 seconds
+                    snooze(5000);
                 }
             }
         });
@@ -67,13 +67,13 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
             let ids: string[] = Array.from(this.smartRaidGyms.keys());
             let gyms = await Gym.getByIds(ids);
             if (gyms === null) {
-                // TODO: sleep 5 seconds
+                snooze(5000);
                 continue;
             }
             gyms.forEach(gym => {
                 this.smartRaidGyms[gym.id] = gym;
             });
-            // TODO: sleep 30 seconds
+            snooze(30 * 1000);
         }
     }
     stop() {
@@ -110,13 +110,15 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
         if (!(gymsNoBoss.length > 0)) {
             // TODO: gymsNoBoss.sort((lhs, rhs) => lhs.1 < rhs.1);
             let first = gymsNoBoss.pop();
-            // TODO: smartRaidPointsUpdated[first.2] = new Date();
-            // TODO: coord = first.2;
+            // TODO: Type 'Coord' cannot be used as an index type.
+            // smartRaidPointsUpdated[first[2]] = new Date();
+            coord = first[2];
         } else if (!(gymsNoRaid.length > 0)) {
             // TODO: gymsNoRaid.sort((lhs, rhs) => lhs.1 < rhs.1);
             let first = gymsNoRaid.pop();
-            // TODO: smartRaidPointsUpdated[first.2] = new Date();
-            // TODO: coord = first.2;
+            // TODO: Type 'Coord' cannot be used as an index type.
+            // smartRaidPointsUpdated[first[2]] = new Date();
+            coord = first[2];
         }
         
         if (coord instanceof Coord) {

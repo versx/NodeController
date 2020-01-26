@@ -329,23 +329,21 @@ class Pokestop {
         let areaType1 = instance.data.area;// as? [[String: Double]]
         let areaType2 = instance.data.area;// as? [[[String: Double]]]
         if (areaType1) {
-            /*
-            TODO: for (coordLine in areaType1) {
-                let lat = coordLine["lat"]
-                let lon = coordLine["lon"]
+            // REVIEW: Might need to use Object.keys/values
+            areaType1.forEach(coordLine => {
+                let lat = coordLine["lat"];
+                let lon = coordLine["lon"];
                 areaString += `${lat},${lon}\n`;
-            }
-            */
+            });
         } else if (areaType2) {
-            /*
-            TODO: for (geofence in areaType2) {
-                for (coordLine in geofence) {
-                    let lat = coordLine["lat"]
-                    let lon = coordLine["lon"]
+            // REVIEW: Might need to use Object.keys/values
+            areaType2.forEach(geofence => {
+                geofence.forEach(coordLine => {
+                    let lat = coordLine["lat"];
+                    let lon = coordLine["lon"];
                     areaString += `${lat},${lon}\n`;
-                }
-            }
-            */
+                })
+            })
         }
         let coords = flattenCoords(areaString);
         let sql = `

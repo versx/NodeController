@@ -1,5 +1,7 @@
 "use strict"
 
+import * as turf from '@turf/turf';
+import { Coord } from "../../coord";
 import { Device } from "../../models/device"
 import { Pokemon } from "../../models/pokemon"
 import { Instance, InstanceType } from "../../models/instance"
@@ -9,7 +11,6 @@ import { CircleSmartRaidInstanceController } from "./smart-circle-controller"
 import { IVInstanceController } from "./iv-controller"
 import { AutoInstanceController, AutoInstanceType } from "./auto-instance-controller"
 import { AssignmentController } from "../assignment-controller"
-import { Coord } from "../../coord";
 //import { winston } from "../../utils/logger"
 
 class InstanceController implements IInstanceController {
@@ -82,8 +83,7 @@ class InstanceController implements IInstanceController {
                 break;
             case InstanceType.PokemonIV:
             case InstanceType.AutoQuest:
-                // TODO: Polygon library
-                let areaArray = [];
+                let areaArray: Coord[][] = [];
                 if (instance.data.area) {
                     areaArray = instance.data.area;
                 } else {
@@ -92,18 +92,18 @@ class InstanceController implements IInstanceController {
                     areas.forEach((coords: any) => {
                         coords.forEach((coord: any) => {
                             while (areaArray.length !== i + 1) {
-                                areaArray.push({});
+                                areaArray.push([]);
                             }
-                            areaArray[i].push({ lat: coord["lat"], lon: coord["lon"] });
+                            areaArray[i].push(new Coord(coord["lat"], coord["lon"]));
                         });
                         i++;
                     });
                     let timeZoneOffset = instance.data.timeZoneOffset || 0;
                     let areaArrayEmptyInner = [];
-                    areaArray.forEach((coords: any) => {
+                    areaArray.forEach((coords: Coord[]) => {
                         let polyCoords = [];
                         coords.forEach(coord => {
-                            polyCoords.push({ lat: coord["lat"], lon: coord["lon"] });
+                            polyCoords.push(turf.point([coord["lat"], coord["lon"]]));
                         });
                         areaArrayEmptyInner.push(polyCoords);
                     });
@@ -114,10 +114,10 @@ class InstanceController implements IInstanceController {
                         let pokemonList: number[] = instance.data["pokemon_ids"] || [];
                         let ivQueueLimit = instance.data["iv_queue_limit"] || 100;
                         let scatterList = instance.data["scatter_pokemon_ids"] || [];
-                        instanceController = new IVInstanceController(instance.name, areaArrayEmptyInner, pokemonList, minLevel, maxLevel, ivQueueLimit, scatterList);
+                        instanceController = new IVInstanceController(instance.name, turf.multiPolygon(areaArrayEmptyInner).geometry, pokemonList, minLevel, maxLevel, ivQueueLimit, scatterList);
                     } else {
                         let spinLimit = instance.data["spin_limit"] || 500
-                        instanceController = new AutoInstanceController(instance.name, areaArrayEmptyInner, AutoInstanceType.Quest, timeZoneOffset, minLevel, maxLevel, spinLimit);
+                        instanceController = new AutoInstanceController(instance.name, turf.multiPolygon(areaArrayEmptyInner).geometry, AutoInstanceType.Quest, timeZoneOffset, minLevel, maxLevel, spinLimit);
                     }                    
                 }
                 break;

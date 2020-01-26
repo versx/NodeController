@@ -1,6 +1,7 @@
 "use strict"
 
-import { Account } from "../models/account";
+import { Account } from '../models/account';
+import { snooze } from '../utils/util';
 import * as moment from 'moment';
 
 const ClearSpinsInterval: number = 60 * 1000;
@@ -25,7 +26,7 @@ class AccountController {
         let second = parseInt(split[2]);
         let timeLeft = (23 - hour) * 3600 + (59 - minute) * 60 + (60 - second);
         if (timeLeft > 0) {
-            // TODO: sleep `timeLeft` seconds
+            snooze(timeLeft * 1000);
             console.info("[AccountController] Clearing Spins...");
             let done = false;
             while (!done) {
@@ -33,7 +34,7 @@ class AccountController {
                     Account.clearSpins();
                     done = true;
                 } catch (err) {
-                    // TODO: Sleep 5 seconds
+                    snooze(5000);
                 }
             }
         }
