@@ -279,6 +279,50 @@ class Account {
         }
         return accounts;
     }
+    static async getStats() {
+        let sql = `
+            SELECT
+              a.level,
+              COUNT(level) as total,
+              SUM(failed IS NULL AND first_warning_timestamp IS NULL) as good,
+              SUM(failed = 'banned') as banned,
+              SUM(first_warning_timestamp IS NOT NULL) as warning,
+              SUM(failed = 'invalid_credentials') as invalid_creds,
+              SUM(failed != 'banned' AND failed != 'invalid_credentials') as other,
+              SUM(last_encounter_time IS NOT NULL AND UNIX_TIMESTAMP() - CAST(last_encounter_time AS SIGNED INTEGER) < 7200) as cooldown,
+              SUM(spins >= 500) as spin_limit,
+              (SELECT count(username) FROM device as d LEFT JOIN accounts_dashboard as ad ON ad.username = d.account_username WHERE a.level = ad.level) as in_use
+            FROM account as a
+            GROUP BY level
+            ORDER BY level DESC
+        `;
+
+        let results: any = await db.query(sql)
+            .then(x => x)
+            .catch(err => {
+                console.error(`[ACCOUNT] Failed to execute query. (${err})`);
+            });
+        let stats = [];
+        if (results && results.length > 0) {
+            for (let i = 0; i < results.length; i++) {
+                let row = results[i];
+                stats.push({
+                    level: row.level,
+                    total: row.total || 0,
+                    good: row.good || 0,
+                    banned: row.banned || 0,
+                    warning: row.warning || 0,
+                    invalid: row.invalid_creds || 0,
+                    other: row.other || 0,
+                    cooldown: row.cooldown || 0,
+                    spin_limit: row.spin_limit || 0,
+                    in_use: row.in_use || 0
+                });
+            }
+        }       
+        return stats;
+    }
+
 }
 
 // Export the class

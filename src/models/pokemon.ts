@@ -638,8 +638,29 @@ class Pokemon /*extends Consumable*/ {
         }
 
         if (this.lat === undefined) {
-            console.log("Lat is null with pokestop_id:", this.pokestopId);
-            return;
+            if (this.pokestopId) {
+                // TODO: Find out why pokestop_id is sometimes null
+                let pokestop: Pokestop;
+                try {
+                    pokestop = await Pokestop.getById(this.pokestopId);
+                } catch (err) {
+                }
+                if (pokestop) {
+                    this.lat = pokestop.lat;
+                    this.lon = pokestop.lon;
+                    if (oldPokemon === null) {
+                        args[2] = this.lat;
+                        args[3] = this.lon;
+                    } else {
+                        args[1] = this.lat;
+                        args[2] = this.lon;
+                    }
+                } else {
+                    return;
+                }
+            } else {
+                return;
+            }
         }
 
         // TODO: Error: ER_BAD_NULL_ERROR: Column 'lat' cannot be null
@@ -647,9 +668,9 @@ class Pokemon /*extends Consumable*/ {
         await db.query(sql, args)
             .then(x => x)
             .catch(x => {
-                console.log("SQL:", sql);
-                console.log("Arguments:", args);
-                console.error("[Pokemon] Error: " + x.message);
+                console.log("[Pokemon] SQL:", sql);
+                console.log("[Pokemon] Arguments:", args);
+                console.error("[Pokemon] Error:", x.message);
                 return null;
             });
 

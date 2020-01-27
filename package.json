@@ -21,11 +21,13 @@
   "homepage": "https://github.com/versx/NodeController#readme",
   "dependencies": {
     "@turf/turf": "^5.1.6",
+    "@types/mustache": "^4.0.0",
     "@types/request": "^2.48.4",
     "express": "^4.17.1",
     "fs": "0.0.1-security",
     "google-protobuf": "^3.11.2",
     "moment": "^2.24.0",
+    "mustache": "github:cheolhohan/mustache.ts",
     "mysql": "^2.17.1",
     "nodes2ts": "^2.0.0",
     "path": "^0.12.7",

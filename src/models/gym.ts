@@ -12,8 +12,8 @@ const db           = new Database(config);
  */
 class Gym {
     static Gyms = {};
-    static exRaidBossId = 486;
-    static exRaidBossForm = 0;
+    static ExRaidBossId = 486;
+    static ExRaidBossForm = 0;
 
     id: string;
     lat: number;
@@ -423,9 +423,9 @@ class Gym {
             oldGym = null;
         }
 
-        if (this.raidIsExclusive && Gym.exRaidBossId) {
-            this.raidPokemonId = Gym.exRaidBossId;
-            this.raidPokemonForm = Gym.exRaidBossForm || 0;
+        if (this.raidIsExclusive && Gym.ExRaidBossId) {
+            this.raidPokemonId = Gym.ExRaidBossId;
+            this.raidPokemonForm = Gym.ExRaidBossForm || 0;
         }
         
         let sql: string = "";

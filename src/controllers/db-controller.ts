@@ -7,7 +7,7 @@ import * as uuid from 'uuid';
 import { spawn } from 'child_process';
 
 import { Database } from '../data/mysql';
-import { snooze } from '../utils/util';
+import { snooze, readFile } from '../utils/util';
 import config      = require('../config.json');
 const db           = new Database(config);
 
@@ -16,6 +16,7 @@ const db           = new Database(config);
  */
 class DbController {
     static instance = new DbController();
+    settings = {};
 
     private multiStatement: boolean = false;
     private asRoot: boolean = false;
@@ -82,6 +83,8 @@ class DbController {
         console.log("[DbController] SetValueForKey:", results);
     }
     async setup() {
+        await this.loadSettings();
+
         this.asRoot = true;
         this.multiStatement = true;
         
@@ -92,7 +95,7 @@ class DbController {
                 let message = `Failed to connect to database (as ${this.rootUsername}) while initializing. Try: ${count}/10`;
                 if (count === 10) {
                     console.error("[DBController]", message);
-                    //fatalError(message);
+                    process.exit(-1);
                 } else {
                     console.log("[DBController]", message);
                 }
@@ -103,9 +106,8 @@ class DbController {
             done = true;
             this.asRoot = false;
             if (db === undefined || db === null) {
-                let message = `Failed to connect to database (as ${this.username}) while initializing.`;
-                console.error("[DBController]", message);
-                //fatalError(message);
+                console.error("[DBController] Failed to connect to database (as ", this.username, ") while initializing.");
+                process.exit(-1);
             }
             this.asRoot = true
         }
@@ -113,7 +115,7 @@ class DbController {
         let version = 0;
         let createMetadataTableSQL = `
             CREATE TABLE IF NOT EXISTS metadata (
-                \key\` VARCHAR(50) PRIMARY KEY NOT NULL,
+                \`key\` VARCHAR(50) PRIMARY KEY NOT NULL,
                 \`value\` VARCHAR(50) DEFAULT NULL
             );
         `;
@@ -121,8 +123,7 @@ class DbController {
         await db.query(createMetadataTableSQL)
             .then(x => x)
             .catch(err => {
-                let message = `Failed to create metadata table: (${err})`;
-                console.error("[DBController]", message);
+                console.error("[DBController] Failed to create metadata table: (", err, ")");
                 process.exit(-1);
             });
         
@@ -136,12 +137,11 @@ class DbController {
         let results = await db.query(getDBVersionSQL)
             .then(x => x)
             .catch(err => {
-                let message = `Failed to get current database version: (${err})`;
-                console.error("[DBController]", message);
+                console.error("[DBController] Failed to get current database version: (", err, ")");
                 process.exit(-1);
             });
         if (results) {
-            Object.keys(results).forEach(x => { //TODO: Confirm Object.keys/values works
+            Object.values(results).forEach(x => {
                 version = parseInt(x);
             })
         }
@@ -150,6 +150,28 @@ class DbController {
         this.multiStatement = false;
         this.asRoot = false;
 
+    }
+    async loadSettings() {
+        console.log("[DbController] Loading database settings");
+        let sql = `
+        SELECT \`key\`, \`value\`
+        FROM metadata
+        `;
+        let results = await db.query(sql)
+            .then(x => x)
+            .catch(err => {
+                console.error("[DbController] Error retrieving database settings:", err);
+            });
+        let settings = {};
+        if (results) {
+            let keys = Object.keys(results);
+            for (let i = 0; i < keys.length; i++) {
+                let row = results[i];
+                settings[row["key"]] = row["value"];
+            }
+        }
+        this.settings = settings;
+        console.log("[DbController] Settings:", settings);
     }
     constructor() {
         fs.mkdirSync(this.migrationsRoot, { recursive: true });
@@ -237,24 +259,21 @@ class DbController {
                 let args = ["-c", mysqldumpCommand + ` --set-gtid-purged=OFF --skip-triggers --add-drop-table --skip-routines --no-data ${this.database} ${tablesShema} -h ${this.host} -P ${this.port} -u ${this.rootUsername} -p${this.rootPassword.replace("\"", "\\\"") || ""} > ${backupFileSchema.path}`];
                 let cmd = executeCommand("bash", args);
                 if (cmd) {
-                    let message = `Failed to create Command Backup: ${cmd}`;
-                    console.error("[DBController]", message);
+                    console.error("[DBController] Failed to create Command Backup:", cmd);
                     process.exit(-1);
                 }
                 // Trigger
                 args = ["-c", mysqldumpCommand + ` --set-gtid-purged=OFF --triggers --no-create-info --no-data --skip-routines ${this.database} ${tablesShema}  -h ${this.host} -P ${this.port} -u ${this.rootUsername} -p${this.rootPassword.replace("\"", "\\\"") || ""} > ${backupFileTrigger.path}`];
                 cmd = executeCommand("bash", args);
                 if (cmd) {
-                    let message = `Failed to create Command Backup ${cmd}`;
-                    console.error("[DBController]", message);
+                    console.error("[DBController] Failed to create Command Backup:", cmd);
                     process.exit(-1);
                 }
                 // Data
                 args = ["-c", mysqldumpCommand + ` --set-gtid-purged=OFF --skip-triggers --skip-routines --no-create-info --skip-routines ${this.database} ${tablesData}  -h ${this.host} -P ${this.port} -u ${this.rootUsername} -p${this.rootPassword.replace("\"", "\\\"") || ""} > ${backupFileData.path}`];
                 cmd = executeCommand("bash", args);
                 if (cmd) {
-                    let message = `Failed to create Data Backup ${cmd}`;
-                    console.error("[DBController]", message);
+                    console.error("[DBController] Failed to create Data Backup: ", cmd);
                     process.exit(-1);
                 }
             }
@@ -266,8 +285,7 @@ class DbController {
                 let sqlFile = `${this.migrationsRoot}${path.sep}${fromVersion + 1}.sql`;
                 migrateSQL = readFile(sqlFile);
             } catch (err) {
-                let message = `Migration failed: (${err})`;
-                console.error("[DBController]", message);
+                console.error("[DBController] Migration failed:", err);
                 process.exit(-1);
             }
             let sqlSplit = migrateSQL.split(';');
@@ -276,9 +294,8 @@ class DbController {
                 if (msql !== "") {
                     let results = await db.query(msql)
                     .then(x => x)
-                    .catch(x => {
-                        let message = `Migration Failed: (${x})`;
-                        console.error("[DBController]", message);
+                    .catch(err => {
+                        console.error("[DBController] Migration failed:", err);
                         if (process.env["NO_BACKUP"] === undefined || process.env["NO_BACKUP"] === null) {
                             for (let i = 0; i < 10; i++) {
                                 console.log(`[DBController] Rolling back migration in ${10 - i} seconds`);
@@ -305,8 +322,7 @@ class DbController {
             await db.query(updateVersionSQL)
                 .then(x => x)
                 .catch(err => {
-                    let message = `Migration Failed: ${err}`;
-                    console.error("[DBController]", message);
+                    console.error("[DBController] Migration failed:", err);
                     process.exit(-1);
                 });
             console.log("[DBController] Migration successful");
@@ -351,11 +367,6 @@ class DbController {
         console.log("[DBController] Sleeping for 60s before restarting again. (Save to kill now)");
         snooze(60 * 1000);
     }
-}
-
-function readFile(path: string) {
-    let data = fs.readFileSync(path);
-    return data.toString('utf8');
 }
 
 function executeCommand(command: string, args?: string[]) {
