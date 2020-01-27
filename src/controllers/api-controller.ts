@@ -282,6 +282,15 @@ class ApiController {
                     } 
                 }    
                 break;
+            case Page.dashboardAssignmentsDeleteAll:
+                data["page_is_dashboard"] = true;
+                try {
+                    await Assignment.deleteAll();
+                } catch {
+                    res.send("Internal Server Error");
+                }
+                res.redirect('/assignments');
+                break;
             case Page.dashboardAccounts:
                 data["page_is_dashboard"] = true;
                 data["page"] = "Dashboard - Accounts";
