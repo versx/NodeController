@@ -23,6 +23,7 @@ class ApiListener {
         app.get('/', async (req, res) => {
             res.send(await api.getPage(Page.dashboard, req, res));
         });
+        // Accounts
         app.get('/accounts', async (req, res) => {
             res.send(await api.getPage(Page.dashboardAccounts, req, res));
         });
@@ -32,6 +33,7 @@ class ApiListener {
         app.post('/accounts/add', async (req, res) => {
             res.send(await api.getPage(Page.dashboardAccountsAdd, req, res));
         });
+        // Devices
         app.get('/devices',  async (req, res) => {
             res.send(await api.getPage(Page.dashboardDevices, req, res));
         });
@@ -41,15 +43,39 @@ class ApiListener {
         app.post('/device/assign/:uuid', async (req, res) => {
             res.send(await api.getPage(Page.dashboardDeviceAssign, req, res));
         });
+        // Instances
         app.get('/instances', async (req, res) => {
             res.send(await api.getPage(Page.dashboardInstances, req, res));
         });
+        // Assignments
         app.get('/assignments', async (req, res) => {
             res.send(await api.getPage(Page.dashboardAssignments, req, res));
         });
-        app.get('/assignments', async (req, res) => {
-            res.send(await api.getPage(Page.dashboardAssignments, req, res));
+        app.get('/assignment/add', async (req, res) => {
+            res.send(await api.getPage(Page.dashboardAssignmentAdd, req, res));
         });
+        app.post('/assignment/add', async (req, res) => {
+            res.send(await api.getPage(Page.dashboardAssignmentAdd, req, res));
+        });
+        app.get('/assignment/edit/:uuid', async (req, res) => {
+            res.send(await api.getPage(Page.dashboardAssignmentEdit, req, res));
+        });
+        app.post('/assignment/edit/:uuid', async (req, res) => {
+            res.send(await api.getPage(Page.dashboardAssignmentEdit, req, res));
+        });
+        app.get('/assignment/start/:uuid', async (req, res) => {
+            res.send(await api.getPage(Page.dashboardAssignmentStart, req, res));
+        });
+        app.get('/assignment/delete/:uuid', async (req, res) => {
+            res.send(await api.getPage(Page.dashboardAssignmentDelete, req, res));
+        });
+        app.post('/assignment/delete/:uuid', async (req, res) => {
+            res.send(await api.getPage(Page.dashboardAssignmentDelete, req, res));
+        });
+        app.get('/assignment/delete_all', async (req, res) => {
+            res.send(await api.getPage(Page.dashboardAssignmentsDeleteAll, req, res));
+        });
+        // DeviceGroups
         app.get('/devicegroups', async (req, res) => {
             res.send(await api.getPage(Page.dashboardDeviceGroups, req, res));
         });
@@ -61,13 +87,15 @@ class ApiListener {
         });
         app.get('/discordrules', async (req, res) => {
             res.send(await api.getPage(Page.dashboardDiscordRules, req, res));
-        });  
+        });
+        // Settings
         app.get('/settings', async (req, res) => {
             res.send(await api.getPage(Page.dashboardSettings, req, res));
         });
         app.post('/settings', async (req, res) => {
             res.send(await api.getPage(Page.dashboardSettings, req, res));
         });
+        // API
         app.get('/api/get_data', async (req, res) => {
             res.send(await api.handle(req, res));
         });
