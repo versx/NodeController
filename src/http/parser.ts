@@ -656,6 +656,12 @@ function _handleControllerData(req, res) {
             device.save(device.uuid);
             res.send('OK');
             break;
+        case "ptcToken": // TODO: Seriously? Who the hell used camelCasing?
+            break;
+        case "job_failed":
+            console.log("[Controller] JOB FAILED:", jsonO);
+            res.send('OK');
+            break;
         default:
             console.error("[Controller] Unhandled Request:", type);
             break;

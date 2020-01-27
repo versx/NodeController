@@ -8,13 +8,12 @@ import { getCurrentTimestamp } from '../utils/util';
 import config      = require('../config.json');
 const db           = new Database(config);
 
-const lureTime = 1800;
-
 /**
  * Pokestop model class.
  */
 class Pokestop {
     static Pokestops = {};
+    static LureTime = 1800;
 
     id: string;
     lat: number;
@@ -57,7 +56,7 @@ class Pokestop {
                     data.fort.active_fort_modifier.includes(502) ||
                     data.fort.active_fort_modifier.includes(503) ||
                     data.fort.active_fort_modifier.includes(504)) {
-                    this.lureExpireTimestamp = lastModifiedTimestamp + lureTime;
+                    this.lureExpireTimestamp = lastModifiedTimestamp + Pokestop.LureTime;
                     this.lureId = data.fort.active_fort_modifier[0].item_id;
                 }
             }

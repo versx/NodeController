@@ -40,7 +40,7 @@ class CircleInstanceController {
             }
         }
 
-        let currentCoord = this.coords[currentIndex]; //TODO: Fix coords, add individually not full array, or find addRange method
+        let currentCoord = this.coords[currentIndex];
         switch (this.type) {
             case InstanceType.CirclePokemon:
                 let currentUuidIndex = {};
@@ -53,7 +53,6 @@ class CircleInstanceController {
                     let data = this.queryLiveDevices(uuid, currentUuidIndex[uuid]);
                     let numLiveDevices = data[0];
                     let distanceToNextLiveDevice = data[1];
-                    //let (numLiveDevices, distanceToNextLiveDevice) = this.queryLiveDevices(uuid, currentUuidIndex[uuid]);
                     if ((distanceToNextLiveDevice * (numLiveDevices + 0.5)) < this.coords.length) {
                         //We're too close to the next device in the route.
                         shouldAdvance = false;
