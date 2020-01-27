@@ -26,6 +26,12 @@ class ApiListener {
         app.get('/accounts', async (req, res) => {
             res.send(await api.getPage(Page.dashboardAccounts, req, res));
         });
+        app.get('/accounts/add', async (req, res) => {
+            res.send(await api.getPage(Page.dashboardAccountsAdd, req, res));
+        });
+        app.post('/accounts/add', async (req, res) => {
+            res.send(await api.getPage(Page.dashboardAccountsAdd, req, res));
+        });
         app.get('/devices',  async (req, res) => {
             res.send(await api.getPage(Page.dashboardDevices, req, res));
         });
