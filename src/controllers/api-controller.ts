@@ -282,6 +282,29 @@ class ApiController {
                     } 
                 }    
                 break;
+            case Page.dashboardAssignmentDelete:
+                data["page_is_dashboard"] = true
+                data["page"] = "Dashboard - Delete Assignment"
+                let uuid2 = decodeURI(req.param("uuid") || "");
+                let tmp2 = uuid2.replace("\\\\-", "&tmp");
+                let split = tmp2.split("\\-");
+                if (split.length === 3) {
+                    let instanceName = unescape(split[0].replace("&tmp", "\\\\-"));
+                    let deviceUUID = unescape(split[1].replace("&tmp", "\\\\-"));
+                    let time = parseInt(split[2]) || 0;
+                    let assignment = new Assignment(instanceName, deviceUUID, time, false);
+                    try {
+                        await assignment.delete();
+                    } catch {
+                        res.send("Internal Server Error");
+                        return data;
+                    }
+                    AssignmentController.instance.deleteAssignment(assignment);
+                    res.redirect('/assignments');
+                } else {
+                    res.send("Bad Request");
+                }    
+                break;
             case Page.dashboardAssignmentsDeleteAll:
                 data["page_is_dashboard"] = true;
                 try {
