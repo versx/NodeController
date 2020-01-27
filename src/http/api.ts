@@ -47,6 +47,12 @@ class ApiListener {
         app.get('/instances', async (req, res) => {
             res.send(await api.getPage(Page.dashboardInstances, req, res));
         });
+        app.get('/instance/add', async (req, res) => {
+            res.send(await api.getPage(Page.dashboardInstanceAdd, req, res));
+        });
+        app.post('/instance/add', async (req, res) => {
+            res.send(await api.getPage(Page.dashboardInstanceAdd, req, res));
+        });
         // Assignments
         app.get('/assignments', async (req, res) => {
             res.send(await api.getPage(Page.dashboardAssignments, req, res));
@@ -65,9 +71,6 @@ class ApiListener {
         });
         app.post('/assignment/edit/:uuid', async (req, res) => {
             res.send(await api.getPage(Page.dashboardAssignmentEdit, req, res));
-        });
-        app.get('/assignment/start/:uuid', async (req, res) => {
-            res.send(await api.getPage(Page.dashboardAssignmentStart, req, res));
         });
         app.get('/assignment/delete/:uuid', async (req, res) => {
             res.send(await api.getPage(Page.dashboardAssignmentDelete, req, res));
