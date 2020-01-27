@@ -179,7 +179,7 @@ async function _handleRawData(req, res) {
                 }
                 break;
             case 102: // EncounterResponse
-                if (trainerLevel >= 30 || isMadData !== false) { //TODO: Set trainerLevel >= 30
+                if (trainerLevel >= 30 || isMadData !== false) {
                     try {
                         let er = POGOProtos.Networking.Responses.EncounterResponse.decode(base64_decode(data));
                         if (er) {
