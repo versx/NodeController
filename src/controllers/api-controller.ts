@@ -236,7 +236,7 @@ class ApiController {
                     } catch {
                         return;
                     }
-                }    
+                }
                 break;
             case Page.dashboardInstances:
                 data["page_is_dashboard"] = true;
@@ -258,13 +258,13 @@ class ApiController {
                     data["iv_queue_limit"] = 100;
                     data["spin_limit"] = 500;
                     data["nothing_selected"] = true;
-                }    
+                }
                 break;
             case Page.dashboardInstanceEdit:
                 let instanceName: string = decodeURI(req.param("instance_name") || "");
                 data["page_is_dashboard"] = true;
                 data["old_name"] = instanceName;
-                data["page"] = "Dashboard - Edit Instance";    
+                data["page"] = "Dashboard - Edit Instance";
                 if (req.param("delete") === "true") {
                     try {
                         await Instance.delete(instanceName);
@@ -299,7 +299,7 @@ class ApiController {
                     } catch {
                         return;
                     }
-                }    
+                }
                 break;
             case Page.dashboardAssignments:
                 data["page_is_dashboard"] = true;
@@ -320,7 +320,7 @@ class ApiController {
                     } catch {
                         return;
                     }
-                }    
+                }
                 break;
             case Page.dashboardAssignmentStart:
                 let uuid = unescape(req.param("uuid") || "");
@@ -344,7 +344,7 @@ class ApiController {
                     device.save(device.uuid);
                     InstanceController.instance.reloadDevice(device, deviceUUID);
                     res.redirect('/assignments');
-                }    
+                }
                 break;
             case Page.dashboardAssignmentEdit:
                 let uuid2 = decodeURI(req.param("uuid") || "");
@@ -364,7 +364,7 @@ class ApiController {
                     } catch {
                         return;
                     } 
-                }    
+                }
                 break;
             case Page.dashboardAssignmentDelete:
                 data["page_is_dashboard"] = true
@@ -387,7 +387,7 @@ class ApiController {
                     res.redirect('/assignments');
                 } else {
                     res.send("Bad Request");
-                }    
+                }
                 break;
             case Page.dashboardAssignmentsDeleteAll:
                 data["page_is_dashboard"] = true;
@@ -414,7 +414,7 @@ class ApiController {
                     }
                 } else {
                     data["level"] = 0;
-                }    
+                }
                 break;
             case Page.dashboardUsers:
             case Page.dashboardGroups:
