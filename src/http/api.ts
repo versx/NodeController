@@ -53,6 +53,12 @@ class ApiListener {
         app.post('/instance/add', async (req, res) => {
             res.send(await api.getPage(Page.dashboardInstanceAdd, req, res));
         });
+        app.get('/instance/edit/:instance_name', async (req, res) => {
+            res.send(await api.getPage(Page.dashboardInstanceEdit, req, res));
+        });
+        app.post('/instance/edit/:instance_name', async (req, res) => {
+            res.send(await api.getPage(Page.dashboardInstanceEdit, req, res));
+        });
         // Assignments
         app.get('/assignments', async (req, res) => {
             res.send(await api.getPage(Page.dashboardAssignments, req, res));
@@ -81,7 +87,7 @@ class ApiListener {
         app.get('/assignment/delete_all', async (req, res) => {
             res.send(await api.getPage(Page.dashboardAssignmentsDeleteAll, req, res));
         });
-        // DeviceGroups
+        /*
         app.get('/devicegroups', async (req, res) => {
             res.send(await api.getPage(Page.dashboardDeviceGroups, req, res));
         });
@@ -94,6 +100,7 @@ class ApiListener {
         app.get('/discordrules', async (req, res) => {
             res.send(await api.getPage(Page.dashboardDiscordRules, req, res));
         });
+        */
         // Settings
         app.get('/settings', async (req, res) => {
             res.send(await api.getPage(Page.dashboardSettings, req, res));
