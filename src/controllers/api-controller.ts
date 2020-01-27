@@ -100,7 +100,7 @@ class ApiController {
                         if (device.lastSeen === 0) {
                             formattedDate = "";
                         } else {
-                            let date = moment(device.lastSeen).format("HH:mm:ss dd.MM.yyyy");
+                            let date = moment(device.lastSeen * 1000).format("HH:mm:ss DD.MM.YYYY");
                             formattedDate = date;
                         }
                         deviceData["last_seen"] = { "timestamp": device.lastSeen, "formatted": formattedDate };
@@ -121,8 +121,9 @@ class ApiController {
                     let instanceData = {};
                     instanceData["name"] = instance.name;
                     let count = Object.values(InstanceController.instance.Devices)
-                        .filter((device: Device) => device.instanceName === instance.name).length;
-                    instanceData["count"] = count || 0; // TODO: instance.count;
+                        .filter((device: Device) => device.instanceName === instance.name)
+                        .length;
+                    instanceData["count"] = count || 0;
                     let type = "";
                     switch (instance.type) {
                         case InstanceType.AutoQuest:       type = "Auto Quest"; break;
@@ -142,7 +143,7 @@ class ApiController {
                     }
 
                     if (formatted) {
-                        instanceData["buttons"] = `<a href="/instance/edit/${instance.name/*.encodeUrl*/}" role="button" class="btn btn-primary">Edit Instance</a>`;
+                        instanceData["buttons"] = `<a href="/instance/edit/${encodeURI(instance.name)}" role="button" class="btn btn-primary">Edit Instance</a>`;
                     }
                     jsonArray.push(instanceData);
                 });
@@ -162,7 +163,7 @@ class ApiController {
                         if (assignment.time === 0) {
                             formattedTime = "On Complete";
                         } else {
-                            let times = moment(assignment.time).format('hh:mm:ss');//.secondsToHoursMinutesSeconds();
+                            let times = moment(assignment.time * 1000).format('hh:mm:ss');//.secondsToHoursMinutesSeconds();
                             formattedTime = times;//`${times.hours}:${times.minutes}:${times.seconds}`;
                         }
                         assignmentData["time"] = { "timestamp": assignment.time, "formatted": formattedTime };
@@ -438,20 +439,6 @@ class ApiController {
                 data["pokestop_lure_time"] = Pokestop.LureTime;
                 data["ex_raid_boss_id"] = Gym.ExRaidBossId || 0;
                 data["ex_raid_boss_form"] = Gym.ExRaidBossForm || 0;
-                data["google_analytics_id"] = DbController.instance.settings["GOOGLE_ANALYTICS_ID"] || "";
-                data["google_adsense_id"] = DbController.instance.settings["GOOGLE_ADSENSE_ID"] || "";
-                data["mailer_base_uri"] = DbController.instance.settings["MAILER_BASE_URI"] || "";
-                data["mailer_name"] = DbController.instance.settings["MAILER_NAME"] || "";
-                data["mailer_email"] = DbController.instance.settings["MAILER_EMAIL"] || "";
-                data["mailer_url"] = DbController.instance.settings["MAILER_URL"] || "";
-                data["mailer_username"] = DbController.instance.settings["MAILER_USERNAME"] || "";
-                data["mailer_password"] = DbController.instance.settings["MAILER_PASSWORD"] || "";
-                data["mailer_footer_html"] = DbController.instance.settings["MAILER_FOOTER_HTML"] || "";
-                data["discord_guild_ids"] = DbController.instance.settings["DISCORD_GUILD_IDS"] || "";
-                data["discord_token"] = DbController.instance.settings["DISCORD_TOKEN"] || "";
-                data["discord_redirect_url"] = DbController.instance.settings["DISCORD_REDIRECT_URL"] || "";
-                data["discord_client_id"] = DbController.instance.settings["DISCORD_CLIENT_ID"] || "";
-                data["discord_client_secret"] = DbController.instance.settings["DISCORD_CLIENT_SECRET"] || "";
                 data["deviceapi_host_whitelist"] = DbController.instance.settings["DEVICEAPI_HOST_WHITELIST"] || "";
                 data["deviceapi_host_whitelist_uses_proxy"] = DbController.instance.settings["DEVICEAPI_HOST_WHITELIST_USES_PROXY"] || "";
                 data["deviceapi_secret"] = DbController.instance.settings["DEVICEAPI_SECRET"] || "";
@@ -1147,19 +1134,6 @@ class ApiController {
         //let webhookUrls = webhookUrlsString.split(";");
         let enableRegister = obj["enable_register_new"] !== null;
         let enableClearing = obj["enable_clearing"] !== null;
-
-        let mailerBaseURI = obj["mailer_base_uri"];
-        let mailerName = obj["mailer_name"];
-        let mailerEmail = obj["mailer_email"];
-        let mailerURL = obj["mailer_url"];
-        let mailerUsername = obj["mailer_username"];
-        let mailerPassword = obj["mailer_password"];
-        let mailerFooterHTML = obj["mailer_footer_html"];
-        let discordGuilds = obj["discord_guild_ids"].split(';').map((x: string) => parseInt(x)) || [];
-        let discordToken = obj["discord_token"];
-        let oauthDiscordRedirectURL = obj["discord_redirect_url"];
-        let oauthDiscordClientID = obj["discord_client_id"];
-        let oauthDiscordClientSecret = obj["discord_client_secret"];
         let deviceAPIhostWhitelist = obj["deviceapi_host_whitelist"].split(';');
         let deviceAPIhostWhitelistUsesProxy = obj["deviceapi_host_whitelist_uses_proxy"] !== null;
         let deviceAPIloginSecret = obj["deviceapi_secret"];
@@ -1178,18 +1152,6 @@ class ApiController {
             await DbController.instance.setValueForKey("LOCALE", locale);
             await DbController.instance.setValueForKey("ENABLE_REGISTER", enableRegister.toString());
             await DbController.instance.setValueForKey("ENABLE_CLEARING", enableClearing.toString());
-            await DbController.instance.setValueForKey("MAILER_URL", mailerURL || "");
-            await DbController.instance.setValueForKey("MAILER_USERNAME", mailerUsername || "");
-            await DbController.instance.setValueForKey("MAILER_PASSWORD", mailerPassword || "");
-            await DbController.instance.setValueForKey("MAILER_EMAIL", mailerEmail || "");
-            await DbController.instance.setValueForKey("MAILER_NAME", mailerName || "");
-            await DbController.instance.setValueForKey("MAILER_FOOTER_HTML", mailerFooterHTML || "");
-            await DbController.instance.setValueForKey("MAILER_BASE_URI", mailerBaseURI || "");
-            await DbController.instance.setValueForKey("DISCORD_GUILD_IDS", discordGuilds.map(x => x.toString()).join(';'));
-            await DbController.instance.setValueForKey("DISCORD_TOKEN", discordToken || "");
-            await DbController.instance.setValueForKey("DISCORD_REDIRECT_URL", oauthDiscordRedirectURL || "");
-            await DbController.instance.setValueForKey("DISCORD_CLIENT_ID", oauthDiscordClientID || "");
-            await DbController.instance.setValueForKey("DISCORD_CLIENT_SECRET", oauthDiscordClientSecret || "");
             await DbController.instance.setValueForKey("DEVICEAPI_HOST_WHITELIST", deviceAPIhostWhitelist.join(';') || "");
             await DbController.instance.setValueForKey("DEVICEAPI_HOST_WHITELIST_USES_PROXY", deviceAPIhostWhitelistUsesProxy.toString());
             await DbController.instance.setValueForKey("DEVICEAPI_SECRET", deviceAPIloginSecret || "");
