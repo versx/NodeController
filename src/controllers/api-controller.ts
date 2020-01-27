@@ -16,6 +16,7 @@ import { Localizer } from '../utils/localizer';
 import { DbController } from './db-controller';
 import { InstanceController } from './instances/instance-controller';
 import { readFile, getCurrentTimestamp } from '../utils/util';
+import { AssignmentController } from './assignment-controller';
 
 enum Page {
     home = "index.mustache",
@@ -102,7 +103,7 @@ class ApiController {
                             formattedDate = date;
                         }
                         deviceData["last_seen"] = { "timestamp": device.lastSeen, "formatted": formattedDate };
-                        deviceData["buttons"] = "<a href=\"/device/assign/" + device.uuid/*.encodeUrl()*/ + "\" role=\"button\" class=\"btn btn-primary\">Assign Instance</a>";
+                        deviceData["buttons"] = `<a href="/device/assign/${device.uuid/*.encodeUrl()*/}" role="button" class="btn btn-primary">Assign Instance</a>`;
                     } else {
                         deviceData["last_seen"] = device.lastSeen;
                     }
@@ -140,7 +141,7 @@ class ApiController {
                     }
 
                     if (formatted) {
-                        instanceData["buttons"] = "<a href=\"/instance/edit/" + instance.name/*.encodeUrl*/ + "\" role=\"button\" class=\"btn btn-primary\">Edit Instance</a>"
+                        instanceData["buttons"] = `<a href="/instance/edit/${instance.name/*.encodeUrl*/}" role="button" class="btn btn-primary">Edit Instance</a>`;
                     }
                     jsonArray.push(instanceData);
                 });
@@ -164,14 +165,13 @@ class ApiController {
                             formattedTime = times;//`${times.hours}:${times.minutes}:${times.seconds}`;
                         }
                         assignmentData["time"] = { "timestamp": assignment.time, "formatted": formattedTime };
-                        let instanceUUID = `${assignment.instanceName/*.escaped()*/}\\-${assignment.deviceUUID/*.escaped()*/}\\-${assignment.time}`;
-                        assignmentData["buttons"] = "<div class=\"btn-group\" role=\"group\"><a" +
-                            `href=\"/assignment/start/${instanceUUID/*.encodeUrl()*/}\" ` +
-                            "role=\"button\" class=\"btn btn-success\">Start</a>" +
-                            `<a href=\"/assignment/edit/${instanceUUID/*.encodeUrl()*/}\" ` +
-                            "role=\"button\" class=\"btn btn-primary\">Edit</a>" +
-                            `<a href=\"/assignment/delete/${instanceUUID/*.encodeUrl()*/}\" ` +
-                            "role=\"button\" class=\"btn btn-danger\">Delete</a></div>"
+                        let instanceUUID = `${escape(assignment.instanceName)}-${escape(assignment.deviceUUID)}-${assignment.time}`;
+                        assignmentData["buttons"] = `
+                        <div class="btn-group" role="group">
+                            <a href="/assignment/start/${encodeURI(instanceUUID)}" role="button" class="btn btn-success">Start</a>
+                            <a href="/assignment/edit/${encodeURI(instanceUUID)}" role="button" class="btn btn-primary">Edit</a>
+                            <a href="/assignment/delete/${encodeURI(instanceUUID)}" role="button" class="btn btn-danger">Delete</a>
+                        </div>`;
                     } else {
                         assignmentData["time"] = assignment.time;
                     }
@@ -244,6 +244,23 @@ class ApiController {
             case Page.dashboardAssignments:
                 data["page_is_dashboard"] = true;
                 data["page"] = "Dashboard - Assignments";
+                break;
+            case Page.dashboardAssignmentAdd:
+                data["page_is_dashboard"] = true;
+                data["page"] = "Dashboard - Add Assignment";
+                if (req.method === "POST") {
+                    try {
+                        data = await this.addAssignmentPost(data, req, res);
+                    } catch {
+                        return;
+                    }
+                } else {
+                    try {
+                        data = await this.addAssignmentGet(data, req, res);
+                    } catch {
+                        return;
+                    }
+                }    
                 break;
             case Page.dashboardAccounts:
                 data["page_is_dashboard"] = true;
@@ -385,7 +402,127 @@ class ApiController {
         }
         res.redirect("/devices");
     }
-    async addAccounts(data: any, req: express.Request, res: express.Response) { 
+    async addAssignmentGet(data: any, req: express.Request, res: express.Response): Promise<any> {
+        var data = data;
+        let instances: Instance[] = [];
+        let devices: Device[] = [];
+        try {
+            devices = await Device.load();
+            instances = await Instance.getAll();
+        } catch {
+            res.send("Internal Server Error");
+            return data;
+        }
+
+        let instancesData = [];
+        instances.forEach(instance => {
+            instancesData.push({
+                name: instance.name, 
+                selected: false
+            });
+        });
+        data["instances"] = instancesData;
+        var devicesData = [];
+        devices.forEach(device => {
+            devicesData.push({
+                uuid: device.uuid,
+                selected: false
+            });
+        });
+        data["devices"] = devicesData;
+        return data;
+
+    }
+    async addAssignmentPost(data: any, req: express.Request, res: express.Response): Promise<any> {
+        let selectedDevice: string = req.body["device"];
+        let selectedInstance: string = req.body["instance"];
+        let time = req.body["time"];
+        let onComplete = req.body["oncomplete"];
+        let enabled = req.body["enabled"];
+
+        var data = data;
+        let instances: Instance[] = [];
+        let devices: Device[] = [];
+        try {
+            devices = await Device.load();
+            instances = await Instance.getAll();
+        } catch {
+            res.send("Internal Server Error");
+            return data;
+        }
+
+        let instancesData = [];
+        instances.forEach(instance => {
+            instancesData.push({
+                name: instance.name,
+                selected: instance.name === selectedInstance
+            });
+        });
+        data["instances"] = instancesData;
+        var devicesData = [];
+        devices.forEach(device => {
+            devicesData.push({
+                uuid: device.uuid,
+                selected: device.uuid === selectedDevice
+            });
+        });
+        data["devices"] = devicesData;
+        data["time"] = time;
+
+        let timeInt: number;
+        if (time === undefined || time === null || time === "") {
+            timeInt = 0;
+        } else {
+            let split = time.split(':');
+            if (split.length === 3) {
+                let hours = parseInt(split[0]);
+                let minutes = parseInt(split[1]);
+                let seconds = parseInt(split[2]);
+                let timeIntNew = hours * 3600 + minutes * 60 + seconds;
+                if (timeIntNew === 0) {
+                    timeInt = 1;
+                } else {
+                    timeInt = timeIntNew;
+                }
+            } else {
+                data["show_error"] = true;
+                data["error"] = "Invalid Time.";
+                return data;
+            }
+        }
+
+        if (selectedDevice === undefined || selectedDevice === null || selectedDevice === "" || 
+            selectedInstance === undefined || selectedInstance === null || selectedInstance === "") {
+            data["show_error"] = true;
+            data["error"] = "Invalid Request.";
+            return data;
+        }
+        try {
+            let assignmentEnabled = enabled == "on";
+            let assignment = new Assignment(selectedInstance, selectedDevice, timeInt, assignmentEnabled);
+            assignment.create();
+            AssignmentController.instance.addAssignment(assignment);
+        } catch {
+            data["show_error"] = true;
+            data["error"] = "Failed to assign Device.";
+            return data;
+        }
+
+        if (onComplete === "on") {
+            try {
+                let onCompleteAssignment = new Assignment(selectedInstance, selectedDevice, 0, true);
+                onCompleteAssignment.create();
+                AssignmentController.instance.addAssignment(onCompleteAssignment);
+            } catch {
+                data["show_error"] = true;
+                data["error"] = "Failed to assign Device.";
+                return data;
+            }
+        }
+
+        res.redirect('/assignments');
+    }
+    async addAccounts(data: any, req: express.Request, res: express.Response): Promise<any> { 
         var data = data
 
             let level = parseInt(req.body["level"] || 0);
