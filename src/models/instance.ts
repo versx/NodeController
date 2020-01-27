@@ -115,8 +115,8 @@ class Instance implements IInstance {
         `;
         let result = await db.query(sql, instanceName)
             .then(x => x)
-            .catch(x => { 
-                console.log("[ACCOUNT] Failed to get Instance with name " + instanceName);
+            .catch(err => { 
+                console.log("[ACCOUNT] Failed to get Instance with name", instanceName);
                 return null;
             });
         let instance: Instance;
@@ -141,8 +141,8 @@ class Instance implements IInstance {
         `;
         let result = await db.query(sql, instanceName)
             .then(x => x)
-            .catch(x => { 
-                console.error("[INSTANCE] Failed to delete instance with name " + name);
+            .catch(err => { 
+                console.error("[INSTANCE] Failed to delete instance with name", name);
                 return null;
             });
         console.debug("[INSTANCE] Delete:", result);
@@ -157,14 +157,15 @@ class Instance implements IInstance {
         SET data = ?, name = ?, type = ?
         WHERE name = ?
         `;
-        let args = [this.data, this.name, this.type, oldName];
+        let dataJson = JSON.stringify(this.data);
+        let args = [dataJson, this.name, this.type, oldName];
         let result = await db.query(sql, args)
             .then(x => x)
-            .catch(x => { 
-                console.error("[INSTANCE] Failed to update instance with name " + name);
+            .catch(err => { 
+                console.error("[INSTANCE] Failed to update instance with name", name);
                 return null;
             });
-        console.debug("[INSTANCE] Update: " + result);
+        console.debug("[INSTANCE] Update:", result);
     }
     /**
      * Load all instances.
@@ -200,8 +201,8 @@ class Instance implements IInstance {
         `;
         let results = await db.query(sql)
             .then(x => x)
-            .catch(x => {
-                console.error("[INSTANCE] Error: " + x);
+            .catch(err => {
+                console.error("[INSTANCE] Error:", err);
                 return null;
             });
         let instances: Instance[] = [];

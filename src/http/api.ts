@@ -17,7 +17,7 @@ class ApiListener {
         this.port = port;
 
         // Middleware
-        app.use(bodyParser.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
+        app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' })); // for parsing application/x-www-form-urlencoded
 
         // Routes
         app.get('/', async (req, res) => {
