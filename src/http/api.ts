@@ -57,6 +57,9 @@ class ApiListener {
         app.post('/assignment/add', async (req, res) => {
             res.send(await api.getPage(Page.dashboardAssignmentAdd, req, res));
         });
+        app.get('/assignment/start/:uuid', async (req, res) => {
+            res.send(await api.getPage(Page.dashboardAssignmentStart, req, res));
+        });
         app.get('/assignment/edit/:uuid', async (req, res) => {
             res.send(await api.getPage(Page.dashboardAssignmentEdit, req, res));
         });

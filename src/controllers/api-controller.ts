@@ -262,11 +262,35 @@ class ApiController {
                     }
                 }    
                 break;
+            case Page.dashboardAssignmentStart:
+                let uuid = unescape(req.param("uuid") || "");
+                let split = uuid.split("\\-");
+                if (split.length >= 2) {
+                    let instanceName = unescape(split[0]);
+                    let deviceUUID = unscape(split[1]);
+                    let device: Device;
+                    try {
+                        let deviceGuard = await Device.getById(deviceUUID);
+                        if (deviceGuard === undefined || deviceGuard === null) {
+                            res.send("Internal Server Error");
+                            return data;
+                        }
+                        device = deviceGuard;
+                    } catch {
+                        res.send("Internal Server Error");
+                        return data;
+                    }
+                    device.instanceName = instanceName;
+                    device.save(device.uuid);
+                    InstanceController.instance.reloadDevice(device, deviceUUID);
+                    res.redirect('/assignments');
+                }    
+                break;
             case Page.dashboardAssignmentEdit:
-                let uuid = decodeURI(req.param("uuid") || "");
-                let tmp = uuid.replace("-", "&tmp");
+                let uuid2 = decodeURI(req.param("uuid") || "");
+                let tmp2 = uuid2.replace("-", "&tmp");
                 data["page_is_dashboard"] = true;
-                data["old_name"] = uuid;
+                data["old_name"] = uuid2;
                 data["page"] = "Dashboard - Edit Assignment";
                 if (req.method === "POST") {
                     try {
@@ -276,7 +300,7 @@ class ApiController {
                     }
                 } else {
                     try {
-                        data = await this.editAssignmentGet(data, req, res, tmp);
+                        data = await this.editAssignmentGet(data, req, res, tmp2);
                     } catch {
                         return;
                     } 
@@ -285,13 +309,13 @@ class ApiController {
             case Page.dashboardAssignmentDelete:
                 data["page_is_dashboard"] = true
                 data["page"] = "Dashboard - Delete Assignment"
-                let uuid2 = decodeURI(req.param("uuid") || "");
-                let tmp2 = uuid2.replace("\\\\-", "&tmp");
-                let split = tmp2.split("\\-");
-                if (split.length === 3) {
-                    let instanceName = unescape(split[0].replace("&tmp", "\\\\-"));
-                    let deviceUUID = unescape(split[1].replace("&tmp", "\\\\-"));
-                    let time = parseInt(split[2]) || 0;
+                let uuid3 = decodeURI(req.param("uuid") || "");
+                let tmp3 = uuid3.replace("\\\\-", "&tmp");
+                let assignmentSplit = tmp3.split("\\-");
+                if (assignmentSplit.length === 3) {
+                    let instanceName = unescape(assignmentSplit[0].replace("&tmp", "\\\\-"));
+                    let deviceUUID = unescape(assignmentSplit[1].replace("&tmp", "\\\\-"));
+                    let time = parseInt(assignmentSplit[2]) || 0;
                     let assignment = new Assignment(instanceName, deviceUUID, time, false);
                     try {
                         await assignment.delete();
