@@ -705,29 +705,34 @@ class ApiController {
             }
             if (oldInstance === undefined || oldInstance === null) {
                 res.send("Instance Not Found");
+                return data;
             } else {
+                let oldInstanceData: any = {};
                 oldInstance.name = name;
                 oldInstance.type = type;
-                oldInstance.data["area"] = newCoords;
-                oldInstance.data["timezone_offset"] = timezoneOffset;
-                oldInstance.data["min_level"] = minLevel;
-                oldInstance.data["max_level"] = maxLevel;
+                oldInstanceData["area"] = newCoords;
+                oldInstanceData["timezone_offset"] = timezoneOffset;
+                oldInstanceData["min_level"] = minLevel;
+                oldInstanceData["max_level"] = maxLevel;
                 if (type === InstanceType.PokemonIV) {
-                    oldInstance!.data["pokemon_ids"] = pokemonIDs;
-                    oldInstance!.data["iv_queue_limit"] = ivQueueLimit;
-                    oldInstance!.data["scatter_pokemon_ids"] = scatterPokemonIDs;
+                    oldInstanceData["pokemon_ids"] = pokemonIDs;
+                    oldInstanceData["iv_queue_limit"] = ivQueueLimit;
+                    oldInstanceData["scatter_pokemon_ids"] = scatterPokemonIDs;
                 } else if (type === InstanceType.AutoQuest) {
-                    oldInstance.data["spin_limit"] = spinLimit;
+                    oldInstanceData["spin_limit"] = spinLimit;
                 }
+                oldInstance.data = <IInstanceData>oldInstanceData;
                 try {
                     await oldInstance.update(instanceName);
-                } catch {
+                } catch (err) {
+                    console.error(err);
                     data["show_error"] = true;
                     data["error"] = "Failed to update instance. Is the name unique?";
                     return data;
                 }
                 InstanceController.instance.reloadInstance(oldInstance, instanceName);
                 res.redirect('/instances');
+                return;
             }
         } else {
             let instanceData = {};
