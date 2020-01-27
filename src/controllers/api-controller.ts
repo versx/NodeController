@@ -5,18 +5,19 @@ import * as mustache from 'mustache';
 import * as express from 'express';
 import * as moment from 'moment';
 
+import { Coord } from '../coord';
+import { DbController } from './db-controller';
+import { InstanceController } from './instances/instance-controller';
+import { AssignmentController } from './assignment-controller';
 import { Account } from '../models/account';
 import { Assignment } from '../models/assignment';
 import { Device } from '../models/device';
 import { Gym } from '../models/gym';
-import { Instance, InstanceType } from '../models/instance';
+import { Instance, InstanceType, IInstanceData } from '../models/instance';
 import { Pokestop } from '../models/pokestop';
 import { Pokemon } from '../models/pokemon';
 import { Localizer } from '../utils/localizer';
-import { DbController } from './db-controller';
-import { InstanceController } from './instances/instance-controller';
 import { readFile, getCurrentTimestamp } from '../utils/util';
-import { AssignmentController } from './assignment-controller';
 
 enum Page {
     home = "index.mustache",
@@ -241,6 +242,24 @@ class ApiController {
                 data["page_is_dashboard"] = true;
                 data["page"] = "Dashboard - Instances";
                 break;
+            case Page.dashboardInstanceAdd:
+                data["page_is_dashboard"] = true;
+                data["page"] = "Dashboard - Add Instance";
+                if (req.method === "POST") {
+                    try {
+                        data = await this.addInstancePost(data, req, res);
+                    } catch {
+                        return;
+                    }
+                } else {
+                    data["min_level"] = 0;
+                    data["max_level"] = 29;
+                    data["timezone_offset"] = 0;
+                    data["iv_queue_limit"] = 100;
+                    data["spin_limit"] = 500;
+                    data["nothing_selected"] = true;
+                }    
+                break;
             case Page.dashboardAssignments:
                 data["page_is_dashboard"] = true;
                 data["page"] = "Dashboard - Assignments";
@@ -267,7 +286,7 @@ class ApiController {
                 let split = uuid.split("\\-");
                 if (split.length >= 2) {
                     let instanceName = unescape(split[0]);
-                    let deviceUUID = unscape(split[1]);
+                    let deviceUUID = unescape(split[1]);
                     let device: Device;
                     try {
                         let deviceGuard = await Device.getById(deviceUUID);
@@ -477,6 +496,223 @@ class ApiController {
             return data;
         }
         res.redirect("/devices");
+    }
+    async addInstancePost(data: any, req: express.Request, res: express.Response, instanceName?: string): Promise<any> {
+        var data = data;
+        let name: string;
+        let area: string;
+        let minLevel: number;
+        let maxLevel: number;
+        try {
+            name = req.param("name"),
+            area = req.param("area")
+                .replace("<br>", "")
+                .replace("\r\n", "\n");//, options: .regularExpression),
+            minLevel = parseInt(req.param("min_level")) || 0;
+            maxLevel = parseInt(req.param("max_level")) || 29;
+        } catch {
+            data["show_error"] = true;
+            data["error"] = "Invalid Request.";
+            return data;
+        }
+
+        let timezoneOffset = parseInt(req.param("timezone_offset") || "0" ) || 0;
+        let pokemonIDsText = req.param("pokemon_ids")
+                                    .replace("<br>", ",")
+                                    .replace("\r\n", ",");//, options: .regularExpression)
+        let scatterPokemonIDsText = req.param("scatter_pokemon_ids")
+                                    .replace("<br>", ",")
+                                    .replace("\r\n", ",");//, options: .regularExpression)
+
+        let pokemonIDs: number[] = [];
+        if (pokemonIDsText.trim() === "*") {
+            pokemonIDs = Array(1...999); // TODO: Get number range.
+        } else {
+            let pokemonIDsSplit = pokemonIDsText.split(',');
+            if (pokemonIDsSplit) {
+                pokemonIDsSplit.forEach(pokemonIDText => {
+                    let pokemonID = parseInt(pokemonIDText.trim());
+                    if (Number.isInteger(pokemonID)) {
+                        pokemonIDs.push(pokemonID);
+                    }
+                });
+            }
+        }
+
+        var scatterPokemonIDs: number[] = [];
+        if (scatterPokemonIDsText.trim() === "*") {
+            scatterPokemonIDs = Array(1...999); // TODO: Get number range.
+        } else {
+            let scatterPokemonIDsSplit = scatterPokemonIDsText.split(',');
+            if (scatterPokemonIDsSplit) {
+                scatterPokemonIDsSplit.forEach(pokemonIDText => {
+                    let pokemonID = parseInt(pokemonIDText.trim());
+                    if (Number.isInteger(pokemonID)) {
+                        scatterPokemonIDs.push(pokemonID);
+                    }
+                });
+            }
+        }
+
+        let type: InstanceType = Instance.fromString(req.param("type") || "");
+        let ivQueueLimit = parseInt(req.param("iv_queue_limit") || "100" ) || 100;
+        let spinLimit = parseInt(req.param("spin_limit") || "500" ) || 500;
+
+        data["name"] = name;
+        data["area"] = area;
+        data["pokemon_ids"] = pokemonIDsText;
+        data["scatter_pokemon_ids"] = scatterPokemonIDs;
+        data["min_level"] = minLevel;
+        data["max_level"] = maxLevel;
+        data["timezone_offset"] = timezoneOffset;
+        data["iv_queue_limit"] = ivQueueLimit;
+        data["spin_limit"] = spinLimit;
+
+        if (type === undefined || type === null) {
+            data["nothing_selected"] = true;
+        } else if (type === InstanceType.CirclePokemon.toString()) {
+            data["circle_pokemon_selected"] = true;
+        } else if (type === InstanceType.CircleRaid.toString()) {
+            data["circle_raid_selected"] = true;
+        } else if (type === InstanceType.SmartCircleRaid.toString()) {
+            data["circle_smart_raid_selected"] = true;
+        } else if (type === InstanceType.AutoQuest.toString()) {
+            data["auto_quest_selected"] = true;
+        } else if (type === InstanceType.PokemonIV.toString()) {
+            data["pokemon_iv_selected"] = true;
+        }
+
+        if (type === InstanceType.PokemonIV && pokemonIDs.length === 0) {
+            data["show_error"] = true;
+            data["error"] = "Failed to parse Pokemon IDs.";
+            return data;
+        }
+
+        if (minLevel > maxLevel || minLevel < 0 || minLevel > 40 || maxLevel < 0 || maxLevel > 40) {
+            data["show_error"] = true;
+            data["error"] = "Invalid Levels";
+            return data;
+        }
+
+        let newCoords: any;
+        if (type && type === InstanceType.CirclePokemon || type === InstanceType.CircleRaid || type === InstanceType.SmartCircleRaid) {
+            var coords: Coord[] = [];
+            let areaRows = area.split('\n');
+            areaRows.forEach(areaRow => {
+                let rowSplit = areaRow.split(',');
+                if (rowSplit.length === 2) {
+                    let lat = parseInt(rowSplit[0].trim());
+                    let lon = parseInt(rowSplit[1].trim());
+                    if (lat && lon) {
+                        coords.push(new Coord(lat, lon));
+                    }
+                }
+            });
+
+            if (coords.length === 0) {
+                data["show_error"] = true;
+                data["error"] = "Failed to parse coords.";
+                return data;
+            }
+
+            newCoords = coords
+
+        } else if (type && type === InstanceType.AutoQuest || type === InstanceType.PokemonIV) {
+            var coordArray: Coord[][] = [];
+            let areaRows = area.split('\n');
+            var currentIndex = 0;
+            areaRows.forEach(areaRow => {
+                let rowSplit = areaRow.split(',');
+                if (rowSplit.length === 2) {
+                    let lat = parseInt(rowSplit[0].trim());
+                    let lon = parseInt(rowSplit[1].trim());
+                    if (lat && lon) {
+                        while (coordArray.length !== currentIndex + 1) {
+                            coordArray.push([]);
+                        }
+                        coordArray[currentIndex].push(new Coord(lat, lon));
+                    }
+                } else if (areaRow.includes("[") && 
+                           areaRow.includes("]") &&
+                           coordArray.length > currentIndex && 
+                           coordArray[currentIndex].length !== 0) {
+                    currentIndex++;
+                }
+            });
+
+            if (coordArray.length === 0) {
+                data["show_error"] = true;
+                data["error"] = "Failed to parse coords.";
+                return data;
+            }
+
+            newCoords = coordArray;
+        } else {
+            data["show_error"] = true;
+            data["error"] = "Invalid Request.";
+            return data;
+        }
+
+        if (instanceName) {
+            let oldInstance: Instance;
+            try {
+                oldInstance = await Instance.getByName(instanceName);
+            } catch {
+                data["show_error"] = true;
+                data["error"] = "Failed to update instance. Is the name unique?";
+                return data;
+            }
+            if (oldInstance === undefined || oldInstance === null) {
+                res.send("Instance Not Found");
+            } else {
+                oldInstance.name = name;
+                oldInstance.type = type;
+                oldInstance.data["area"] = newCoords;
+                oldInstance.data["timezone_offset"] = timezoneOffset;
+                oldInstance.data["min_level"] = minLevel;
+                oldInstance.data["max_level"] = maxLevel;
+                if (type === InstanceType.PokemonIV) {
+                    oldInstance!.data["pokemon_ids"] = pokemonIDs;
+                    oldInstance!.data["iv_queue_limit"] = ivQueueLimit;
+                    oldInstance!.data["scatter_pokemon_ids"] = scatterPokemonIDs;
+                } else if (type === InstanceType.AutoQuest) {
+                    oldInstance.data["spin_limit"] = spinLimit;
+                }
+                try {
+                    await oldInstance.update(instanceName);
+                } catch {
+                    data["show_error"] = true;
+                    data["error"] = "Failed to update instance. Is the name unique?";
+                    return data;
+                }
+                InstanceController.instance.reloadInstance(oldInstance, instanceName);
+                res.redirect('/instances');
+            }
+        } else {
+            let instanceData: IInstanceData;
+            instanceData["area"] = newCoords,
+            instanceData["timezone_offset"] = timezoneOffset;
+            instanceData["min_level"] = minLevel;
+            instanceData["max_level"] = maxLevel;
+            if (type === InstanceType.PokemonIV) {
+                instanceData["pokemon_ids"] = pokemonIDs;
+                instanceData["iv_queue_limit"] = ivQueueLimit;
+                instanceData["scatter_pokemon_ids"] = scatterPokemonIDs;
+                instanceData["scatter_pokemon_ids"] = scatterPokemonIDs;
+            } else if (type === InstanceType.AutoQuest) {
+                instanceData["spin_limit"] = spinLimit;
+            }
+            let instance = new Instance(name, type, instanceData);
+            try {
+                await instance.create();
+                InstanceController.instance.addInstance(instance);
+            } catch {
+                data["show_error"] = true;
+                data["error"] = "Failed to create instance. Is the name unique?";
+                return data;
+            }
+        }
+        res.redirect('/instances');
     }
     async addAssignmentGet(data: any, req: express.Request, res: express.Response): Promise<any> {
         var data = data;
