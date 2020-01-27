@@ -250,6 +250,19 @@ class ApiController {
                 data["page"] = "Dashboard - Accounts";
                 data["stats"] = await Account.getStats();
                 break;
+            case Page.dashboardAccountsAdd:
+                data["page_is_dashboard"] = true;
+                data["page"] = "Dashboard - Add Accounts";
+                if (req.method === "POST") {
+                    try {
+                        data = await this.addAccounts(data, req, res);
+                    } catch {
+                        return;
+                    }
+                } else {
+                    data["level"] = 0;
+                }    
+                break;
             case Page.dashboardUsers:
             case Page.dashboardGroups:
             case Page.dashboardDiscordRules:
@@ -371,6 +384,52 @@ class ApiController {
             return data;
         }
         res.redirect("/devices");
+    }
+    async addAccounts(data: any, req: express.Request, res: express.Response) { 
+        var data = data
+
+            let level = parseInt(req.body["level"] || 0);
+            let accounts: string = req.body["accounts"];
+            if (accounts === undefined || accounts === null) {
+                data["show_error"] = true;
+                data["error"] = "Invalid Request.";
+                return data
+            }
+            accounts = accounts.replace("<br>", "")
+                           .replace("\r\n", "\n")//, options: .regularExpression)
+                           .replace(";", ",")
+                           .replace(":", ",");
+
+        data["accounts"] = accounts;
+        data["level"] = level;
+
+        var accs: Account[] = [];
+        let accountsRows = accounts.split('\n');
+        accountsRows.forEach(accountsRow => {
+            let split = accountsRow.split(',');
+            if (split.length === 2) {
+                let username = split[0]
+                let password = split[1]
+                accs.push(new Account(username, password, null, null, null, level, null, null, null, 0, null, null));
+            }
+        });
+
+        if (accs.length === 0) {
+            data["show_error"] = true;
+            data["error"] = "Failed to parse accounts.";
+            return data;
+        } else {
+            try {
+                accs.forEach(async acc => {
+                    await acc.save(false);
+                });
+            } catch {
+                data["show_error"] = true;
+                data["error"] = "Failed to save accounts.";
+                return data;
+            }
+            res.redirect('/accounts');
+        }
     }
     async updateSettings(req: express.Request, res: express.Response) {
         let obj = req.body;
