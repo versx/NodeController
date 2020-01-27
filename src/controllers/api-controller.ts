@@ -198,15 +198,12 @@ class ApiController {
     }
     async getPage(page: Page, req: express.Request, res: express.Response) {
         var data = {
-            title: "NodeController",
+            title: DbController.instance.settings["title"] || "NodeController",
             locale: Localizer.instance.locale,
-            page: "Dashboard",
-            google_analytics_id: "",
-            google_adsense_id: ""
+            page: "Dashboard"
         };
         data["show_dashboard"] = true;
         data["is_logged_in"] = true;
-        data["show_areas"] = true;
         let navLoc = ["nav_dashboard", "nav_areas", "nav_stats", "nav_logout", "nav_register", "nav_login"]
         navLoc.forEach(nav => {
             data[nav] = Localizer.instance.get(nav);
@@ -214,17 +211,43 @@ class ApiController {
 
         switch (page) {
             case Page.dashboard:
+                data["page_is_dashboard"] = true;
+                data["page"] = "Dashboard";
                 break;
             case Page.dashboardDevices:
-                data["devices"] = await Device.load();
+                data["page_is_dashboard"] = true;
+                data["page"] = "Dashboard - Devices";
+                break;
+            case Page.dashboardDeviceAssign:
+                data["page_is_dashboard"] = true
+                data["page"] = "Dashboard - Assign Device"
+                let deviceUUID = req.param("uuid") || "";
+                data["device_uuid"] = deviceUUID;
+                if (req.method === "POST") {
+                    try {
+                        data = await this.assignDevicePost(data, req, res, deviceUUID);
+                    } catch {
+                        return;
+                    }
+                } else {
+                    try {
+                        data = await this.assignDeviceGet(data, req, res, deviceUUID);
+                    } catch {
+                        return;
+                    }
+                }    
                 break;
             case Page.dashboardInstances:
-                data["instances"] = await Instance.load();
+                data["page_is_dashboard"] = true;
+                data["page"] = "Dashboard - Instances";
                 break;
             case Page.dashboardAssignments:
-                data["assignments"] = await Assignment.getAll();
+                data["page_is_dashboard"] = true;
+                data["page"] = "Dashboard - Assignments";
                 break;
             case Page.dashboardAccounts:
+                data["page_is_dashboard"] = true;
+                data["page"] = "Dashboard - Accounts";
                 data["stats"] = await Account.getStats();
                 break;
             case Page.dashboardUsers:
@@ -232,7 +255,7 @@ class ApiController {
             case Page.dashboardDiscordRules:
                 break;
             case Page.dashboardSettings:
-                data["page_is_dashboard"] = true
+                data["page_is_dashboard"] = true;
                 data["page"] = "Dashboard - Settings";
                 if (req.method === "POST") {
                     await this.updateSettings(req, res);
@@ -280,6 +303,74 @@ class ApiController {
         } catch (err) {
             console.error("[ApiController] Failed to get page:", err);
         }
+    }
+    async assignDeviceGet(data: any, req: express.Request, res: express.Response, deviceUUID: string): Promise<any> {
+        var data = data;
+        let instances: Instance[] = [];
+        let device: Device;
+        try {
+            device = await Device.getById(deviceUUID);
+            instances = await Instance.getAll();
+        } catch {
+            res.send("Internal Server Error");
+            return;
+        }
+        if (device === undefined || device === null) {
+            res.send("Device Not Found");
+            return;
+        }
+
+        let instancesData = [];
+        instances.forEach(instance => {
+            instancesData.push({ 
+                name: instance.name, 
+                selected: instance.name === device.instanceName
+            });
+        });
+        data["instances"] = instancesData;
+        return data;
+    }
+    async assignDevicePost(data: any, req: express.Request, res: express.Response, deviceUUID: string): Promise<any> {
+        var data = data;
+        let instanceName: string = req.body["instance"];
+        if (instanceName === undefined || instanceName === null) {
+            data["show_error"] = true;
+            data["error"] = "Invalid Request.";
+            return data;
+        }
+        let device: Device;
+        let instances: Instance[] = [];
+        try {
+            device = await Device.getById(deviceUUID);
+            instances = await Instance.getAll();
+        } catch {
+            data["show_error"] = true;
+            data["error"] = "Failed to assign Device.";
+            return data;
+        }
+        if (device === undefined || device === null) {
+            res.send("Device Not Found");
+            return data;
+        }
+        var instancesData = [];
+        instances.forEach(instance => {
+            instancesData.push({ 
+                name: instance.name,
+                selected: instance.name === instanceName
+            });
+        });
+        data["instances"] = instancesData;
+
+        try {
+            device.instanceName = instanceName;
+            device.save(device.uuid);
+            InstanceController.instance.reloadDevice(device, deviceUUID);
+        } catch {
+            data["show_error"] = true;
+            data["error"] = "Failed to assign Device.";
+            return data;
+        }
+        res.redirect("/devices");
     }
     async updateSettings(req: express.Request, res: express.Response) {
         let obj = req.body;
