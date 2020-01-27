@@ -260,6 +260,47 @@ class ApiController {
                     data["nothing_selected"] = true;
                 }    
                 break;
+            case Page.dashboardInstanceEdit:
+                let instanceName: string = decodeURI(req.param("instance_name") || "");
+                data["page_is_dashboard"] = true;
+                data["old_name"] = instanceName;
+                data["page"] = "Dashboard - Edit Instance";    
+                if (req.param("delete") === "true") {
+                    try {
+                        await Instance.delete(instanceName);
+                        InstanceController.instance.removeInstance(InstanceController.instance.Instances[instanceName]); // REVIEW: Make sure this works.
+                        res.redirect('/instances');
+                        return;
+                    } catch {
+                        res.send("Internal Server Error");
+                        return;
+                    }
+                } else if (req.param("clear_quests") === "true") {
+                    try {
+                        let instance = await Instance.getByName(instanceName);
+                        if (instance.type === InstanceType.AutoQuest) {
+                            await Pokestop.clearQuestsByInstance(instance);
+                        }
+                        res.redirect('/instances');
+                        return;
+                    } catch {
+                        res.send("Internal Server Error");
+                        return;
+                    }
+                } else if (req.method === "POST") {
+                    try {
+                        data = await this.addInstancePost(data, req, res, instanceName);
+                    } catch {
+                        return;
+                    }
+                } else {
+                    try {
+                        data = await this.editInstanceGet(data, req, res, instanceName);
+                    } catch {
+                        return;
+                    }
+                }    
+                break;
             case Page.dashboardAssignments:
                 data["page_is_dashboard"] = true;
                 data["page"] = "Dashboard - Assignments";
@@ -526,7 +567,7 @@ class ApiController {
 
         let pokemonIDs: number[] = [];
         if (pokemonIDsText.trim() === "*") {
-            pokemonIDs = Array(1...999); // TODO: Get number range.
+            pokemonIDs = Array.from({length: 999}, (v, k) => k + 1);
         } else {
             let pokemonIDsSplit = pokemonIDsText.split(',');
             if (pokemonIDsSplit) {
@@ -541,7 +582,7 @@ class ApiController {
 
         var scatterPokemonIDs: number[] = [];
         if (scatterPokemonIDsText.trim() === "*") {
-            scatterPokemonIDs = Array(1...999); // TODO: Get number range.
+            scatterPokemonIDs = Array.from({length: 999}, (v, k) => k + 1);
         } else {
             let scatterPokemonIDsSplit = scatterPokemonIDsText.split(',');
             if (scatterPokemonIDsSplit) {
@@ -713,6 +754,80 @@ class ApiController {
             }
         }
         res.redirect('/instances');
+    }
+    async editInstanceGet(data: any, req: express.Request, res: express.Response, instanceName?: string): Promise<any> {
+        var data = data;
+        let oldInstance: Instance;
+        try {
+            oldInstance = await Instance.getByName(instanceName);
+        } catch {
+            res.send("Internal Server Error");
+        }
+        if (oldInstance === undefined || oldInstance === null) {
+            res.send("Instance Not Found");
+        } else {
+            let areaString = "";
+            let areaType1 = oldInstance.data["area"];// as? [[String: Double]];
+            let areaType2 = oldInstance.data["area"];// as? [[[String: Double]]];
+            if (areaType1) {
+                areaType1.forEach(coordLine => {
+                    let lat = coordLine["lat"];
+                    let lon = coordLine["lon"];
+                    areaString += `${lat},${lon}\n`;
+                });
+            } else if (areaType2) {
+                let index = 1;
+                areaType2.forEach(geofence => {
+                    areaString += `[Geofence ${index}]\n`;
+                    index++;
+                    geofence.forEach(coordLine => {
+                        let lat = coordLine["lat"];
+                        let lon = coordLine["lon"];
+                        areaString += `${lat},${lon}\n`;
+                    });
+                });
+            }
+
+            data["name"] = oldInstance.name;
+            data["area"] = areaString;
+            data["min_level"] = oldInstance.data["min_level"] || 0;
+            data["max_level"] = oldInstance.data["max_level"] || 29;
+            data["timezone_offset"] = oldInstance.data["timezone_offset"] || 0;
+            data["iv_queue_limit"] = oldInstance.data["iv_queue_limit"] || 100;
+            data["spin_limit"] = oldInstance.data["spin_limit"] || 500;
+
+            let pokemonIDs: number[] = oldInstance.data["pokemon_ids"];
+            if (pokemonIDs) {
+                var text = "";
+                pokemonIDs.forEach(id => {
+                    text += `${id}\n`;
+                });
+                data["pokemon_ids"] = text;
+            }
+
+            let scatterPokemonIDs: number[] = oldInstance!.data["scatter_pokemon_ids"];
+            if (scatterPokemonIDs) {
+                var text = "";
+                scatterPokemonIDs.forEach(id => {
+                    text += `${id}\n`;
+                });
+                data["scatter_pokemon_ids"] = text;
+            }
+
+            switch (oldInstance.type) {
+                case InstanceType.CirclePokemon:
+                    data["circle_pokemon_selected"] = true;
+                case InstanceType.CircleRaid:
+                    data["circle_raid_selected"] = true;
+                case InstanceType.SmartCircleRaid:
+                    data["circle_smart_raid_selected"] = true;
+                case InstanceType.AutoQuest:
+                    data["auto_quest_selected"] = true;
+                case InstanceType.PokemonIV:
+                    data["pokemon_iv_selected"] = true;
+            }
+            return data;
+        }
     }
     async addAssignmentGet(data: any, req: express.Request, res: express.Response): Promise<any> {
         var data = data;
