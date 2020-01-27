@@ -262,6 +262,26 @@ class ApiController {
                     }
                 }    
                 break;
+            case Page.dashboardAssignmentEdit:
+                let uuid = decodeURI(req.param("uuid") || "");
+                let tmp = uuid.replace("-", "&tmp");
+                data["page_is_dashboard"] = true;
+                data["old_name"] = uuid;
+                data["page"] = "Dashboard - Edit Assignment";
+                if (req.method === "POST") {
+                    try {
+                        data = await this.editAssignmentPost(data, req, res);
+                    } catch {
+                        return;
+                    }
+                } else {
+                    try {
+                        data = await this.editAssignmentGet(data, req, res, tmp);
+                    } catch {
+                        return;
+                    } 
+                }    
+                break;
             case Page.dashboardAccounts:
                 data["page_is_dashboard"] = true;
                 data["page"] = "Dashboard - Accounts";
@@ -519,7 +539,137 @@ class ApiController {
                 return data;
             }
         }
+        res.redirect('/assignments');
+    }
+    async editAssignmentGet(data: any, req: express.Request, res: express.Response, instanceUUID: string): Promise<any> {
+        let selectedUUID = decodeURI(req.param("uuid") || "");
+        let tmp = selectedUUID.replace("\\\\-", "\\-");
+        let split = tmp.split('-');
+        if (split.length !== 3) {
+            res.send("Bad Request");
+            return data;
+        } else {
+            let selectedInstance = unescape(split[0].replace("&tmp", "\\\\-"));
+            let selectedDevice = unescape(split[1].replace("&tmp", "\\\\-"));
+            let time = parseInt(split[2]) || 0;
 
+            var data = data;
+            let instances: Instance[] = [];
+            let devices: Device[] = [];
+            try {
+                devices = await Device.load();
+                instances = await Instance.getAll();
+            } catch {
+                res.send("Internal Server Error");
+                return data;
+            }
+
+            let instancesData = [];
+            instances.forEach(instance => {
+                instancesData.push({
+                    name: instance.name,
+                    selected: instance.name === selectedInstance
+                });
+            });
+            data["instances"] = instancesData;
+            let devicesData = [];
+            devices.forEach(device => {
+                devicesData.push({
+                    uuid: device.uuid,
+                    selected: device.uuid === selectedDevice
+                });
+            });
+            data["devices"] = devicesData;
+
+            let formattedTime: string;
+            if (time === 0) {
+                formattedTime = "";
+            } else {
+                let times = moment(time).format('hh:mm:ss');//time.secondsToHoursMinutesSeconds()
+                formattedTime = times;//"\(String(format: "%02d", times.hours)):\(String(format: "%02d", times.minutes)):\(String(format: "%02d", times.seconds))"
+            }
+            data["time"] = formattedTime;
+            let assignment: Assignment;
+            try {
+                assignment = await Assignment.getByUUID(selectedInstance, selectedDevice, time);
+            } catch {
+                res.send("Internal Server Error");
+                return data;
+            }
+            data["enabled"] = assignment.enabled ? "checked" : "";
+            if (selectedDevice === "" || selectedInstance === "") {
+                data["show_error"] = true;
+                data["error"] = "Invalid Request.";
+                return data;
+            }
+            return data;
+        }
+    }
+    async editAssignmentPost(data: any, req: express.Request, res: express.Response): Promise<any> {
+        let selectedDevice = req.body("device");
+        let selectedInstance = req.body("instance");
+        let time = req.body("time");
+        let enabled = req.body("enabled");
+        var data = data;
+        let timeInt: number;
+        if (time === undefined || time === null || time === "") {
+            timeInt = 0;
+        } else {
+            let split = time.split(':');
+            if (split.length === 3) {
+                let hours = parseInt(split[0]);
+                let minutes = parseInt(split[1]);
+                let seconds = parseInt(split[2]);
+                let timeIntNew = hours * 3600 + minutes * 60 + seconds;
+                if (timeIntNew === 0) {
+                    timeInt = 1;
+                } else {
+                    timeInt = timeIntNew;
+                }
+            } else {
+                data["show_error"] = true;
+                data["error"] = "Invalid Time.";
+                return data;
+            }
+        }
+
+        if (selectedDevice === undefined || selectedDevice === null ||
+            selectedInstance === undefined || selectedInstance === null) {
+            data["show_error"] = true;
+            data["error"] = "Invalid Request.";
+            return data;
+        }
+
+        let selectedUUID = data["old_name"] || "";
+        let tmp = selectedUUID.replace("\\\\-", "\\-");
+        let split = tmp.split("\\-");
+        if (split.count !== 3) {
+            res.send("Bad Request");
+            return data;
+        } else {
+            let oldInstanceName = unescape(split[0].replace("&tmp", "\\\\-"));
+            let oldDeviceUUID = unescape(split[1].replace("&tmp", "\\\\-"));
+            let oldTime = parseInt(split[2]) || 0;
+
+            let oldAssignment: Assignment;
+            try {
+                oldAssignment = await Assignment.getByUUID(oldInstanceName, oldDeviceUUID, oldTime);
+            } catch {
+                res.send("Internal Server Error");
+                return data;
+            }
+
+            try {
+                let assignmentEnabled = enabled === "on";
+                let newAssignment = new Assignment(selectedInstance, selectedDevice, timeInt, assignmentEnabled);
+                newAssignment.save(oldInstanceName, oldDeviceUUID, oldTime, assignmentEnabled);
+                AssignmentController.instance.editAssignment(oldAssignment, newAssignment);
+            } catch {
+                data["show_error"] = true;
+                data["error"] = "Failed to assign Device.";
+                return data;
+            }
+        }
         res.redirect('/assignments');
     }
     async addAccounts(data: any, req: express.Request, res: express.Response): Promise<any> { 
