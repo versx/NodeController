@@ -71,8 +71,8 @@ class InstanceController implements IInstanceController {
                         coordsArray.push(new Coord(coord["lat"], coord["lon"]));
                     });
                 }
-                let minLevel = instance.data.minLevel || 0;
-                let maxLevel = instance.data.maxLevel || 29;
+                let minLevel = instance.data.min_level || 0;
+                let maxLevel = instance.data.max_level || 29;
                 switch (instance.type) {
                     case InstanceType.CirclePokemon:
                     case InstanceType.CircleRaid:
@@ -102,7 +102,7 @@ class InstanceController implements IInstanceController {
                         });
                         i++;
                     });
-                    let timeZoneOffset = instance.data.timeZoneOffset || 0;
+                    let timeZoneOffset = instance.data.timezone_offset || 0;
                     let areaArrayEmptyInner = [];
                     areaArray.forEach((coords: Coord[]) => {
                         let polyCoords = [];
@@ -112,8 +112,8 @@ class InstanceController implements IInstanceController {
                         areaArrayEmptyInner.push(polyCoords);
                     });
 
-                    let minLevel = instance.data.minLevel || 0;
-                    let maxLevel = instance.data.maxLevel || 29;
+                    let minLevel = instance.data.min_level || 0;
+                    let maxLevel = instance.data.max_level || 29;
                     if (instance.type == InstanceType.PokemonIV) {
                         let pokemonList: number[] = instance.data["pokemon_ids"] || [];
                         let ivQueueLimit = instance.data["iv_queue_limit"] || 100;
