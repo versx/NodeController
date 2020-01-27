@@ -371,7 +371,7 @@ class ApiController {
                 data["page"] = "Dashboard - Delete Assignment"
                 let uuid3 = decodeURI(req.param("uuid") || "");
                 let tmp3 = uuid3.replace("\\\\-", "&tmp");
-                let assignmentSplit = tmp3.split("\\-");
+                let assignmentSplit = tmp3.split("-");
                 if (assignmentSplit.length === 3) {
                     let instanceName = unescape(assignmentSplit[0].replace("&tmp", "\\\\-"));
                     let deviceUUID = unescape(assignmentSplit[1].replace("&tmp", "\\\\-"));
@@ -730,8 +730,8 @@ class ApiController {
                 res.redirect('/instances');
             }
         } else {
-            let instanceData: IInstanceData;
-            instanceData["area"] = newCoords,
+            let instanceData = {};
+            instanceData["area"] = newCoords;
             instanceData["timezone_offset"] = timezoneOffset;
             instanceData["min_level"] = minLevel;
             instanceData["max_level"] = maxLevel;
@@ -743,7 +743,7 @@ class ApiController {
             } else if (type === InstanceType.AutoQuest) {
                 instanceData["spin_limit"] = spinLimit;
             }
-            let instance = new Instance(name, type, instanceData);
+            let instance = new Instance(name, type, <IInstanceData>instanceData);
             try {
                 await instance.create();
                 InstanceController.instance.addInstance(instance);
@@ -767,8 +767,9 @@ class ApiController {
             res.send("Instance Not Found");
         } else {
             let areaString = "";
-            let areaType1 = oldInstance.data["area"];// as? [[String: Double]];
-            let areaType2 = oldInstance.data["area"];// as? [[[String: Double]]];
+            let oldInstanceData = JSON.parse(String(oldInstance.data));
+            let areaType1 = oldInstanceData["area"];// as? [[String: Double]];
+            let areaType2 = oldInstanceData["area"];// as? [[[String: Double]]];
             if (areaType1) {
                 areaType1.forEach(coordLine => {
                     let lat = coordLine["lat"];
@@ -790,24 +791,24 @@ class ApiController {
 
             data["name"] = oldInstance.name;
             data["area"] = areaString;
-            data["min_level"] = oldInstance.data["min_level"] || 0;
-            data["max_level"] = oldInstance.data["max_level"] || 29;
-            data["timezone_offset"] = oldInstance.data["timezone_offset"] || 0;
-            data["iv_queue_limit"] = oldInstance.data["iv_queue_limit"] || 100;
-            data["spin_limit"] = oldInstance.data["spin_limit"] || 500;
+            data["min_level"] = oldInstanceData["min_level"] || 0;
+            data["max_level"] = oldInstanceData["max_level"] || 29;
+            data["timezone_offset"] = oldInstanceData["timezone_offset"] || 0;
+            data["iv_queue_limit"] = oldInstanceData["iv_queue_limit"] || 100;
+            data["spin_limit"] = oldInstanceData["spin_limit"] || 500;
 
-            let pokemonIDs: number[] = oldInstance.data["pokemon_ids"];
+            let pokemonIDs: number[] = oldInstanceData["pokemon_ids"];
             if (pokemonIDs) {
-                var text = "";
+                let text = "";
                 pokemonIDs.forEach(id => {
                     text += `${id}\n`;
                 });
                 data["pokemon_ids"] = text;
             }
 
-            let scatterPokemonIDs: number[] = oldInstance!.data["scatter_pokemon_ids"];
+            let scatterPokemonIDs: number[] = oldInstanceData["scatter_pokemon_ids"];
             if (scatterPokemonIDs) {
-                var text = "";
+                let text = "";
                 scatterPokemonIDs.forEach(id => {
                     text += `${id}\n`;
                 });
@@ -849,7 +850,7 @@ class ApiController {
             });
         });
         data["instances"] = instancesData;
-        var devicesData = [];
+        let devicesData = [];
         devices.forEach(device => {
             devicesData.push({
                 uuid: device.uuid,
@@ -886,7 +887,7 @@ class ApiController {
             });
         });
         data["instances"] = instancesData;
-        var devicesData = [];
+        let devicesData = [];
         devices.forEach(device => {
             devicesData.push({
                 uuid: device.uuid,
@@ -1013,10 +1014,10 @@ class ApiController {
         }
     }
     async editAssignmentPost(data: any, req: express.Request, res: express.Response): Promise<any> {
-        let selectedDevice = req.body("device");
-        let selectedInstance = req.body("instance");
-        let time = req.body("time");
-        let enabled = req.body("enabled");
+        let selectedDevice: string = req.body["device"];
+        let selectedInstance: string = req.body["instance"];
+        let time: string = req.body["time"];
+        let enabled: string = req.body["enabled"];
         var data = data;
         let timeInt: number;
         if (time === undefined || time === null || time === "") {
@@ -1049,8 +1050,8 @@ class ApiController {
 
         let selectedUUID = data["old_name"] || "";
         let tmp = selectedUUID.replace("\\\\-", "\\-");
-        let split = tmp.split("\\-");
-        if (split.count !== 3) {
+        let split = tmp.split("-");
+        if (split.length !== 3) {
             res.send("Bad Request");
             return data;
         } else {
@@ -1097,7 +1098,7 @@ class ApiController {
         data["accounts"] = accounts;
         data["level"] = level;
 
-        var accs: Account[] = [];
+        let accs: Account[] = [];
         let accountsRows = accounts.split('\n');
         accountsRows.forEach(accountsRow => {
             let split = accountsRow.split(',');

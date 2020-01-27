@@ -36,8 +36,8 @@ class Assignment {
         `;
         let results = await db.query(sql)
             .then(x => x)
-            .catch(x => {
-                console.log("[ASSIGNMENT] Error:", x);
+            .catch(err => {
+                console.log("[ASSIGNMENT] Error:", err);
                 return null;
             });
         let assignments: Assignment[] = [];
@@ -71,8 +71,8 @@ class Assignment {
         let args = [deviceUUID, instanceName, time];
         let result = await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.log("[ASSIGNMENT] Error:", x);
+            .catch(err => {
+                console.log("[ASSIGNMENT] Error:", err);
                 return null;
             });
         let assignment: Assignment;
@@ -94,8 +94,8 @@ class Assignment {
         let sql = `DELETE FROM assignment`;
         let result = await db.query(sql)
             .then(x => x)
-            .catch(x => {
-                console.log("[ASSIGNMENT] Error:", x);
+            .catch(err => {
+                console.log("[ASSIGNMENT] Error:", err);
                 return null;
             });
         console.log("[ASSIGNMENT] DeleteAll:", result);
@@ -116,8 +116,8 @@ class Assignment {
         let args = [this.deviceUUID, this.instanceName, this.time, enabled, oldDeviceUUID, oldInstanceName, oldTime];
         let result = await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.log("[ASSIGNMENT] Error:", x);
+            .catch(err => {
+                console.log("[ASSIGNMENT] Error:", err);
                 return null;
             });
         console.log("[ASSIGNMENT] Save:", result);
@@ -133,8 +133,8 @@ class Assignment {
         let args = [this.deviceUUID, this.instanceName, this.time, this.enabled];
         let result = await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.log("[ASSIGNMENT] Error:", x);
+            .catch(err => {
+                console.log("[ASSIGNMENT] Error:", err);
                 return null;
             });
         console.log("[ASSIGNMENT] Create:", result);
@@ -150,8 +150,8 @@ class Assignment {
         let args = [this.deviceUUID, this.instanceName, this.time];
         let result = await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.log("[ASSIGNMENT] Error:", x);
+            .catch(err => {
+                console.log("[ASSIGNMENT] Error:", err);
                 return null;
             });
         console.log("[ASSIGNMENT] Delete:", result);
