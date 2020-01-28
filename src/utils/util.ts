@@ -14,4 +14,12 @@ function readFile(path: string) {
     return data.toString('utf8');
 }
 
-export { getCurrentTimestamp, snooze, readFile };
+/**
+ * Base64 decodes the string to raw data.
+ * @param {*} data 
+ */
+function base64_decode(data: any): Buffer {
+    return Buffer.from(data, 'base64');
+}
+
+export { getCurrentTimestamp, snooze, readFile, base64_decode };

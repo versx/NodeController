@@ -1,8 +1,8 @@
 "use strict"
 
-import * as turf from '@turf/turf'
-import { Pokemon } from "../../models/pokemon";
-import { getCurrentTimestamp, snooze } from "../../utils/util"
+import * as turf from '@turf/turf';
+import { Pokemon } from '../../models/pokemon';
+import { getCurrentTimestamp, snooze } from '../../utils/util';
 
 class IVInstanceController {
     private multiPolygon: turf.MultiPolygon;
@@ -31,7 +31,6 @@ class IVInstanceController {
         this.init();
     }
     async init() {
-        // TODO: new thread
         // while (!shouldExit) {
         if (this.scannedPokemon.length > 0) {
             snooze(5000);
@@ -40,7 +39,7 @@ class IVInstanceController {
             }
         } else {
             let first = this.scannedPokemon.pop();
-            let timeSince = getCurrentTimestamp() - (first["date"].getTime() / 1000); //TODO: review
+            let timeSince = getCurrentTimestamp() - (first["date"].getTime() / 1000);
             if (timeSince < 120) {
                 snooze((120 - timeSince) * 1000);
                 if (this.shouldExit) {
@@ -90,19 +89,16 @@ class IVInstanceController {
             max_level: this.maxLevel
         }
     }
-    getStatus(formatted: boolean) {
+    getStatus(formatted: boolean): any {
         let ivh = 0;
         if (this.startDate instanceof Date) {
-            // TODO: ivh = parseInt(this.count / parseInt(new Date() - this.startDate) * 3600);
+            ivh = this.count / (new Date().getTime() - this.startDate.getTime()) * 3600;
         }
         if (formatted) {
             let ivhString = ivh || "-";
-            return "";//"<a href=\"/dashboard/instance/ivqueue/\(name.encodeUrl() ?? "")\">Queue</a>: \(pokemonQueue.count), IV/h: \(ivhString)";
-        } else {
-            return {
-                iv_per_hour: ivh
-            }
+            return `<a href="/instance/ivqueue/${encodeURI(name) || ""}">Queue</a>: ${this.pokemonQueue.length}, IV/h: ${ivhString}`;
         }
+        return { iv_per_hour: ivh };
     }
     reload() {}
     stop() {}

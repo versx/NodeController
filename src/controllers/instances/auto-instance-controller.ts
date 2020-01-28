@@ -210,7 +210,7 @@ class AutoInstanceController {
                                     lastLon = x.lastEncounterLon;
                                     lastTime = x.lastEncounterTime;
                                 } else {
-                                    // TODO: Don't think this is needed anymore
+                                    // REVIEW: Don't think this is needed anymore
                                     /*
                                     lastLat = Double(try DBController.global.getValueForKey(key: "AIC_\(uuid)_last_lat") ?? "")
                                     lastLon = Double(try DBController.global.getValueForKey(key: "AIC_\(uuid)_last_lon") ?? "")
@@ -354,7 +354,7 @@ class AutoInstanceController {
                 break;
         }
     }
-    async getStatus(formatted: boolean) {
+    async getStatus(formatted: boolean): Promise<any> {
         switch (this.type) {
             case AutoInstanceType.Quest:
                 if (!(this.bootstrapCellIds.length > 0)) {
@@ -367,7 +367,7 @@ class AutoInstanceController {
                         percentage = 100;
                     }
                     if (formatted) {
-                        return ""; // TODO: "Bootstrapping \(count)/\(totalCount) (\(percentage.rounded(toStringWithDecimals: 1))%)";
+                        return `Bootstrapping ${count}/${totalCount} (${Math.fround(percentage)}%)`;
                     } else {
                         return {
                             bootstrapping: {
@@ -378,12 +378,12 @@ class AutoInstanceController {
                     }
                 } else {
                     let currentCountDb = 0;
-                    let ids = this.allStops.map(function(stop) {
+                    let ids = this.allStops.map(stop => {
                         return stop.id
                     });
                     let stops = await Pokestop.getInIds(ids);
                     if (stops instanceof Pokestop) {
-                        stops.forEach(function(stop) {
+                        stops.forEach(stop => {
                             if (stop.questType !== undefined) {
                                 currentCountDb++;
                             }
@@ -392,8 +392,6 @@ class AutoInstanceController {
     
                     let maxCount = this.allStops.length || 0;
                     let currentCount = maxCount - (this.todayStops.length || 0);
-
-                    /*
                     let percentage: number;
                     if (maxCount > 0) {
                         percentage = currentCount / maxCount * 100;
@@ -406,9 +404,8 @@ class AutoInstanceController {
                     } else {
                         percentageReal = 100;
                     }
-                    */
                     if (formatted) {
-                        return ""; //"Done: \(currentCountDb)|\(currentCount)/\(maxCount) (\(percentageReal.rounded(toStringWithDecimals: 1))|\(percentage.rounded(toStringWithDecimals: 1))%)"
+                        return `Done: ${currentCountDb}|${currentCount}/${maxCount} (${Math.fround(percentageReal)}|${Math.fround(percentage)}%)`;
                     } else {
                         return {
                             "quests": {
@@ -418,7 +415,6 @@ class AutoInstanceController {
                             }
                         };
                     }
-    
                 }
                 break;
         }
@@ -435,7 +431,7 @@ class AutoInstanceController {
     autoLoop() {
         //while (!this.shouldExit) {
             let date = moment(new Date(), 'HH:mm:ss');
-            // TODO: formatter.timeZone = TimeZone(secondsFromGMT: timezoneOffset) ?? Localizer.global.timeZone;
+            // formatter.timeZone = TimeZone(secondsFromGMT: timezoneOffset) ?? Localizer.global.timeZone;
             let split = date.toString().split(":");
             let hour = parseInt(split[0]);
             let minute = parseInt(split[1]);

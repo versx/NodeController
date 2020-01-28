@@ -639,7 +639,6 @@ class Pokemon /*extends Consumable*/ {
 
         if (this.lat === undefined) {
             if (this.pokestopId) {
-                // TODO: Find out why pokestop_id is sometimes null
                 let pokestop: Pokestop;
                 try {
                     pokestop = await Pokestop.getById(this.pokestopId);
@@ -663,7 +662,6 @@ class Pokemon /*extends Consumable*/ {
             }
         }
 
-        // TODO: Error: ER_BAD_NULL_ERROR: Column 'lat' cannot be null
         // TODO: Error: ER_NO_REFERENCED_ROW_2: Cannot add or update a child row: a foreign key constraint fails (`rdmdb`.`pokemon`, CONSTRAINT `fk_pokemon_cell_id` FOREIGN KEY (`cell_id`) REFERENCES `s2cell` (`id`) ON DELETE CASCADE ON UPDATE CASCADE)
         await db.query(sql, args)
             .then(x => x)

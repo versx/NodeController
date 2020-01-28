@@ -12,30 +12,35 @@ class Device {
     uuid: string;
     instanceName: string;
     accountUsername: string;
+    deviceLevel: number;
     lastHost: string;
     lastSeen: number;
     lastLat: number;
     lastLon: number;
+    deviceGroup: string;
 
     /**
      * Initalize new Device object.
      * @param uuid 
      * @param instanceName 
      * @param accountUsername 
+     * @param deviceLevel 
      * @param lastHost 
      * @param lastSeen 
      * @param lastLat 
      * @param lastLon 
      */
-    constructor(uuid: string, instanceName: string, accountUsername: string, lastHost: string, 
-        lastSeen: number, lastLat: number, lastLon: number) {
+    constructor(uuid: string, instanceName: string, accountUsername: string, deviceLevel: number,
+        lastHost: string, lastSeen: number, lastLat: number, lastLon: number, deviceGroup: string) {
         this.uuid = uuid;
         this.instanceName = instanceName;
         this.accountUsername = accountUsername;
+        this.deviceLevel = deviceLevel;
         this.lastHost = lastHost;
         this.lastSeen = lastSeen;
         this.lastLat = lastLat;
         this.lastLon = lastLon;
+        this.deviceGroup = deviceGroup;
     }
     /**
      * Get all devices.
@@ -62,15 +67,16 @@ class Device {
         */
 
         let sql = `
-        SELECT uuid, instance_name, account_username, last_host, last_seen, last_lat, last_lon
+        SELECT uuid, instance_name, account_username, device_level, last_host, last_seen, last_lat, last_lon, device_group
         FROM device
         WHERE uuid = ?
         LIMIT 1
         `;
-        let result = await db.query(sql, uuid)
+        let args = [uuid];
+        let result = await db.query(sql, args)
             .then(x => x)
-            .catch(x => { 
-                console.error("[Device] Failed to get Device with uuid", uuid, "Error:", x);
+            .catch(err => { 
+                console.error("[Device] Failed to get Device with uuid", uuid, "Error:", err);
             });
         let device: Device;
         if (result) {
@@ -80,10 +86,12 @@ class Device {
                     key.uuid,
                     key.instance_name,
                     key.account_username,
+                    key.device_level,
                     key.last_host || "",
                     key.last_seen || "",
                     key.last_lat || "",
-                    key.last_lon || ""
+                    key.last_lon || "",
+                    key.device_group
                 );
             });
         }
@@ -104,29 +112,38 @@ class Device {
         let args = [lat, lon, uuid];
         let results = await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.error("[Device] Error: " + x);
+            .catch(err => {
+                console.error("[Device] Error:", err);
             });
-        console.debug("[Device] SetLastLocation: " + results);
+        console.debug("[Device] SetLastLocation:", results);
     }
     /**
      * Update host information for device.
      * @param uuid 
      * @param host 
      */
-    static async touch(uuid: string, host: string): Promise<void> {
-        let sql = `
-        UPDATE device
-        SET last_host = ?
-        WHERE uuid = ?
-        `;
+    static async touch(uuid: string, host: string, updateLastSeen: boolean): Promise<void> {
+        let sql: string;
+        if (updateLastSeen) {
+            sql = `
+            UPDATE device
+            SET last_host = ?, last_seen = UNIX_TIMESTAMP()
+            WHERE uuid = ?
+            `;
+        } else {
+            sql = `
+            UPDATE device
+            SET last_host = ?
+            WHERE uuid = ?
+            `;
+        }
         let args = [host, uuid];
         let results = await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.error("[Device] Error: " + x);
+            .catch(err => {
+                console.error("[Device] Error:", err);
             });
-        console.debug("[Device] Touch: " + results);
+        console.debug("[Device] Touch:", results);
         //redisClient.addDevice(this);
     }
     /**
@@ -134,16 +151,16 @@ class Device {
      */
     async create(): Promise<void> {
         let sql = `
-        INSERT INTO device (uuid, instance_name, account_username, last_host, last_seen, last_lat, last_lon)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO device (uuid, instance_name, account_username, device_level, last_host, last_seen, last_lat, last_lon, device_group)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
-        let args = [this.uuid, this.instanceName, this.accountUsername, this.lastHost, this.lastSeen, this.lastLat, this.lastLon];
+        let args = [this.uuid, this.instanceName, this.accountUsername, this.deviceLevel, this.lastHost, this.lastSeen, this.lastLat, this.lastLon, this.deviceGroup];
         let results = await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.error("[Device] Error: " + x);
+            .catch(err => {
+                console.error("[Device] Error:", err);
             });
-        console.debug("[Device] Insert: " + results);
+        console.debug("[Device] Insert:", results);
         //redisClient.addDevice(this);
     }
     /**
@@ -152,17 +169,17 @@ class Device {
     async clearGroup(): Promise<void> {
         let sql = `
         UPDATE device 
-        SET device_group = ?
+        SET device_group = NULL
         WHERE uuid = ?
         `;
-        let args = ["", this.uuid];
+        let args = [this.uuid];
         let results = await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.error("[Device] Error: " + x);
+            .catch(err => {
+                console.error("[Device] Error:", err);
                 return null;
             });
-        console.debug("[Device] ClearGroup: " + results);
+        console.debug("[Device] ClearGroup:", results);
         //redisClient.addDevice(this);
     }
     /**
@@ -172,16 +189,16 @@ class Device {
     async save(oldUUID?: string): Promise<void> {
        let sql = `
        UPDATE device 
-       SET uuid = ?, instance_name = ?, account_username = ?, last_host = ?, last_seen = ?, last_lat = ?, last_lon = ?
+       SET uuid = ?, instance_name = ?, account_username = ?, device_level = ?, last_host = ?, last_seen = ?, last_lat = ?, last_lon = ?, device_group = ?
        WHERE uuid = ?
        `;
-       let args = [this.uuid, this.instanceName, this.accountUsername, this.lastHost, this.lastSeen, this.lastLat, this.lastLon, oldUUID];
+       let args = [this.uuid, this.instanceName, this.accountUsername, this.deviceLevel, this.lastHost, this.lastSeen, this.lastLat, this.lastLon, this.deviceGroup, oldUUID];
        let results = await db.query(sql, args)
            .then(x => x)
-           .catch(x => {
-               console.error("[Device] Error: " + x);
+           .catch(err => {
+               console.error("[Device] Error:", err);
            });
-        console.debug("[Device] Save: " + results);
+        console.debug("[Device] Save:", results);
        //redisClient.addDevice(this);
     }
     /**
@@ -216,13 +233,13 @@ class Device {
         });
         */
         let sql = `
-        SELECT uuid, instance_name, account_username, last_host, last_seen, last_lat, last_lon
+        SELECT uuid, instance_name, account_username, device_level, last_host, last_seen, last_lat, last_lon, device_group
         FROM device
         `;
         let results = await db.query(sql)
             .then(x => x)
-            .catch(x => {
-                console.error("[Device] Error: " + x);
+            .catch(err => {
+                console.error("[Device] Error:", err);
                 return null;
             });
         let devices: Device[] = [];
@@ -233,10 +250,12 @@ class Device {
                     key.uuid,
                     key.instance_name,
                     key.account_username,
+                    key.device_level,
                     key.last_host,
                     key.last_seen,
                     key.last_lat,
-                    key.last_lon
+                    key.last_lon,
+                    key.device_group
                 );
                 //redisClient.addDevice(device);
                 devices.push(device);

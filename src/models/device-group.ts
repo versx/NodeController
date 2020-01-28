@@ -42,8 +42,8 @@ class DeviceGroup {
         `;
         let results = await db.query(sql)
             .then(x => x)
-            .catch(x => {
-                console.log("[DEVICE-GROUP] Error:", x);
+            .catch(err => {
+                console.log("[DEVICE-GROUP] Error:", err);
                 return null;
             });
         let deviceGroups: DeviceGroup[] = [];
@@ -65,14 +65,14 @@ class DeviceGroup {
      */
     static async getDevicesByGroup(name: string) {
         let sql = `
-        SELECT uuid, instance_name, last_host, last_seen, account_username, last_lat, last_lon, device_group
+        SELECT uuid, instance_name, account_username, device_level, last_host, last_seen, last_lat, last_lon, device_group
         FROM device
         WHERE device_group = ?
         `;
         let result = await db.query(sql, name)
             .then(x => x)
-            .catch(x => { 
-                console.log("[DEVICE-GROUP] Failed to get devices with device group name", name);
+            .catch(err => { 
+                console.log("[DEVICE-GROUP] Failed to get devices with device group name", name, "Error:", err);
                 return null;
             });
         let devices: Device[] = [];
@@ -82,10 +82,12 @@ class DeviceGroup {
                 key.uuid,
                 key.instance_name,
                 key.account_username,
+                key.device_level,
                 key.last_host,
                 key.last_seen,
                 key.last_lat,
-                key.last_lon
+                key.last_lon,
+                key.device_group
             ));
         })
         return devices;
@@ -102,8 +104,8 @@ class DeviceGroup {
         `;
         let result = await db.query(sql, name)
             .then(x => x)
-            .catch(x => { 
-                console.log("[DEVICE-GROUP] Failed to get devices with device group name", name);
+            .catch(err => { 
+                console.log("[DEVICE-GROUP] Failed to get devices with device group name", name, "Error:", err);
                 return null;
             });
         let deviceGroup: DeviceGroup;
@@ -129,8 +131,8 @@ class DeviceGroup {
         `;
         let result = await db.query(sql, name)
             .then(x => x)
-            .catch(x => { 
-                console.log("[DEVICE-GROUP] Failed to delete device group with name", name);
+            .catch(err => { 
+                console.log("[DEVICE-GROUP] Failed to delete device group with name", name, "Error:", err);
                 return null;
             });
         console.log("[DEVICE-GROUP] Delete:", result);
@@ -146,8 +148,8 @@ class DeviceGroup {
         let args = [this.name, this.instanceName];
         let result = await db.query(sql, args)
             .then(x => x)
-            .catch(x => { 
-                console.log("[DEVICE-GROUP] Failed to create device group with name", this.name);
+            .catch(err => { 
+                console.log("[DEVICE-GROUP] Failed to create device group with name", this.name, "Error:", err);
                 return null;
             });
         console.log("[DEVICE-GROUP] Create:", result);
@@ -165,8 +167,8 @@ class DeviceGroup {
         let args = [this.name, this.instanceName, oldName];
         let result = await db.query(sql, args)
             .then(x => x)
-            .catch(x => { 
-                console.log("[DEVICE-GROUP] Failed to update device group with name", this.name);
+            .catch(err => { 
+                console.log("[DEVICE-GROUP] Failed to update device group with name", this.name, "Error:", err);
                 return null;
             });
         console.log("[DEVICE-GROUP] Update:", result);

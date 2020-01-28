@@ -68,58 +68,6 @@
                 <input type="number" class="form-control" name="webhook_delay" value="{{webhook_delay}}" step=0.1 min="1.0" max="60.0" required>
             </div>
             <br>
-            <h4>Mail</h4>
-            <div class="form-group">
-                Base URI
-                <input type="text" class="form-control" name="mailer_base_uri" value="{{mailer_base_uri}}">
-            </div>
-            <div class="form-group">
-                Sender Name
-                <input type="text" class="form-control" name="mailer_name" value="{{mailer_name}}">
-            </div>
-            <div class="form-group">
-                Sender Email
-                <input type="text" class="form-control" name="mailer_email" value="{{mailer_email}}">
-            </div>
-            <div class="form-group">
-                SMTP Server URL (example: smtp://example.com)
-                <input type="text" class="form-control" name="mailer_url" value="{{mailer_url}}">
-            </div>
-            <div class="form-group">
-                SMTP Server Username
-                <input type="text" class="form-control" name="mailer_username" value="{{mailer_username}}">
-            </div>
-            <div class="form-group">
-                SMTP Server Password
-                <input type="text" class="form-control" name="mailer_password" value="{{mailer_password}}">
-            </div>
-            <div class="form-group">
-                Footer HTML
-                <textarea class="form-control" rows="2" name="mailer_footer_html">{{{mailer_footer_html}}}</textarea>
-            </div>
-            <br>
-            <h4>Discord</h4>
-            <div class="form-group">
-                Guild IDs (separated by ";")
-                <input type="text" class="form-control" name="discord_guild_ids" value="{{discord_guild_ids}}">
-            </div>
-            <div class="form-group">
-                Bot Token
-                <input type="text" class="form-control" name="discord_token" value="{{discord_token}}">
-            </div>
-            <div class="form-group">
-                Redirect URL
-                <input type="text" class="form-control" name="discord_redirect_url" value="{{discord_redirect_url}}">
-            </div>
-            <div class="form-group">
-                Client ID
-                <input type="text" class="form-control" name="discord_client_id" value="{{discord_client_id}}">
-            </div>
-            <div class="form-group">
-                Client Secret
-                <input type="text" class="form-control" name="discord_client_secret" value="{{discord_client_secret}}">
-            </div>
-            <br>
             <h4>Device API</h4>
             <div class="form-group">
                 Device Endpoint Whitelist (separated by ";", empty=No Whitelist)
@@ -136,9 +84,6 @@
             <h4>Misc</h4>
             <div class="checkbox">
                 <label><input type="checkbox" name="enable_clearing" value="enable_clearing" {{#enable_clearing}}checked{{/enable_clearing}}> Enable Clearing of removed Pokestops/Gyms</label>
-            </div>
-            <div class="checkbox">
-                <label><input type="checkbox" name="enable_register_new" value="enable_register_new" {{#enable_register_new}}checked{{/enable_register_new}}> Enable Register</label>
             </div>
             <br>
             <input type="hidden" name="_csrf" value="{{csrf}}">
