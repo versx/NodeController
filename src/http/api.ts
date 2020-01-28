@@ -87,20 +87,23 @@ class ApiListener {
         app.get('/assignment/delete_all', async (req, res) => {
             res.send(await api.getPage(Page.dashboardAssignmentsDeleteAll, req, res));
         });
-        /*
         app.get('/devicegroups', async (req, res) => {
             res.send(await api.getPage(Page.dashboardDeviceGroups, req, res));
         });
-        app.get('/groups', async (req, res) => {
-            res.send(await api.getPage(Page.dashboardGroups, req, res));
+        app.get('/devicegroup/add', async (req, res) => {
+            res.send(await api.getPage(Page.dashboardDeviceGroupAdd, req, res));
         });
-        app.get('/users', async (req, res) => {
-            res.send(await api.getPage(Page.dashboardUsers, req, res));
+        app.post('/devicegroup/add', async (req, res) => {
+            res.send(await api.getPage(Page.dashboardDeviceGroupAdd, req, res));
         });
-        app.get('/discordrules', async (req, res) => {
-            res.send(await api.getPage(Page.dashboardDiscordRules, req, res));
+        app.get('/devicegroup/edit/:name', async (req, res) => {
+            res.send(await api.getPage(Page.dashboardDeviceGroupEdit, req, res));
         });
-        */
+        app.post('/devicegroup/edit/:name', async (req, res) => {
+            res.send(await api.getPage(Page.dashboardDeviceGroupEdit, req, res));
+        });
+        // TODO: IV Queue
+        // TODO: Clear Quests
         // Settings
         app.get('/settings', async (req, res) => {
             res.send(await api.getPage(Page.dashboardSettings, req, res));

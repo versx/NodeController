@@ -130,9 +130,8 @@ class Weather {
                 let start = 10000 * i;
                 let end = Math.min(10000 * (i + 1) - 1, ids.length - 1);
                 let splice = ids.splice(start, end);
-                let spliceResult = this.getInIds(splice);
-                (await spliceResult).forEach(x => result.push(x));
-                //result.push(spliceResult); // TODO: Double check
+                let spliceResult = await this.getInIds(splice);
+                spliceResult.forEach(x => result.push(x));
             }
             return result;
         }

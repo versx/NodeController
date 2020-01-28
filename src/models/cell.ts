@@ -116,10 +116,9 @@ class Cell {
             for (let i = 0; i < count; i++) {
                 let start = 10000 * i;
                 let end = Math.min(10000 * (i + 1) - 1, ids.length - 1);
-                let splice = ids.splice(start, end); // TODO: Double check
-                let spliceResult = this.getInIds(splice);
-                (await spliceResult).forEach(x => result.push(x));
-                //result.push(spliceResult); // TODO: Double check
+                let splice = ids.splice(start, end);
+                let spliceResult = await this.getInIds(splice);
+                spliceResult.forEach(x => result.push(x));
             }
             return result
         }
@@ -130,7 +129,7 @@ class Cell {
 
         let inSQL = "(";
         for (let i = 1; i < ids.length; i++) {
-            inSQL += "?, "; // TODO: Double check
+            inSQL += "?, ";
         }
         inSQL += "?)";
         

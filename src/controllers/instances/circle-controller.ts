@@ -27,16 +27,18 @@ class CircleInstanceController {
         this.lastCompletedTime = getCurrentTimestamp();
         this.lastIndex = 0;
     }
-    getTask(uuid: string, username: string) {
+    getTask(uuid: string, username: string, startup: boolean) {
         let currentIndex: number = 0;
         if (this.type !== InstanceType.CirclePokemon) {
-           currentIndex = this.lastIndex;
-            if (this.lastIndex + 1 === this.coords.length) {
-                this.lastLastCompletedTime = this.lastCompletedTime;
-                this.lastCompletedTime = getCurrentTimestamp();
-                this.lastIndex = 0;
-            } else {
-                this.lastIndex = this.lastIndex + 1
+            currentIndex = this.lastIndex;
+            if (startup === false) {
+                if (this.lastIndex + 1 === this.coords.length) {
+                    this.lastLastCompletedTime = this.lastCompletedTime;
+                    this.lastCompletedTime = getCurrentTimestamp();
+                    this.lastIndex = 0;
+                } else {
+                    this.lastIndex = this.lastIndex + 1;
+                }
             }
         }
 
@@ -44,8 +46,8 @@ class CircleInstanceController {
         switch (this.type) {
             case InstanceType.CirclePokemon:
                 let currentUuidIndex = {};
-                currentUuidIndex[uuid] = (this.lastUuidIndex[uuid] || Math.round(Math.random() % this.coords.length)); // TODO: UInt16.random
-                let shouldAdvance = true
+                currentUuidIndex[uuid] = (this.lastUuidIndex[uuid] || Math.round(Math.random() % this.coords.length)); // UInt16.random
+                let shouldAdvance = true;
                 if ((Math.random() % 100) < 5) {
                     //Use a light hand and 5% of the time try to space out devices
                     //This ensures average round time decreases by at most 10% using this
@@ -62,26 +64,27 @@ class CircleInstanceController {
                     //Don't back up past 0 to avoid round time inaccuracy
                     shouldAdvance = true;
                 }
-                if (shouldAdvance) {
-                    currentUuidIndex[uuid] = currentUuidIndex[uuid] + 1;
-                    if (currentUuidIndex[uuid] >= this.coords.length) {
-                        currentUuidIndex[uuid] = 0;
-                        //This is an approximation of round time.
-                        this.lastLastCompletedTime = this.lastCompletedTime;
-                        this.lastCompletedTime = getCurrentTimestamp();
-                    }
-                } else {
-                    //Back up!
-                    currentUuidIndex[uuid] = currentUuidIndex[uuid] - 1;
-                    if (currentUuidIndex[uuid] < 0) {
-                        currentUuidIndex[uuid] = this.coords.length - 1;
+                if (startup === false) {
+                    if (shouldAdvance) {
+                        currentUuidIndex[uuid] = currentUuidIndex[uuid] + 1;
+                        if (currentUuidIndex[uuid] >= this.coords.length) {
+                            currentUuidIndex[uuid] = 0;
+                            //This is an approximation of round time.
+                            this.lastLastCompletedTime = this.lastCompletedTime;
+                            this.lastCompletedTime = getCurrentTimestamp();
+                        }
+                    } else {
+                        //Back up!
+                        currentUuidIndex[uuid] = currentUuidIndex[uuid] - 1;
+                        if (currentUuidIndex[uuid] < 0) {
+                            currentUuidIndex[uuid] = this.coords.length - 1;
+                        }
                     }
                 }
                 //This is the only place either of these dicts are modified:
                 this.lastUuidIndex[uuid] = currentUuidIndex[uuid];
                 this.lastUuidSeenTime[uuid] = getCurrentTimestamp();
                 currentCoord = this.coords[currentUuidIndex[uuid] || 0];
-
                 return {
                     area: this.name,
                     action: "scan_pokemon",
@@ -100,17 +103,15 @@ class CircleInstanceController {
                     max_level: this.maxLevel
                 };
             case InstanceType.Leveling:
-                /*
-                let currentUuidIndex: [string, number] = [uuid, this.lastUuidIndex[uuid] || 0];
-                //if (!startup) {
+                let levelCurrentUuidIndex: [string, number] = [uuid, this.lastUuidIndex[uuid] || 0];
+                if (!startup) {
                     if ((this.lastUuidIndex[uuid] || 0) + 1 == this.coords.length) {
                         this.lastUuidIndex[uuid] = 0
                     } else {
                         this.lastUuidIndex[uuid] = (this.lastUuidIndex[uuid] || 0) + 1
                     }
-                //}
-                currentCoord = this.coords[currentUuidIndex[uuid] || 0]
-                */
+                }
+                currentCoord = this.coords[levelCurrentUuidIndex[uuid] || 0]
                 return {
                   area: this.name,
                     action: "leveling",
@@ -121,15 +122,18 @@ class CircleInstanceController {
                 };
         }
     }
-    getStatus() {
+    getStatus(formatted: boolean): any {
         let lastLast = this.lastLastCompletedTime;
         let last = this.lastCompletedTime;
-        if (lastLast !== undefined && last !== undefined) {
+        if (lastLast && last) {
             // TODO: TimesinceLastInterval.
             let time = last - lastLast
+            if (formatted) {
+                return `Round Time: ${time}s`;
+            }
             return { round_time: time };
         }
-        return null;
+        return formatted ? "-" : null;
     }
     reload() {
         this.lastIndex = 0;

@@ -12,6 +12,7 @@ import { AssignmentController } from './assignment-controller';
 import { Account } from '../models/account';
 import { Assignment } from '../models/assignment';
 import { Device } from '../models/device';
+import { DeviceGroup } from 'src/models/device-group';
 import { Gym } from '../models/gym';
 import { Instance, InstanceType, IInstanceData } from '../models/instance';
 import { Pokestop } from '../models/pokestop';
@@ -20,19 +21,11 @@ import { Localizer } from '../utils/localizer';
 import { readFile, getCurrentTimestamp } from '../utils/util';
 
 enum Page {
-    home = "index.mustache",
-    homeJs = "index.js.mustache",
-    homeCss = "index.css.mustache",
     setup = "setup.mustache",
     login = "login.mustache",
-    oauthDiscord = "oauth_discord.mustache",
     register = "register.mustache",
     logout = "logout.mustache",
     profile = "profile.mustache",
-    confirmemail = "confirmemail.mustache",
-    confirmemailToken = "confirmemail_token.mustache",
-    resetpassword = "resetpassword.mustache",
-    resetpasswordToken = "resetpassword_token.mustache",
     dashboard = "dashboard.mustache",
     dashboardSettings = "dashboard_settings.mustache",
     dashboardDevices = "dashboard_devices.mustache",
@@ -53,14 +46,6 @@ enum Page {
     dashboardAssignmentStart = "dashboard_assignment_start.mustache",
     dashboardAssignmentDelete = "dashboard_assignment_delete.mustache",
     dashboardAssignmentsDeleteAll = "dashboard_assignments_delete_all.mustache",
-    dashboardUsers = "dashboard_users.mustache",
-    dashboardUserEdit = "dashboard_user_edit.mustache",
-    dashboardGroups = "dashboard_groups.mustache",
-    dashboardGroupEdit = "dashboard_group_edit.mustache",
-    dashboardGroupAdd = "dashboard_group_add.mustache",
-    dashboardDiscordRules = "dashboard_discordrules.mustache",
-    dashboardDiscordRuleAdd = "dashboard_discordrule_add.mustache",
-    dashboardDiscordRuleEdit = "dashboard_discordrule_edit.mustache",
     unauthorized = "unauthorized.mustache"
 }
 
@@ -76,12 +61,9 @@ class ApiController {
         let showDevices =  req.param("show_devices", false);
         let showInstances =  req.param("show_instances", false);
         let showDeviceGroups = req.param("show_devicegroups", false);
-        let showUsers =  req.param("show_users", false);
-        let showGroups =  req.param("show_groups", false);
-        let formatted =  req.param("formatted", false);
         let showAssignments = req.param("show_assignments", false);
         let showIVQueue = req.param("show_ivqueue", false);
-        let showDiscordRules = req.param("show_discordrules", false);
+        let formatted =  req.param("formatted", false);
 
         // TODO: Security
 
@@ -117,7 +99,7 @@ class ApiController {
             let instances = await Instance.getAll();
             let jsonArray = [];
             if (instances) {
-                instances.forEach(instance => {
+                instances.forEach(async instance => {
                     let instanceData = {};
                     instanceData["name"] = instance.name;
                     let count = Object.values(InstanceController.instance.Devices)
@@ -136,10 +118,10 @@ class ApiController {
                     }
                     instanceData["type"] = type;
                     if (formatted) {
-                        let status = InstanceController.instance.getInstanceStatus(instance, true);
+                        let status = await InstanceController.instance.getInstanceStatus(instance, true);
                         instanceData["status"] = status ? status.toString() : "?";
                     } else {
-                        instanceData["status"] = InstanceController.instance.getInstanceStatus(instance, false);
+                        instanceData["status"] = await InstanceController.instance.getInstanceStatus(instance, false);
                     }
 
                     if (formatted) {
@@ -184,12 +166,22 @@ class ApiController {
             data["assignments"] = jsonArray;
         }
         if (showDeviceGroups) {
-        }
-        if (showUsers) {
-        }
-        if (showGroups) {
-        }
-        if (showDiscordRules) {
+            let deviceGroups = await DeviceGroup.getAll();
+            let jsonArray = [];
+            if (deviceGroups) {
+                deviceGroups.forEach(deviceGroup => {
+                    let deviceGroupData = {};
+                    deviceGroupData["name"] = deviceGroup.name;
+                    deviceGroupData["instance"] = deviceGroup.instanceName;
+                    deviceGroupData["devices"] = deviceGroup.devices.length;
+                    if (formatted) {
+                        deviceGroupData["buttons"] =
+                            `<a href="/devicegroup/edit/${encodeURI(deviceGroup.name)}" role="button" class="btn btn-primary">Edit Device Group</a>`;
+                    }
+                    jsonArray.push(deviceGroupData);
+                });
+            }
+            data["devicegroups"] = jsonArray;
         }
         if (showIVQueue) {
         }
@@ -399,6 +391,30 @@ class ApiController {
                 }
                 res.redirect('/assignments');
                 break;
+            case Page.dashboardDeviceGroups:
+                data["page_is_dashboard"] = true;
+                data["page"] = "Dashboard - Device Groups";
+                break;
+            case Page.dashboardDeviceGroupAdd:
+                data["page_is_dashboard"] = true;
+                data["page"] = "Dashboard - Add Device Group";
+                if (req.method === "POST") {
+                    try {
+                        data = await this.addDeviceGroupPost(data, req, res);
+                    } catch {
+                        return;
+                    }
+                } else {
+                    try {
+                        data["nothing_selected"] = true;
+                        data = await this.addDeviceGroupGet(data, req, res);
+                    } catch {
+                        return;
+                    }
+                }    
+                break;
+            case Page.dashboardDeviceGroupEdit:
+                break;
             case Page.dashboardAccounts:
                 data["page_is_dashboard"] = true;
                 data["page"] = "Dashboard - Accounts";
@@ -416,10 +432,6 @@ class ApiController {
                 } else {
                     data["level"] = 0;
                 }
-                break;
-            case Page.dashboardUsers:
-            case Page.dashboardGroups:
-            case Page.dashboardDiscordRules:
                 break;
             case Page.dashboardSettings:
                 data["page_is_dashboard"] = true;
@@ -1071,6 +1083,218 @@ class ApiController {
             }
         }
         res.redirect('/assignments');
+    }
+    async addDeviceGroupGet(data: any, req: express.Request, res: express.Response): Promise<any> {
+        var data = data;
+        let instances: Instance[] = [];
+        let devices: Device[] = [];
+        try {
+            instances = await Instance.getAll(); // TODO: Use InstanceController.Instances
+            devices = await Device.load(); // TODO: Use InstanceController.Devices
+        } catch {
+            res.send("Internal Server Errror");
+            return;
+        }
+        let instancesData = [];
+        instances.forEach(instance => {
+            instancesData.push({
+                name: instance.name,
+                selected: false
+            });
+        });
+        data["instances"] = instancesData
+
+        let devicesData = [];
+        devices.forEach(device => {
+            devicesData.push({
+                name: device.uuid,
+                selected: false
+            });
+        });
+        data["devices"] = devicesData;
+        return data;
+    }
+    async addDeviceGroupPost(data: any, req: express.Request, res: express.Response): Promise<any> {
+        var data = data;
+        let groupName = req.body["name"];
+        let instanceName = req.body["instance"];
+        if (groupName === undefined || groupName === null ||
+            instanceName === undefined || instanceName === null) {
+            data["show_error"] = true;
+            data["error"] = "Invalid Request.";
+            return data;
+        }
+
+        let deviceUUIDs = req.params("devices");
+        let deviceGroup = new DeviceGroup(groupName, instanceName, []);
+        deviceGroup.name = groupName;
+        deviceGroup.instanceName = instanceName;
+        try {
+            await deviceGroup.create();
+        } catch {
+            data["show_error"] = true;
+            data["error"] = "Failed to create device group. Does this device group already exist?";
+            return data;
+        }
+
+        try {
+            deviceUUIDs.forEach(async deviceUUID => {
+                let device = await Device.getById(deviceUUID);
+                device.deviceGroup = groupName;
+                device.instanceName = instanceName;
+                await device.save(device.uuid);
+                deviceGroup.devices.push(device);
+                InstanceController.instance.reloadDevice( device, deviceUUID);
+            });
+        } catch {
+            data["show_error"] = true;
+            data["error"] = "Failed to assign Device.";
+            return data;
+        }
+        res.redirect('/devicegroups');
+    }
+    async editDeviceGroupGet(data: any, req: express.Request, res: express.Response, deviceGroupName: string): Promise<any> {
+        var data = data;
+        let oldDeviceGroup: DeviceGroup;
+        try {
+            oldDeviceGroup = await DeviceGroup.getByName(deviceGroupName);
+        } catch {
+            res.send("Internal Server Error");
+            return;
+        }
+        if (oldDeviceGroup === undefined || oldDeviceGroup === null) {
+            res.send("Device Group Not Found");
+            return;
+        } else {
+            let instances: Instance[] = [];
+            let devices: Device[] = [];
+            data["old_name"] = oldDeviceGroup.name;
+            data["name"] = oldDeviceGroup.name;
+            try {
+                instances = await Instance.getAll();
+                devices = await Device.load();
+            } catch {
+                res.send("Internal Server Errror");
+                return;
+            }
+
+            let instancesData = [];
+            instances.forEach(instance => {
+                instancesData.push({
+                    name: instance.name,
+                    selected: instance.name === oldDeviceGroup.instanceName
+                });
+            });
+            data["instances"] = instancesData;
+
+            let devicesData = [];
+            var oldDevicesData: string[] = [];
+            devices.forEach(device => {
+                if (device.deviceGroup === oldDeviceGroup.name) {
+                    oldDevicesData.push(device.uuid);
+                }
+                devicesData.push({
+                    name: device.uuid,
+                    selected: device.deviceGroup === oldDeviceGroup.name
+                });
+            });
+            data["old_devices"] = oldDevicesData;
+            data["devices"] = devicesData;
+            return data;
+        }
+    }
+    async editDeviceGroupPost(data: any, req: express.Request, res: express.Response, deviceGroupName?: string): Promise<any> {
+        var data = data
+        let name = req.param("name");
+        let instanceName = req.param("instance");
+        if (name === undefined || name === null ||
+            instanceName === undefined || instanceName === null) {
+            data["show_error"] = true;
+            data["error"] = "Invalid Request.";
+            return data;
+        }
+
+        let deviceUUIDs = req.params("devices");
+        let oldDeviceUUIDs = req.param("old_devices");
+
+        var oldDevices: string[] = [];
+        let split = oldDeviceUUIDs.split(',');
+        split.forEach(device => {
+            let deviceName = device.replace("[", "")
+                            .replace("]",  "")
+                            .replace("\"", "")
+                            .replace(" ", "");
+            oldDevices.push(deviceName);
+        });
+
+        let deviceDiff = Array(Set(oldDevices).symmetricDifference(Set(deviceUUIDs)));
+        data["name"] = name
+        if (deviceGroupName) {
+            let oldDeviceGroup: DeviceGroup;
+            try {
+                oldDeviceGroup = await DeviceGroup.getByName(deviceGroupName);
+            } catch {
+                data["show_error"] = true;
+                data["error"] = "Failed to update device group. Is the name unique?";
+                return data;
+            }
+            if (oldDeviceGroup === undefined || oldDeviceGroup === null) {
+                res.send("Device Group Not Found");
+                return;
+            } else {
+                oldDeviceGroup!.name = name;
+                oldDeviceGroup!.instanceName = instanceName;
+
+                try {
+                    await oldDeviceGroup.update(deviceGroupName);
+                    //Remove all existing devices from the group's device list.
+                    oldDeviceGroup.devices.removeAll();
+
+                    //Set any removed device's group name to null.
+                    deviceDiff.forEach(async deviceUUID => {
+                        let device = await Device.getById(deviceUUID);
+                        if (device) {
+                            await device.clearGroup();
+                        }
+                    });
+                    //Update new and existing devices
+                    deviceUUIDs.forEach(async deviceUUID => {
+                        let device = await Device.getById(deviceUUID);
+                        if (device) {
+                            device.deviceGroup = name;
+                            device.instanceName = instanceName;
+                            await device.save(device.uuid);
+                            oldDeviceGroup!.devices.push(device);
+                            InstanceController.instance.reloadDevice(device, deviceUUID);
+                        }
+                    });
+                } catch {
+                    data["show_error"] = true;
+                    data["error"] = "Failed to update device group. Is the name unique?";
+                    return data;
+                }
+                res.redirect('/devicegroups');
+                return;
+            }
+        } else {
+            let deviceGroup = new DeviceGroup(name, instanceName, []);
+            try {
+                await deviceGroup.create();
+                deviceUUIDs.forEach(async deviceUUID => {
+                    let device = await Device.getById(deviceUUID);
+                    device.deviceGroup = deviceGroupName;
+                    device.instanceName = instanceName;
+                    await device.save(device.uuid);
+                    deviceGroup.devices.push(device);
+                    InstanceController.instance.reloadDevice(device, deviceUUID);
+                });
+            } catch {
+                data["show_error"] = true;
+                data["error"] = "Failed to create device group. Is the name unique?";
+                return data;
+            }
+        }
+        res.redirect('/devicegroups');
     }
     async addAccounts(data: any, req: express.Request, res: express.Response): Promise<any> { 
         var data = data

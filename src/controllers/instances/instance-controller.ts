@@ -64,7 +64,7 @@ class InstanceController implements IInstanceController {
             case InstanceType.GatherToken:
                 let coordsArray: Coord[] = [];
                 if (instance.data.area) {
-                    coordsArray = instance.data.area; //TODO: Check
+                    coordsArray = instance.data.area; //TODO: Confirm working
                 } else {
                     let coords = instance.data.area;
                     coords.forEach((coord: any) => {
@@ -207,12 +207,33 @@ class InstanceController implements IInstanceController {
         });
         return deviceUUIDs;
     }
-    getInstanceStatus(instance: Instance, formatted: boolean): string {
-        let instanceProto = this.instancesByInstanceName[instance.name];
-        if (instanceProto instanceof Instance) {
-            return "";// TODO: instanceProto.getStatus(formatted);
+    async getInstanceStatus(instance: Instance, formatted: boolean): Promise<any> {
+        //let instanceProto = this.instancesByInstanceName[instance.name];
+        switch (instance.type) {
+            case InstanceType.AutoQuest:
+                let auto: AutoInstanceController = InstanceController.instance.getInstanceControllerByInstanceName(instance.name);
+                return await auto.getStatus(formatted);
+            case InstanceType.CirclePokemon:
+                let pkmn: CircleInstanceController = InstanceController.instance.getInstanceControllerByInstanceName(instance.name);
+                return pkmn.getStatus(formatted);
+            case InstanceType.CircleRaid:
+                let raid: IVInstanceController = InstanceController.instance.getInstanceControllerByInstanceName(instance.name);
+                return raid.getStatus(formatted);
+            case InstanceType.GatherToken:
+                let token: IVInstanceController = InstanceController.instance.getInstanceControllerByInstanceName(instance.name);
+                return token.getStatus(formatted);
+            case InstanceType.Leveling:
+                let level: CircleInstanceController = InstanceController.instance.getInstanceControllerByInstanceName(instance.name);
+                return level.getStatus(formatted);
+            case InstanceType.PokemonIV:
+                let iv: IVInstanceController = InstanceController.instance.getInstanceControllerByInstanceName(instance.name);
+                return iv.getStatus(formatted);
+            case InstanceType.SmartCircleRaid:
+                let smart: CircleSmartRaidInstanceController = InstanceController.instance.getInstanceControllerByInstanceName(instance.name);
+                return smart.getStatus(formatted);
+            default:
+                return formatted ? "?" : null;
         }
-        return formatted ? "?" : null;
     }
     gotPokemon(pokemon: Pokemon) {
         let keys = Object.keys(this.instancesByInstanceName);

@@ -6,8 +6,9 @@ import { Account } from '../models/account';
 import { Device } from '../models/device';
 import { Pokemon } from '../models/pokemon';
 import { InstanceController } from '../controllers/instances/instance-controller';
-import { getCurrentTimestamp } from '../utils/util';
+import { getCurrentTimestamp, base64_decode } from '../utils/util';
 import { Digest } from '../data/digest';
+import { Request, Response } from 'express';
 //import { RedisClient } from '../redis-client';
 //import { winston } from '../utils/logger';
 
@@ -36,7 +37,7 @@ class WebhookHandler {
      * @param req 
      * @param res 
      */
-    handleRawData(req, res) {
+    handleRawData(req: Request, res: Response) {
         _handleRawData(req, res);
     }
     /**
@@ -44,7 +45,7 @@ class WebhookHandler {
      * @param req 
      * @param res 
      */
-    handleControllerData(req, res) {
+    handleControllerData(req: Request, res: Response) {
         _handleControllerData(req, res);
     }
 }
@@ -54,7 +55,7 @@ class WebhookHandler {
  * @param {*} req 
  * @param {*} res 
  */
-async function _handleRawData(req, res) {
+async function _handleRawData(req: Request, res: Response) {
     let jsonOpt: any = {};
     try {
         jsonOpt = JSON.parse(req.body);
@@ -383,8 +384,9 @@ async function _handleRawData(req, res) {
     }
     if (pokemonCoords && pokemonEncounterId) {
         let point = pokemonCoords.toPoint();
-        data["pokemon_lat"] = pokemonCoords.latDegrees; // TODO: Verify this is correct
-        data["pokemon_lon"] = pokemonCoords.lngDegrees; // TODO: Verify this is correct
+        // TODO: Confirm lat/lon values are correct.
+        data["pokemon_lat"] = pokemonCoords.latDegrees;
+        data["pokemon_lon"] = pokemonCoords.lngDegrees;
         data["pokemon_encounter_id"] = pokemonEncounterId;
     }
 
@@ -457,7 +459,7 @@ async function _handleRawData(req, res) {
  * @param {*} req 
  * @param {*} res 
  */
-function _handleControllerData(req, res) {
+async function _handleControllerData(req: Request, res: Response) {
     let jsonO = {};
     try {
         jsonO = JSON.parse(req.body);
@@ -475,6 +477,8 @@ function _handleControllerData(req, res) {
     let type: string = typeO;
     let uuid: string = uuidO;
     let username: string = jsonO["username"];
+    let ptcToken: string = jsonO["ptcToken"];
+    //let tutorial: number = parseInt(jsonO["tutorial"]);
     let minLevel: number = parseInt(jsonO["min_level"] || 0);
     let maxLevel: number = parseInt(jsonO["max_level"] || 29);
     let device: Device = getDevice(uuid);
@@ -485,7 +489,7 @@ function _handleControllerData(req, res) {
             if (device === undefined || device.accountUsername === undefined) {
                 firstWarningTimestamp = null;
             } else {
-                let account = accounts[device.accountUsername];
+                let account = await accounts[device.accountUsername];
                 if (account !== undefined) {
                     firstWarningTimestamp = account.firstWarningTimestamp;
                 } else {
@@ -497,15 +501,15 @@ function _handleControllerData(req, res) {
                 console.debug("[Controller] Device registered");
                 res.send({
                     data: {
-                        assigned: device.instanceName !== undefined,
+                        assigned: device.instanceName !== undefined && device.instanceName !== null && device.instanceName !== "",
                         first_warning_timestamp: firstWarningTimestamp
                     }
                 });
             } else {
                 // Register new device
                 console.debug("[Controller] Registering device");
-                let newDevice = new Device(uuid, null, null, null, 0, 0.0, 0.0);
-                newDevice.create();
+                let newDevice = new Device(uuid, null, null, 0, null, 0, 0.0, 0.0, null);
+                await newDevice.create();
                 res.send({ 
                     data: { 
                         assigned: false,
@@ -515,12 +519,12 @@ function _handleControllerData(req, res) {
             }
             break;
         case "heartbeat":
-            let client = req.client;
+            let client = req.socket;
             let host = client 
                 ? `${client.remoteAddress}:${client.remotePort}` 
                 : "?";
             try {
-                Device.touch(uuid, host);
+                await Device.touch(uuid, host, false);
                 res.send('OK');
             } catch (err) {
                 res.send(err);
@@ -528,9 +532,9 @@ function _handleControllerData(req, res) {
             break;
         case "get_job":
             let controller = InstanceController.instance.getInstanceController(uuid);
-            if (controller !== null) {
+            if (controller) {
                 try {
-                    let task = controller.getTask(uuid, username);
+                    let task = controller.getTask(uuid, username, false);
                     res.send({
                         data: task
                     });
@@ -539,61 +543,98 @@ function _handleControllerData(req, res) {
                     res.end();
                 }
             } else {
-                console.info("[Controller] Device " + uuid + " not assigned to an instance!");
+                console.info("[Controller] Device", uuid, "not assigned to an instance!");
+                res.status(404);
+                res.end();
+            }
+            break;
+        case "get_startup":
+            let startupController = InstanceController.instance.getInstanceController(uuid);
+            if (startupController) {
+                try {
+                    let task = startupController.getTask(uuid, username, true);
+                    res.send({
+                        data: task
+                    });
+                } catch (err) {
+                    res.status(404);
+                    res.end();
+                }
+            } else {
+                console.info("[Controller] Device", uuid, " failed to get startup location!");
                 res.status(404);
                 res.end();
             }
             break;
         case "get_account":
-            let account = Account.getNewAccount(minLevel, maxLevel);
+            let account = await Account.getNewAccount(minLevel, maxLevel);
             console.debug("[Controller] GetAccount: " + account);
-            account.then(x => {
-                console.debug("[Controller] Random Account: " + x);
-                if (device === undefined || x === undefined) {
-                    console.error("[Controller] Failed to get account, device or account is null.");
-                    return res.status(400).end();
+            if (device === undefined || device === null || 
+                account === undefined || account === null) {
+                console.error("[Controller] Failed to get account, device or account is null.");
+                return res.status(400).end();
+            }
+            if (device.accountUsername) {
+                let oldAccount = await accounts[device.accountUsername];
+                if (oldAccount instanceof Account && 
+                    oldAccount.level >= minLevel &&
+                    oldAccount.level <= maxLevel &&
+                    oldAccount.firstWarningTimestamp === undefined && 
+                    oldAccount.failed                === undefined && 
+                    oldAccount.failedTimestamp       === undefined) {
+                    res.send({
+                        data: {
+                            username: oldAccount.username,
+                            password: oldAccount.password,
+                            first_warning_timestamp: oldAccount.firstWarningTimestamp,
+                            level: oldAccount.level,
+                            tutorial: account.tutorial,
+                            ptcToken: oldAccount.ptcToken
+                        }
+                    });
+                    return;
                 }
-                if (device.accountUsername !== undefined) {
-                    let oldAccount = accounts[device.accountUsername];
-                    if (oldAccount instanceof Account && 
-                        oldAccount.firstWarningTimestamp === undefined && 
-                        oldAccount.failed                === undefined && 
-                        oldAccount.failedTimestamp       === undefined) {
-                        res.send({
-                            data: {
-                                username: oldAccount.username,
-                                password: oldAccount.password,
-                                first_warning_timestamp: oldAccount.firstWarningTimestamp,
-                                level: oldAccount.level
-                            }
-                        });
-                        return;
-                    }
-                }
+            }
 
-                device.accountUsername = x.username;
-                device.save(device.uuid);
-                res.send({
-                    data: {
-                        username: x.username,
-                        password: x.password,
-                        first_warning_timestamp: x.firstWarningTimestamp,
-                        level: x.level
-                    }
-                });
+            device.accountUsername = account.username;
+            device.deviceLevel = account.level;
+            await device.save(device.uuid);
+            res.send({
+                data: {
+                    username: account.username,
+                    password: account.password,
+                    first_warning_timestamp: account.firstWarningTimestamp,
+                    level: account.level,
+                    tutorial: account.tutorial,
+                    ptcToken: account.ptcToken
+                }
             });
+            break;
+        case "last_seen":
+            let lastSeenClient = req.socket;
+            let lastSeenHost = lastSeenClient 
+                ? `${lastSeenClient.remoteAddress}:${lastSeenClient.remotePort}` 
+                : "?";
+            try {
+                await Device.touch(uuid, lastSeenHost, true);
+                res.send('OK');
+            } catch (err) {
+                res.send(err);
+            }
             break;
         case "tutorial_done":
             accounts[device.accountUsername].then((account: Account) => {
-                if (device === undefined || account === undefined) {
+                if (device === undefined || device === null || 
+                    account === undefined || account === null) {
                     console.error("[Controller] Failed to get account, device or account is null.");
                     return res.status(400).end();
                 }
                 if (account.level === 0) {
                     account.level = 1;
-                    account.save(true);
-                    res.send('OK');
                 }
+                account.tutorial = 1;
+                account.save(true);
+                res.send('OK');
             });
             break;
         case "account_banned":
@@ -602,7 +643,8 @@ function _handleControllerData(req, res) {
                     console.error("[Controller] Failed to get account, device or account is null.");
                     return res.status(400).end();
                 }
-                if (account.failedTimestamp === undefined || account.failed === undefined) {
+                if (account.failedTimestamp === undefined || account.failedTimestamp === null || 
+                    account.failed === undefined || account.failed === null) {
                     account.failedTimestamp = getCurrentTimestamp();
                     account.failed = "banned";
                     account.save(true);
@@ -616,7 +658,7 @@ function _handleControllerData(req, res) {
                     console.error("[Controller] Failed to get account, device or account is null.");
                     return res.status(400).end();
                 }
-                if (account.firstWarningTimestamp === undefined) {
+                if (account.firstWarningTimestamp === undefined || account.firstWarningTimestamp === null) {
                     account.firstWarningTimestamp = getCurrentTimestamp();
                     account.save(true);
                     res.send('OK');
@@ -629,7 +671,8 @@ function _handleControllerData(req, res) {
                     console.error("[Controller] Failed to get account, device or account is null.");
                     return res.status(400).end();
                 }
-                if (account.failedTimestamp === undefined || account.failed === undefined) {
+                if (account.failedTimestamp === undefined || account.failedTimestamp === null || 
+                    account.failed === undefined || account.failed === null) {
                     account.failedTimestamp = getCurrentTimestamp();
                     account.failed = "invalid_credentials";
                     account.save(true);
@@ -643,7 +686,8 @@ function _handleControllerData(req, res) {
                     console.error("[Controller] Failed to get account, device or account is null.");
                     return res.status(400).end();
                 }
-                if (account.failedTimestamp === undefined || account.failed === undefined) {
+                if (account.failedTimestamp === undefined || account.failedTimestamp === null ||
+                    account.failed === undefined || account.failed === null) {
                     account.failedTimestamp = getCurrentTimestamp();
                     account.failed = "error_26";
                     account.save(true);
@@ -652,11 +696,58 @@ function _handleControllerData(req, res) {
             });
             break;
         case "logged_out":
+            // TODO: Redo logged_out with Thor's changes.
+            /*
+            do {
+                guard
+                    let device = try Device.getById(mysql: mysql, id: uuid)
+                else {
+                    response.respondWithError(status: .notFound)
+                    return
+                }
+                if device.accountUsername == nil {
+                    response.respondWithError(status: .notFound)
+                    return
+                }
+                let failed = try Account.checkFail(mysql: mysql, username: device.accountUsername!)
+                if !failed {
+                    try Account.setInstanceUuid(uuid: device.uuid, area: device.instanceName!, username: device.accountUsername!)
+                }
+                try Account.cooldownAccount(mysql:mysql, last_lat: device.lastLat! , last_lon: device.lastLon! , username: device.accountUsername!)
+                device.accountUsername = nil
+                try device.save(mysql: mysql, oldUUID: device.uuid)
+                response.respondWithOk()
+            } catch {
+                response.respondWithError(status: .internalServerError)
+            }
+            */
             device.accountUsername = null;
             device.save(device.uuid);
             res.send('OK');
             break;
         case "ptcToken": // TODO: Seriously? Who the hell used camelCasing?
+            try {
+                let device = await Device.getById(uuid);
+                let username = device.accountUsername;
+                let account = await Account.getWithUsername(username);
+                if (device === undefined || device === null ||
+                    username === undefined || username === null || username === "" ||
+                    account === undefined || account === null) {
+                        res.status(404);
+                        res.end();
+                        return;
+                }
+                if (account.ptcToken === undefined || 
+                    account.ptcToken === null ||
+                    account.ptcToken === "") {
+                    account.ptcToken = ptcToken;
+                    account.save(true);
+                }
+                res.send('OK');
+            } catch {
+                res.status(404);
+                res.end();
+            }
             break;
         case "job_failed":
             console.log("[Controller] JOB FAILED:", jsonO);
@@ -668,27 +759,10 @@ function _handleControllerData(req, res) {
     }
 }
 
-function getDevice(uuid: string) {
+function getDevice(uuid: string): Device {
     let devices: Device[] = Object.values(InstanceController.instance.Devices);
     let device = devices.find(x => x.uuid === uuid);
     return device;
-}
-
-/**
- * Returns a random value from a dictionary.
- * @param {*} obj 
- */
-function randomValue(obj) {
-    let keys = Object.keys(obj)
-    return obj[keys[ keys.length * Math.random() << 0]];
-}
-
-/**
- * Base64 decodes the string to raw data.
- * @param {*} data 
- */
-function base64_decode(data) {
-    return Buffer.from(data, 'base64');
 }
 
 // Export the class
