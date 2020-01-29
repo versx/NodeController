@@ -49,10 +49,10 @@ class DeviceGroup {
         let deviceGroups: DeviceGroup[] = [];
         let keys = Object.values(results);
         keys.forEach(async key => {
-            let devices = await this.getDevicesByGroup(key.name);
+            let devices = await this.getDevicesByGroup(key.name) || [];
             let deviceGroup = new DeviceGroup(
                 key.name,
-                key.instance_type,
+                key.instance_name,
                 devices
             );
             deviceGroups.push(deviceGroup);
