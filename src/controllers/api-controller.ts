@@ -1125,7 +1125,7 @@ class ApiController {
             return data;
         }
 
-        let deviceUUIDs = req.params("devices");
+        let deviceUUIDs = req.body["devices"]; // TODO: Confirm working
         let deviceGroup = new DeviceGroup(groupName, instanceName, []);
         deviceGroup.name = groupName;
         deviceGroup.instanceName = instanceName;
@@ -1214,7 +1214,7 @@ class ApiController {
             return data;
         }
 
-        let deviceUUIDs = req.params("devices");
+        let deviceUUIDs = req.body["devices"]; // TODO: Confirm working.
         let oldDeviceUUIDs = req.param("old_devices");
 
         var oldDevices: string[] = [];
@@ -1227,7 +1227,9 @@ class ApiController {
             oldDevices.push(deviceName);
         });
 
-        let deviceDiff = Array(Set(oldDevices).symmetricDifference(Set(deviceUUIDs)));
+        let deviceDiff = oldDevices
+                 .filter(x => !deviceUUIDs.includes(x))
+                 .concat(deviceUUIDs.filter(x => !oldDevices.includes(x)));
         data["name"] = name
         if (deviceGroupName) {
             let oldDeviceGroup: DeviceGroup;
@@ -1248,7 +1250,7 @@ class ApiController {
                 try {
                     await oldDeviceGroup.update(deviceGroupName);
                     //Remove all existing devices from the group's device list.
-                    oldDeviceGroup.devices.removeAll();
+                    oldDeviceGroup.devices.length = 0;
 
                     //Set any removed device's group name to null.
                     deviceDiff.forEach(async deviceUUID => {
