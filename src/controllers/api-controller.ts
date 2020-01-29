@@ -86,7 +86,7 @@ class ApiController {
                             formattedDate = date;
                         }
                         deviceData["last_seen"] = { "timestamp": device.lastSeen, "formatted": formattedDate };
-                        deviceData["buttons"] = `<a href="/device/assign/${device.uuid/*.encodeUrl()*/}" role="button" class="btn btn-primary">Assign Instance</a>`;
+                        deviceData["buttons"] = `<a href="/device/assign/${encodeURI(device.uuid)}" role="button" class="btn btn-primary">Assign Instance</a>`;
                     } else {
                         deviceData["last_seen"] = device.lastSeen;
                     }
@@ -173,7 +173,7 @@ class ApiController {
                     let deviceGroupData = {};
                     deviceGroupData["name"] = deviceGroup.name;
                     deviceGroupData["instance"] = deviceGroup.instanceName;
-                    deviceGroupData["devices"] = deviceGroup.devices.length;
+                    deviceGroupData["devices"] = deviceGroup.count;
                     if (formatted) {
                         deviceGroupData["buttons"] =
                             `<a href="/devicegroup/edit/${encodeURI(deviceGroup.name)}" role="button" class="btn btn-primary">Edit Device Group</a>`;
@@ -1089,8 +1089,8 @@ class ApiController {
         let instances: Instance[] = [];
         let devices: Device[] = [];
         try {
-            instances = await Instance.getAll(); // TODO: Use InstanceController.Instances
-            devices = await Device.load(); // TODO: Use InstanceController.Devices
+            instances = await Instance.getAll();
+            devices = await Device.load();
         } catch {
             res.send("Internal Server Errror");
             return;
@@ -1127,8 +1127,6 @@ class ApiController {
 
         let deviceUUIDs = req.body["devices"]; // TODO: Confirm working
         let deviceGroup = new DeviceGroup(groupName, instanceName, []);
-        deviceGroup.name = groupName;
-        deviceGroup.instanceName = instanceName;
         try {
             await deviceGroup.create();
         } catch {
@@ -1138,14 +1136,15 @@ class ApiController {
         }
 
         try {
-            deviceUUIDs.forEach(async deviceUUID => {
+            for (let i = 0; i < deviceUUIDs.length; i++) {
+                let deviceUUID: string = deviceUUIDs[i];
                 let device = await Device.getById(deviceUUID);
                 device.deviceGroup = groupName;
                 device.instanceName = instanceName;
                 await device.save(device.uuid);
                 deviceGroup.devices.push(device);
                 InstanceController.instance.reloadDevice( device, deviceUUID);
-            });
+            }
         } catch {
             data["show_error"] = true;
             data["error"] = "Failed to assign Device.";
@@ -1205,8 +1204,8 @@ class ApiController {
     }
     async editDeviceGroupPost(data: any, req: express.Request, res: express.Response, deviceGroupName?: string): Promise<any> {
         var data = data
-        let name = req.param("name");
-        let instanceName = req.param("instance");
+        let name = req.body["name"];
+        let instanceName = req.body["instance"];
         if (name === undefined || name === null ||
             instanceName === undefined || instanceName === null) {
             data["show_error"] = true;
@@ -1214,8 +1213,8 @@ class ApiController {
             return data;
         }
 
-        let deviceUUIDs = req.body["devices"]; // TODO: Confirm working.
-        let oldDeviceUUIDs = req.param("old_devices");
+        let deviceUUIDs = req.body["devices"];
+        let oldDeviceUUIDs = req.body["old_devices"];
 
         var oldDevices: string[] = [];
         let split = oldDeviceUUIDs.split(',');
@@ -1244,8 +1243,8 @@ class ApiController {
                 res.send("Device Group Not Found");
                 return;
             } else {
-                oldDeviceGroup!.name = name;
-                oldDeviceGroup!.instanceName = instanceName;
+                oldDeviceGroup.name = name;
+                oldDeviceGroup.instanceName = instanceName;
 
                 try {
                     await oldDeviceGroup.update(deviceGroupName);
@@ -1260,7 +1259,8 @@ class ApiController {
                         }
                     });
                     //Update new and existing devices
-                    deviceUUIDs.forEach(async deviceUUID => {
+                    for (let i = 0; i < deviceUUIDs.length; i++) {
+                        let deviceUUID = deviceUUIDs[i];
                         let device = await Device.getById(deviceUUID);
                         if (device) {
                             device.deviceGroup = name;
@@ -1269,7 +1269,7 @@ class ApiController {
                             oldDeviceGroup!.devices.push(device);
                             InstanceController.instance.reloadDevice(device, deviceUUID);
                         }
-                    });
+                    }
                 } catch {
                     data["show_error"] = true;
                     data["error"] = "Failed to update device group. Is the name unique?";
@@ -1282,14 +1282,15 @@ class ApiController {
             let deviceGroup = new DeviceGroup(name, instanceName, []);
             try {
                 await deviceGroup.create();
-                deviceUUIDs.forEach(async deviceUUID => {
+                for (let i = 0; i < deviceUUIDs.length; i++) {
+                    let deviceUUID: string = deviceUUIDs[i];
                     let device = await Device.getById(deviceUUID);
                     device.deviceGroup = deviceGroupName;
                     device.instanceName = instanceName;
                     await device.save(device.uuid);
                     deviceGroup.devices.push(device);
                     InstanceController.instance.reloadDevice(device, deviceUUID);
-                });
+                }
             } catch {
                 data["show_error"] = true;
                 data["error"] = "Failed to create device group. Is the name unique?";
