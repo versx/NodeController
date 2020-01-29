@@ -12,7 +12,7 @@ import { AssignmentController } from './assignment-controller';
 import { Account } from '../models/account';
 import { Assignment } from '../models/assignment';
 import { Device } from '../models/device';
-import { DeviceGroup } from 'src/models/device-group';
+import { DeviceGroup } from '../models/device-group';
 import { Gym } from '../models/gym';
 import { Instance, InstanceType, IInstanceData } from '../models/instance';
 import { Pokestop } from '../models/pokestop';
