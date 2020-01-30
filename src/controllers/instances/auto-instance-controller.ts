@@ -10,10 +10,6 @@ import { getCurrentTimestamp, snooze } from "../../utils/util";
 
 const AutoInstanceInterval: number = 2 * 1000;
 
-const cooldownDataArray = { '0.3': 0.16, '1': 1, '2': 2, '4': 3, '5': 4, '8': 5, '10': 7, '15': 9, '20': 12, '25': 15, '30': 17, '35': 18, '45': 20, '50': 20, '60': 21, '70': 23, '80': 24, '90': 25, '100': 26, '125': 29, '150': 32, '175': 34, '201': 37, '250': 41, '300': 46, '328': 48, '350': 50, '400': 54, '450': 58, '500': 62, '550': 66, '600': 70, '650': 74, '700': 77, '751': 82, '802': 84, '839': 88, '897': 90, '900': 91, '948': 95, '1007': 98, '1020': 102, '1100': 104, '1180': 109, '1200': 111, '1221': 113, '1300': 117, '1344': 119/*, TODO: Number.MAX_VALUE: 120*/ };//.sorted { (lhs, rhs) -> Bool in
-//    lhs.key < rhs.key
-//}
-
 enum AutoInstanceType {
     Quest
 }
@@ -115,6 +111,9 @@ class AutoInstanceController {
     }
     encounterCooldown(distanceM: number) {
         let dist = distanceM / 1000;
+        let delay = AutoInstanceController.getCooldownDelay(distanceM);
+        return delay;
+        /*
         let keys = Object.keys(cooldownDataArray);
         keys.forEach(key => {
             let value = cooldownDataArray[key];
@@ -123,6 +122,7 @@ class AutoInstanceController {
             }
         });
         return 0;
+        */
     }
     async getTask(uuid: string, username: string) {
         switch (this.type) {
@@ -512,6 +512,47 @@ class AutoInstanceController {
             }
         });
         return cellIds;
+    }
+    static getCooldownDelay(distance: number) {
+        //Credits: Mizu
+        let delay: number;
+        if (distance <= 30.0) {
+            delay = 0;
+            console.log(`Distance: ${distance}m < 40.0m Already spun. Go to next stop`)
+        }else if (distance <= 1000.0) {
+            delay = (distance / 1000.0) * 60.0;
+        } else if (distance <= 2000.0) {
+            delay = (distance / 2000.0) * 90.0;
+        } else if (distance < 4000.0) {
+            delay = (distance / 4000.0) * 120.0;
+        } else if (distance < 5000.0) {
+            delay = (distance / 5000.0) * 150.0;
+        } else if (distance < 8000.0) {
+            delay = (distance / 8000.0) * 360.0;
+        } else if (distance < 10000.0) {
+            delay = (distance / 10000.0) * 420.0;
+        } else if (distance < 15000.0) {
+            delay = (distance / 15000.0) * 480.0;
+        } else if (distance < 20000.0) {
+            delay = (distance / 20000.0) * 600.0;
+        } else if (distance < 25000.0) {
+            delay = (distance / 25000.0) * 900.0;
+        } else if (distance < 30000.0) {
+            delay = (distance / 30000.0) * 1020.0;
+        } else if (distance < 40000.0) {
+            delay = (distance / 40000.0) * 1140.0;
+        } else if (distance < 65000.0) {
+            delay = (distance / 65000.0) * 1320.0
+        } else if (distance < 81000.0) {
+            delay = (distance / 81000.0) * 1800.0
+        } else if (distance < 100000.0) {
+            delay = (distance / 100000.0) * 2400.0
+        } else if (distance < 220000.0) {
+            delay = (distance / 220000.0) * 2700.0
+        } else {
+            delay = 7200.0
+        }
+        return delay;
     }
 }
 
