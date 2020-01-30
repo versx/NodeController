@@ -414,6 +414,33 @@ class ApiController {
                 }    
                 break;
             case Page.dashboardDeviceGroupEdit:
+                let deviceGroupName = decodeURI(req.param("name") || "");
+                data["page_is_dashboard"] = true;
+                data["page"] = "Dashboard - Edit Device Group";
+                data["old_name"] = deviceGroupName;
+                if (req.param("delete") === "true") {
+                    try {
+                        await DeviceGroup.delete(deviceGroupName);
+                        res.redirect('/devicegroups');
+                        return;
+                    } catch {
+                        res.send("Internal Server Error");
+                        return;
+                    }
+                    
+                } else if (req.method === "POST") {
+                    try {
+                        data = await this.editDeviceGroupPost(data, req, res, deviceGroupName);
+                    } catch {
+                        return
+                    }
+                } else {
+                    try {
+                        data = await this.editDeviceGroupGet(data, req, res, deviceGroupName);
+                    } catch {
+                        return
+                    }
+                }    
                 break;
             case Page.dashboardAccounts:
                 data["page_is_dashboard"] = true;
@@ -1157,7 +1184,7 @@ class ApiController {
         let oldDeviceGroup: DeviceGroup;
         try {
             oldDeviceGroup = await DeviceGroup.getByName(deviceGroupName);
-        } catch {
+        } catch (err) {
             res.send("Internal Server Error");
             return;
         }
