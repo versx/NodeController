@@ -47,16 +47,19 @@ class DeviceGroup {
                 return null;
             });
         let deviceGroups: DeviceGroup[] = [];
-        let keys = Object.values(results);
-        keys.forEach(async key => {
-            let devices = await this.getDevicesByGroup(key.name) || [];
-            let deviceGroup = new DeviceGroup(
-                key.name,
-                key.instance_name,
-                devices
-            );
-            deviceGroups.push(deviceGroup);
-        });
+        if (results) {
+            let keys = Object.keys(results);
+            for (let i = 0; i < keys.length; i++) {
+                let row = results[i];
+                let devices = await this.getDevicesByGroup(row.name) || [];
+                let deviceGroup = new DeviceGroup(
+                    row.name,
+                    row.instance_name,
+                    devices
+                );
+                deviceGroups.push(deviceGroup);
+            }
+        }
         return deviceGroups;
     }
     /**
