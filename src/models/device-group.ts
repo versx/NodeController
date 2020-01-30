@@ -30,7 +30,7 @@ class DeviceGroup {
     /**
      * Get all device groups.
      */
-    static async getAll() {
+    static async getAll(): Promise<DeviceGroup[]> {
         let sql = `
         SELECT name, instance_name
         FROM device_group AS devgroup
@@ -66,7 +66,7 @@ class DeviceGroup {
      * Get devices by group name.
      * @param name 
      */
-    static async getDevicesByGroup(name: string) {
+    static async getDevicesByGroup(name: string): Promise<Device[]> {
         let sql = `
         SELECT uuid, instance_name, account_username, device_level, last_host, last_seen, last_lat, last_lon, device_group
         FROM device
@@ -99,9 +99,9 @@ class DeviceGroup {
      * Get device group by name.
      * @param name 
      */
-    static async getByName(name: string) {
+    static async getByName(name: string): Promise<DeviceGroup> {
         let sql = `
-        SELECT instance_name
+        SELECT name, instance_name
         FROM device_group
         WHERE name = ?
         `;
@@ -112,22 +112,25 @@ class DeviceGroup {
                 return null;
             });
         let deviceGroup: DeviceGroup;
-        let keys = Object.values(result);
-        keys.forEach(function(key) {
-            let devices = this.getDevicesByGroup(key.name);
-            deviceGroup = new DeviceGroup(
-                key.name,
-                key.instance_name,
-                devices
-            );
-        })
+        if (result) {
+            let keys = Object.keys(result);
+            for (let i = 0; i < keys.length; i++) {
+                let row = result[i];
+                let devices = await this.getDevicesByGroup(row.name) || [];
+                deviceGroup = new DeviceGroup(
+                    row.name,
+                    row.instance_name,
+                    devices
+                );
+            }
+        }
         return deviceGroup; 
     }
     /**
      * Delete device group by name.
      * @param name 
      */
-    static async delete(name: string) {
+    static async delete(name: string): Promise<void> {
         let sql = `
         DELETE FROM device_group
         WHERE name = ?
@@ -143,7 +146,7 @@ class DeviceGroup {
     /**
      * Create device group.
      */
-    async create() {
+    async create(): Promise<void> {
         let sql = `
         INSERT INTO device_group (name, instance_name)
         VALUES (?, ?)
@@ -161,7 +164,7 @@ class DeviceGroup {
      * Update device group.
      * @param oldName 
      */
-    async update(oldName: string) {
+    async update(oldName: string): Promise<void> {
         let sql = `
         UPDATE device_group
         SET name = ?, instance_name = ?
@@ -178,4 +181,5 @@ class DeviceGroup {
     }
 }
 
+// Export class.
 export { DeviceGroup };
