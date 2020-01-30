@@ -110,7 +110,7 @@ class AutoInstanceController {
         }
     }
     encounterCooldown(distanceM: number) {
-        let dist = distanceM / 1000;
+        //let dist = distanceM / 1000;
         let delay = AutoInstanceController.getCooldownDelay(distanceM);
         return delay;
         /*
