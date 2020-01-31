@@ -1,2 +1,5 @@
+ALTER TABLE `gym`
+MODIFY COLUMN `raid_pokemon_form` smallint unsigned;
+
 ALTER TABLE `pokemon`
-ADD COLUMN `display_pokemon_id` smallint unsigned;
+MODIFY COLUMN `form` smallint unsigned;

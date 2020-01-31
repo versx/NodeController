@@ -1,11 +1,8 @@
-ALTER TABLE `group`
-ADD COLUMN `perm_view_map_lure` tinyint(1) unsigned NOT NULL;
+ALTER TABLE `pokestop`
+ADD COLUMN `pokestop_display` smallint(5) DEFAULT 0;
 
-ALTER TABLE `group`
-ADD COLUMN `perm_view_map_invasion` tinyint(1) unsigned NOT NULL;
+ALTER TABLE `pokestop`
+ADD COLUMN `incident_expire_timestamp` int(11) unsigned DEFAULT NULL;
 
-UPDATE `group`
-SET `perm_view_map_lure` = `perm_view_map_pokestop`;
-
-UPDATE `group`
-SET `perm_view_map_invasion` = `perm_view_map_pokestop`;
+ALTER TABLE `pokestop`
+ADD KEY `ix_incident_expire_timestamp` (`incident_expire_timestamp`);

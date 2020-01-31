@@ -1,7 +1,7 @@
 /**
  * Author: versx
  * Date: January 4th 2020
- * Version: 0.0.4
+ * Version: 0.8.3
  */
 
 "use strict"
@@ -17,7 +17,9 @@ import { Localizer } from './utils/localizer';
 import config     = require('./config.json');
 
 // Setup controllers
-DbController.instance.setup();
+DbController.instance.setup().then(x=>x).catch(err=> {
+    console.error("Fuck:", err);
+});
 Localizer.instance.load();
 InstanceController.instance.setup();
 AccountController.instance.setup();

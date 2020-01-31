@@ -1,8 +1,8 @@
-ALTER TABLE `pokestop`
-ADD COLUMN `pokestop_display` smallint(5) DEFAULT 0;
+ALTER TABLE device
+ADD COLUMN device_group varchar(30) DEFAULT NULL;
 
-ALTER TABLE `pokestop`
-ADD COLUMN `incident_expire_timestamp` int(11) unsigned DEFAULT NULL;
-
-ALTER TABLE `pokestop`
-ADD KEY `ix_incident_expire_timestamp` (`incident_expire_timestamp`);
+CREATE TABLE IF NOT EXISTS `device_group` (
+  `name` varchar(30) UNIQUE NOT NULL,
+  `instance_name` varchar(30) NOT NULL,
+  PRIMARY KEY (`name`)
+);

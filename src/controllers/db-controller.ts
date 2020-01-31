@@ -100,7 +100,7 @@ class DbController {
                     console.log("[DBController]", message);
                 }
                 count++;
-                snooze(2500);
+                await snooze(2500);
                 continue;
             }
             done = true;
@@ -180,13 +180,13 @@ class DbController {
         console.log("[DBController] Initializing database");
         
         let enviroment = process.env;
-        this.database = enviroment["DB_DATABASE"] ?? "rdmdb";
-        this.host = enviroment["DB_HOST"] ?? "127.0.0.1";
-        this.port = parseInt(enviroment["DB_PORT"] ?? "") ?? 3306;
-        this.username = enviroment["DB_USERNAME"] ?? "rdmuser";
-        this.password = enviroment["DB_PASSWORD"];
-        this.rootUsername = enviroment["DB_ROOT_USERNAME"] ?? "root";
-        this.rootPassword = enviroment["DB_ROOT_PASSWORD"];
+        this.database = enviroment["DB_DATABASE"] || config.db.database || "rdmdb";
+        this.host = enviroment["DB_HOST"] || config.db.host || "127.0.0.1";
+        this.port = parseInt(enviroment["DB_PORT"] || "") || config.db.port || 3306;
+        this.username = enviroment["DB_USERNAME"] || config.db.username || "rdmuser";
+        this.password = enviroment["DB_PASSWORD"] || config.db.password;
+        this.rootUsername = enviroment["DB_ROOT_USERNAME"] || config.db.rootUsername || "root";
+        this.rootPassword = enviroment["DB_ROOT_PASSWORD"] || config.db.rootPassword;
     }
     async migrate(fromVersion: number, toVersion: number) {
         let backupFileSchema: fs.WriteStream;
@@ -279,7 +279,6 @@ class DbController {
             }
             
             console.log("[DBController] Migrating...");
-
             let migrateSQL: string
             try {
                 let sqlFile = `${this.migrationsRoot}${path.sep}${fromVersion + 1}.sql`;
@@ -294,24 +293,24 @@ class DbController {
                 if (msql !== "") {
                     let results = await db.query(msql)
                     .then(x => x)
-                    .catch(err => {
+                    .catch(async err => {
                         console.error("[DBController] Migration failed:", err);
                         if (process.env["NO_BACKUP"] === undefined || process.env["NO_BACKUP"] === null) {
                             for (let i = 0; i < 10; i++) {
-                                console.log(`[DBController] Rolling back migration in ${10 - i} seconds`);
-                                snooze(1000);
+                                console.log(`[DBController] Rolling back migration in ${(10 - i)} seconds`);
+                                await snooze(1000);
                             }
                             console.log("[DBController] Rolling back migration now. Do not kill RDM!");
                             this.rollback(
                                 backupFileSchema.path.toString(), 
                                 backupFileTrigger.path.toString(), 
-                                backupFileData.path.toString());
+                                backupFileData.path.toString()
+                            );
                         }
                         //fatalError(message);
                         return null;
                     });
-                }
-                
+                }                
             })
             
             let updateVersionSQL: string = `
@@ -329,7 +328,7 @@ class DbController {
             this.migrate(fromVersion + 1, toVersion);
         }
     }
-    rollback(backupFileSchema: string, backupFileTrigger: string, backupFileData: string) {
+    async rollback(backupFileSchema: string, backupFileTrigger: string, backupFileData: string) {
         let mysqlCommand: string;
         if (os.type().toLowerCase() === "darwin") {
             mysqlCommand = "/usr/local/opt/mysql@5.7/bin/mysql";
@@ -365,7 +364,7 @@ class DbController {
 
         console.log("[DBController] Database restored successfully!");
         console.log("[DBController] Sleeping for 60s before restarting again. (Save to kill now)");
-        snooze(60 * 1000);
+        await snooze(60 * 1000);
     }
 }
 

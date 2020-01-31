@@ -1,5 +1,5 @@
-ALTER TABLE `gym`
-MODIFY COLUMN `raid_pokemon_form` smallint unsigned;
+ALTER TABLE pokemon
+ADD COLUMN shiny TINYINT(1) UNSIGNED;
 
-ALTER TABLE `pokemon`
-MODIFY COLUMN `form` smallint unsigned;
+ALTER TABLE pokemon
+ADD COLUMN username VARCHAR(30);

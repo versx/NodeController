@@ -1,6 +1,5 @@
-ALTER TABLE pokemon
-ADD COLUMN shiny TINYINT(1) DEFAULT 0;
+ALTER TABLE `pokemon`
+ADD COLUMN `display_pokemon_id` smallint unsigned;
 
-ALTER TABLE pokemon
-ADD COLUMN username VARCHAR(15) DEFAULT NULL;
-
+ALTER TABLE `gym`
+ADD COLUMN `raid_pokemon_gender` tinyint unsigned;
