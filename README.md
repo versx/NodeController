@@ -43,6 +43,10 @@ cp config.json.example config.json
     }
 }
 ```
+5.) Compile NodeJS files to Typescript in root folder.
+```
+tsc
+```
 5.) Run:  
 ```
 node index.js
