@@ -8,6 +8,18 @@ module.exports = {
     plugins: [
         '@typescript-eslint',
     ],
+    ignorePatterns: ['node_modules/'],
+    rules: {
+        'comma-dangle': ['error', 'always'],
+        'curly': 'error',
+        'eqeqeq': ['error', 'always'],
+        'indent': ['error', 4],
+        'linebreak-style': ['warn', 'unix'],
+        'no-cond-assign': ['error', 'always'],
+        'semi': ['warn', 'always'],
+        'quotes': ['error', 'double']
+    },
+    reportUnusedDisableDirectives: true,
     extends: [
         'eslint:recommended',
         'plugin:@typescript-eslint/eslint-recommended',
