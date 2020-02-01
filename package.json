@@ -4,6 +4,7 @@
   "description": "",
   "main": "dist/src/index.js",
   "scripts": {
+    "lint": "tsc --noEmit && eslint '*/**/*.{js,ts}' --quiet --fix",
     "start": "TS_NODE_FILES=true node --inspect=5858 -r ts-node/register ./src/index.ts",
     "start:watch": "nodemon",
     "start:production": "cd dist && node -r ts-node/register src/index.js",
@@ -22,6 +23,8 @@
   "dependencies": {
     "@turf/turf": "^5.1.6",
     "@types/request": "^2.48.4",
+    "@typescript-eslint/eslint-plugin": "^2.17.0",
+    "@typescript-eslint/parser": "^2.17.0",
     "express": "^4.17.1",
     "fs": "0.0.1-security",
     "google-protobuf": "^3.11.2",
@@ -44,6 +47,7 @@
     "@types/node": "^13.1.6",
     "eslint": "^6.8.0",
     "eslint-plugin-import": "^2.20.0",
+    "eslint-plugin-prettier": "^3.1.2",
     "nodemon": "^2.0.2",
     "ts-node": "^8.6.1",
     "typescript": "^3.7.4"
