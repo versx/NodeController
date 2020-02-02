@@ -24,12 +24,12 @@ enum InstanceType {
  */
 interface IInstanceData {
     //[json("timezone_offset")]
-    timeZoneOffset: number;
-    spinLimit: number;
-    ivQueueLimit: number;
+    timezone_offset: number;
+    spin_limit: number;
+    iv_queue_limit: number;
     area: any;
-    minLevel: number;
-    maxLevel: number
+    min_level: number;
+    max_level: number
 }
 
 /**
@@ -60,6 +60,42 @@ class Instance implements IInstance {
         this.type = type;
         this.data = data;
     }
+    static fromString(value: string): InstanceType {
+        let val = value.toLowerCase();
+        if (val === "circle_pokemon" || val === "circlepokemon") {
+            return InstanceType.CirclePokemon;
+        } else if (val == "circle_raid" || val === "circleraid") {
+            return InstanceType.CircleRaid;
+        } else if (val === "circle_smart_raid" || val === "circlesmartraid") {
+            return InstanceType.SmartCircleRaid;
+        } else if (val === "auto_quest" || val === "autoquest") {
+            return InstanceType.AutoQuest;
+        } else if (val === "pokemon_iv" || val === "pokemoniv") {
+            return InstanceType.PokemonIV;
+        } else if (val === "leveler" || val === "leveling") {
+            return InstanceType.Leveling;
+        } else if (val === "gather_token" || val === "gathertoken") {
+            return InstanceType.GatherToken;
+        } else {
+            return null;
+        }
+    }
+    async create() {
+        let sql = `
+            INSERT INTO instance (name, type, data)
+            VALUES (?, ?, ?)
+        `;
+        let args = [
+            this.name,
+            this.type,
+            JSON.stringify(this.data)
+        ];
+        let results = await db.query(sql, args)
+            .then(x => x)
+            .catch(err => {
+                console.error("[INSTANCE] Failed to execute query. (", err, ")");
+            });
+    }
     /**
      * Get all Instances.
      */
@@ -79,8 +115,8 @@ class Instance implements IInstance {
         `;
         let result = await db.query(sql, instanceName)
             .then(x => x)
-            .catch(x => { 
-                console.log("[ACCOUNT] Failed to get Instance with name " + instanceName);
+            .catch(err => { 
+                console.log("[ACCOUNT] Failed to get Instance with name", instanceName);
                 return null;
             });
         let instance: Instance;
@@ -105,8 +141,8 @@ class Instance implements IInstance {
         `;
         let result = await db.query(sql, instanceName)
             .then(x => x)
-            .catch(x => { 
-                console.error("[INSTANCE] Failed to delete instance with name " + name);
+            .catch(err => { 
+                console.error("[INSTANCE] Failed to delete instance with name", name);
                 return null;
             });
         console.debug("[INSTANCE] Delete:", result);
@@ -121,14 +157,15 @@ class Instance implements IInstance {
         SET data = ?, name = ?, type = ?
         WHERE name = ?
         `;
-        let args = [this.data, this.name, this.type, oldName];
+        let dataJson = JSON.stringify(this.data);
+        let args = [dataJson, this.name, this.type, oldName];
         let result = await db.query(sql, args)
             .then(x => x)
-            .catch(x => { 
-                console.error("[INSTANCE] Failed to update instance with name " + name);
+            .catch(err => { 
+                console.error("[INSTANCE] Failed to update instance with name", name);
                 return null;
             });
-        console.debug("[INSTANCE] Update: " + result);
+        console.debug("[INSTANCE] Update:", result);
     }
     /**
      * Load all instances.
@@ -164,8 +201,8 @@ class Instance implements IInstance {
         `;
         let results = await db.query(sql)
             .then(x => x)
-            .catch(x => {
-                console.error("[INSTANCE] Error: " + x);
+            .catch(err => {
+                console.error("[INSTANCE] Error:", err);
                 return null;
             });
         let instances: Instance[] = [];
@@ -179,11 +216,10 @@ class Instance implements IInstance {
                     data
                 );
                 instances.push(instance);
-                InstanceController.instance.Instances[key.name] = instance;
             });
         }
         return instances;
     }
 }
 
-export { InstanceType, Instance };
+export { InstanceType, Instance, IInstanceData };

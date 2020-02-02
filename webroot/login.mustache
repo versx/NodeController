@@ -1,0 +1,37 @@
+{{> header}}
+<body>
+    <br>
+    {{#error}}
+    <div class="alert alert-danger w-75" style="float: none; margin: 0 auto;">
+        <strong>Error!</strong><br>{{error}}</a>
+    </div>
+    <br>
+    {{/error}}
+    <h1 align="center">{{login_title}}</h1>
+    <div class="w-75" style="float: none; margin: 0 auto;">
+        <form action="/login" method="post">
+            <div class="form-group">
+                <label for="username-email">{{login_username_email}}</label>
+                <input type="username-email" class="form-control" id="username-email" name="username-email" value="{{username-email}}" required>
+            </div>
+            <div class="form-group">
+                <label for="password">{{login_password}}</label>
+                <input type="password" class="form-control" id="password" name="password" value="{{password}}" required>
+            </div>
+            <input type="hidden" name="_csrf" value="{{csrf}}">
+            <input type="hidden" name="redirect" value="{{redirect}}">
+            <button type="submit" class="btn btn-primary">{{login_login}}</button>
+            {{#is_error}}<br><small class="text-danger">{{error}}</small>{{/is_error}}
+        </form>
+        {{#has_mailer}}<a href="/resetpassword">{{login_password_info}}<br></a>{{/has_mailer}}
+        {{#has_discord_oauth}}
+        <br><h4>Discord</h4>
+        <form method="get" action="/oauth/discord">
+            <input type="hidden" name="login" value="true">
+            <input type="hidden" name="redirect" value="{{redirect}}">
+            <button type="submit" class="btn btn-primary">{{login_discord}}</button>
+        </form>
+        {{/has_discord_oauth}}
+    </div>
+    <br>
+</body>

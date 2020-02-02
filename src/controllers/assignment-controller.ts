@@ -3,8 +3,7 @@
 import { Assignment } from '../models/assignment';
 import { Device } from '../models/device';
 import { InstanceController } from './instances/instance-controller';
-import { snooze } from '../utils/util';
-import * as moment from 'moment';
+import { snooze, todaySeconds } from '../utils/util';
 
 class AssignmentController /*InstanceControllerDelegate?*/ {
     static instance = new AssignmentController();
@@ -102,20 +101,6 @@ class AssignmentController /*InstanceControllerDelegate?*/ {
                 return;
             }
         });
-    }
-}
-
-function todaySeconds() {
-    let date = moment(new Date(), "HH:mm:ss").toString();
-    // TODO: formatter.timeZone = timeZone
-    let split = date.split(":");
-    if (split.length >= 3) {
-        let hour = parseInt(split[0]) || 0;
-        let minute = parseInt(split[1]) || 0;
-        let second = parseInt(split[2]) || 0;
-        return hour * 3600 + minute * 60 + second;
-    } else {
-        return 0;
     }
 }
 

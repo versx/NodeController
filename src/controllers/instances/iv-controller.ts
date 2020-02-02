@@ -1,22 +1,22 @@
 "use strict"
 
-import * as turf from '@turf/turf'
-import { Pokemon } from "../../models/pokemon";
-import { getCurrentTimestamp, snooze } from "../../utils/util"
+import * as turf from '@turf/turf';
+import { Pokemon } from '../../models/pokemon';
+import { getCurrentTimestamp, snooze } from '../../utils/util';
 
 class IVInstanceController {
     private multiPolygon: turf.MultiPolygon;
-    private pokemonQueue: Pokemon[];
+    private pokemonQueue: Pokemon[] = [];
     private scannedPokemon = []; // { date: "", pokemon: {} }
     private startDate: Date;
-    private count: number;
+    private count: number = 0;
     private shouldExit = false;
 
     name: string;
     pokemonList: number[];
     minLevel: number = 0;
     maxLevel: number = 29;
-    ivQueueLimit: number =  100;
+    ivQueueLimit: number = 100;
     scatterList: number[];
 
     constructor(name: string, multiPolygon: turf.MultiPolygon, pokemonList: number[], 
@@ -31,40 +31,41 @@ class IVInstanceController {
         this.init();
     }
     async init() {
-        // TODO: new thread
         // while (!shouldExit) {
         if (this.scannedPokemon.length > 0) {
-            snooze(5000);
+            await snooze(5000);
             if (this.shouldExit) {
                 return;
             }
         } else {
             let first = this.scannedPokemon.pop();
-            let timeSince = getCurrentTimestamp() - (first["date"].getTime() / 1000); //TODO: review
-            if (timeSince < 120) {
-                snooze((120 - timeSince) * 1000);
-                if (this.shouldExit) {
-                    return;
-                }
-            }
-            let success = false;
-            let pokemonReal: Pokemon;
-            while (!success) {
-                try {
-                    pokemonReal = await Pokemon.getById(first["pokemon"].id);
-                    success = true;
-                } catch (err) {
-                    snooze(1000);
+            if (first) {
+                let timeSince = getCurrentTimestamp() - (first["date"].getTime() / 1000);
+                if (timeSince < 120) {
+                    await snooze((120 - timeSince) * 1000);
                     if (this.shouldExit) {
                         return;
                     }
                 }
-            }
-            if (pokemonReal instanceof Pokemon && pokemonReal !== undefined) {
-                if (pokemonReal.atkIv === undefined) {
-                    console.log("[IVInstanceController] Checked Pokemon doesn't have IV.");
-                } else {
-                    console.log("[IVInstanceController] Checked Pokemon has IV.");
+                let success = false;
+                let pokemonReal: Pokemon;
+                while (!success) {
+                    try {
+                        pokemonReal = await Pokemon.getById(first["pokemon"].id);
+                        success = true;
+                    } catch (err) {
+                        await snooze(1000);
+                        if (this.shouldExit) {
+                            return;
+                        }
+                    }
+                }
+                if (pokemonReal instanceof Pokemon) {
+                    if (pokemonReal.atkIv === undefined) {
+                        console.log("[IVInstanceController] Checked Pokemon doesn't have IV.");
+                    } else {
+                        console.log("[IVInstanceController] Checked Pokemon has IV.");
+                    }
                 }
             }
         }
@@ -90,19 +91,16 @@ class IVInstanceController {
             max_level: this.maxLevel
         }
     }
-    getStatus(formatted: boolean) {
+    getStatus(formatted: boolean): any {
         let ivh = 0;
         if (this.startDate instanceof Date) {
-            // TODO: ivh = parseInt(this.count / parseInt(new Date() - this.startDate) * 3600);
+            ivh = this.count / (new Date().getTime() - this.startDate.getTime()) * 3600;
         }
         if (formatted) {
             let ivhString = ivh || "-";
-            return "";//"<a href=\"/dashboard/instance/ivqueue/\(name.encodeUrl() ?? "")\">Queue</a>: \(pokemonQueue.count), IV/h: \(ivhString)";
-        } else {
-            return {
-                iv_per_hour: ivh
-            }
+            return `<a href="/instance/ivqueue/${encodeURI(this.name) || ""}">Queue</a>: ${this.pokemonQueue.length}, IV/h: ${ivhString}`;
         }
+        return { iv_per_hour: ivh };
     }
     reload() {}
     stop() {}

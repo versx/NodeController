@@ -1,0 +1,61 @@
+{{> header-head}}
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <a class="navbar-brand" href="/">{{title}}</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarText">
+        <ul class="navbar-nav mr-auto">
+            {{#show_dashboard}}
+                <li class="nav-item dropdown{{#page_is_dashboard}} active{{/page_is_dashboard}}">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        {{nav_dashboard}}{{#page_is_dashboard}}<span class="sr-only">(current)</span>{{/page_is_dashboard}}
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <a href="/" class="dropdown-item">{{nav_dashboard}}</a>
+
+                        <div class="dropdown-divider"></div>
+                        <h6 class="dropdown-header">General</h6>
+                        <a href="/settings" class="dropdown-item">Settings</a>
+
+                        <div class="dropdown-divider"></div>
+                        <h6 class="dropdown-header">Scanning</h6>
+                        <a href="/devices" class="dropdown-item">Devices</a>
+                        <a href="/devicegroups" class="dropdown-item">Device Groups</a>
+                        <a href="/accounts" class="dropdown-item">Accounts</a>
+                        <a href="/instances" class="dropdown-item">Instances</a>
+                        <a href="/assignments" class="dropdown-item">Auto-Assignments</a>
+
+                        <div class="dropdown-divider"></div>
+                        <h6 class="dropdown-header">Misc</h6>
+                        <a href="/clearquests" class="dropdown-item">Clear All Quests</a>
+                    </div>
+                </li>
+            {{/show_dashboard}}
+            {{#show_stats}}
+                <li class="nav-item{{#page_is_stats}} active{{/page_is_stats}}">
+                    <a class="nav-link" href="/stats">{{nav_stats}}{{#page_is_stats}}<span class="sr-only">(current)</span>{{/page_is_stats}}</a>
+                </li>
+            {{/show_stats}}
+        </ul>
+        {{^is_logged_in}}
+            <ul class="nav navbar-nav navbar-right">
+                <li class="nav-item{{#page_is_login}} active{{/page_is_login}}">
+                    <a class="nav-link" href="/login">{{nav_login}}{{#page_is_login}}<span class="sr-only">(current)</span>{{/page_is_login}}</a>
+                </li>
+            </ul>
+        {{/is_logged_in}}
+        {{#is_logged_in}}
+            <ul class="nav navbar-nav navbar-right">
+                <li class="nav-item{{#page_is_profile}} active{{/page_is_profile}}">
+                    <a class="nav-link" href="/profile">{{username}}{{#page_is_profile}}<span class="sr-only">(current)</span>{{/page_is_profile}}</a>
+                </li>
+                <li class="nav-item">
+                <a class="nav-link" href="/logout?redirect={{uri}}">{{nav_logout}}</a>
+                </li>
+            </ul>
+        {{/is_logged_in}}
+    </div>
+</nav>
