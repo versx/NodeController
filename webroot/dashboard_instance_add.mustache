@@ -3,16 +3,25 @@
 <script>
 	$(document).ready(function() {
 		$('.type-select').change(function() {
-            if ($(this).val() === 'pokemon_iv') {
-                $('.pokemon_ids_text').removeClass('d-none');
-                $('.scatter_pokemon_ids_text').removeClass('d-none');
-                $('.iv_queue_limit_text').removeClass('d-none');
-                $('.spin_limit_text').addClass('d-none');
-            } else {
-                $('.pokemon_ids_text').addClass('d-none');
-                $('.scatter_pokemon_ids_text').addClass('d-none');
-                $('.iv_queue_limit_text').addClass('d-none');
-                $('.spin_limit_text').removeClass('d-none');
+            switch ($(this).val()) {
+                case 'pokemon_iv':
+                    $('.pokemon_ids_text').removeClass('d-none');
+                    $('.scatter_pokemon_ids_text').removeClass('d-none');
+                    $('.iv_queue_limit_text').removeClass('d-none');
+                    $('.spin_limit_text').addClass('d-none');
+                    break;
+                case 'auto_quest':
+                    $('.pokemon_ids_text').addClass('d-none');
+                    $('.scatter_pokemon_ids_text').addClass('d-none');
+                    $('.iv_queue_limit_text').addClass('d-none');
+                    $('.spin_limit_text').removeClass('d-none');
+                    break;
+                default:
+                    $('.pokemon_ids_text').addClass('d-none');
+                    $('.scatter_pokemon_ids_text').addClass('d-none');
+                    $('.iv_queue_limit_text').addClass('d-none');
+                    $('.spin_limit_text').addClass('d-none');
+                    break;
             }
         });
     })

@@ -63,18 +63,22 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
         setInterval(() => this.raidUpdaterRun(), this.smartRaidInterval);
     }
     async raidUpdaterRun() {
-        while (!this.shouldExit) {
-            let ids: string[] = Array.from(this.smartRaidGyms.keys());
-            let gyms = await Gym.getByIds(ids);
-            if (gyms === null) {
-                snooze(5000);
-                continue;
-            }
+        if (this.shouldExit) {
+            return;
+        }
+        let ids: string[] = this.smartRaidGyms ? Array.from(this.smartRaidGyms.keys()) : [];
+        if (ids.length === 0) {
+            return;
+        }
+        let gyms = await Gym.getByIds(ids);
+        if (gyms) {
             gyms.forEach(gym => {
                 this.smartRaidGyms[gym.id] = gym;
             });
-            snooze(30 * 1000);
+            await snooze(5000);
+            return;
         }
+        await snooze(30 * 1000);
     }
     stop() {
         this.shouldExit = true;

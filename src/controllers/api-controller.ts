@@ -77,7 +77,8 @@ class ApiController {
             let devices = await Device.load();
             let jsonArray = [];
             if (devices) {
-                devices.forEach(device => {
+                for (let i = 0; i < devices.length; i++) {
+                    let device = devices[i];
                     let deviceData = {};
                     deviceData["uuid"] = device.uuid;
                     deviceData["host"] = device.lastHost || "";
@@ -97,7 +98,7 @@ class ApiController {
                         deviceData["last_seen"] = device.lastSeen;
                     }
                     jsonArray.push(deviceData);
-                });
+                }
             }
             data["devices"] = jsonArray;
         }
@@ -106,7 +107,8 @@ class ApiController {
             let devices = await Device.load() || [];
             let jsonArray = [];
             if (instances) {
-                instances.forEach(async instance => {
+                for (let i = 0; i < instances.length; i++) {
+                    let instance = instances[i];
                     let instanceData = {};
                     instanceData["name"] = instance.name;
                     let count = devices
@@ -135,7 +137,7 @@ class ApiController {
                         instanceData["buttons"] = `<a href="/instance/edit/${encodeURI(instance.name)}" role="button" class="btn btn-primary">Edit Instance</a>`;
                     }
                     jsonArray.push(instanceData);
-                });
+                }
             }
             data["instances"] = jsonArray;
         }
@@ -143,7 +145,8 @@ class ApiController {
             let assignments = await Assignment.getAll();
             let jsonArray = [];
             if (assignments) {
-                assignments.forEach(assignment => {
+                for (let i = 0; i < assignments.length; i++) {
+                    let assignment = assignments[i];
                     let assignmentData = {};
                     assignmentData["instance_name"] = assignment.instanceName;
                     assignmentData["device_uuid"] = assignment.deviceUUID;
@@ -168,7 +171,7 @@ class ApiController {
                     }
                     assignmentData["enabled"] = assignment.enabled ? "Yes" : "No";
                     jsonArray.push(assignmentData);
-                });
+                }
             }
             data["assignments"] = jsonArray;
         }
@@ -176,7 +179,8 @@ class ApiController {
             let deviceGroups = await DeviceGroup.getAll();
             let jsonArray = [];
             if (deviceGroups) {
-                deviceGroups.forEach(deviceGroup => {
+                for (let i = 0; i < deviceGroups.length; i++) {
+                    let deviceGroup = deviceGroups[i];
                     let deviceGroupData = {};
                     deviceGroupData["name"] = deviceGroup.name;
                     deviceGroupData["instance"] = deviceGroup.instanceName;
@@ -186,7 +190,7 @@ class ApiController {
                             `<a href="/devicegroup/edit/${encodeURI(deviceGroup.name)}" role="button" class="btn btn-primary">Edit Device Group</a>`;
                     }
                     jsonArray.push(deviceGroupData);
-                });
+                }
             }
             data["devicegroups"] = jsonArray;
         }
@@ -194,10 +198,10 @@ class ApiController {
             let jsonArray = [];
             let queue = InstanceController.instance.getIVQueue(decodeURI(instance) || "");
             if (queue) {
-                let i = 1;
-                queue.forEach(pokemon => {
+                for (let i = 0; i < queue.length; i++) {
+                    let pokemon = queue[i];
                     let json = {
-                        id: i,
+                        id: (i + 1),
                         pokemon_id: toThreeDigits(pokemon.pokemonId),
                         pokemon_name: Localizer.instance.get(`poke_${pokemon.pokemonId}`),
                         pokemon_spawn_id: pokemon.id,
@@ -208,8 +212,7 @@ class ApiController {
                         json["pokemon_image"] = `<img src="/static/img/pokemon/${pokemon.pokemonId}.png" style="height:50px; width:50px;">`;
                     }
                     jsonArray.push(json);
-                    i++;
-                });
+                }
             }
             data["ivqueue"] = jsonArray;
         }
@@ -499,7 +502,8 @@ class ApiController {
                         InstanceController.instance.reloadAllInstances();
                         res.redirect('/dashboard');
                         return
-                    } catch {
+                    } catch (err) {
+                        console.error(err);
                         data["show_error"] = true;
                         data["error"] = "Failed to clear Quests. Please try again later.";
                     }
