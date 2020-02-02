@@ -500,7 +500,7 @@ class ApiController {
                     try {
                         await Pokestop.clearQuests();
                         InstanceController.instance.reloadAllInstances();
-                        res.redirect('/dashboard');
+                        res.redirect('/');
                         return
                     } catch (err) {
                         console.error(err);
