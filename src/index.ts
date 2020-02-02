@@ -4,7 +4,7 @@
  * Version: 0.8.3
  */
 
-"use strict"
+"use strict";
 
 import { AccountController } from './controllers/account-controller';
 import { AssignmentController } from './controllers/assignment-controller';
@@ -17,9 +17,7 @@ import { Localizer } from './utils/localizer';
 import config     = require('./config.json');
 
 // Setup controllers
-DbController.instance.setup().then(x=>x).catch(err=> {
-    console.error("Fuck:", err);
-});
+DbController.instance.setup();
 Localizer.instance.load();
 InstanceController.instance.setup();
 AccountController.instance.setup();

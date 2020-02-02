@@ -59,6 +59,9 @@ class ApiListener {
         app.post('/instance/edit/:instance_name', async (req, res) => {
             res.send(await api.getPage(Page.dashboardInstanceEdit, req, res));
         });
+        app.get('/instance/ivqueue/:instance_name', async (req, res) => {
+            res.send(await api.getPage(Page.dashboardInstanceIVQueue, req, res));
+        });
         // Assignments
         app.get('/assignments', async (req, res) => {
             res.send(await api.getPage(Page.dashboardAssignments, req, res));
@@ -87,6 +90,7 @@ class ApiListener {
         app.get('/assignment/delete_all', async (req, res) => {
             res.send(await api.getPage(Page.dashboardAssignmentsDeleteAll, req, res));
         });
+        // Device Groups
         app.get('/devicegroups', async (req, res) => {
             res.send(await api.getPage(Page.dashboardDeviceGroups, req, res));
         });
@@ -102,19 +106,35 @@ class ApiListener {
         app.post('/devicegroup/edit/:name', async (req, res) => {
             res.send(await api.getPage(Page.dashboardDeviceGroupEdit, req, res));
         });
-        // TODO: IV Queue
-        // TODO: Clear Quests
+        // Clear Quests
+        app.route('/clearquests')
+            .get(async (req, res) => {
+                res.send(await api.getPage(Page.dashboardClearQuests, req, res));
+            })
+            .post(async (req, res) => {
+                res.send(await api.getPage(Page.dashboardClearQuests, req, res));
+            });
         // Settings
+        app.route('/settings')
+            .get(async (req, res) => {
+                res.send(await api.getPage(Page.dashboardSettings, req, res));
+            })
+            .post(async (req, res) => {
+                res.send(await api.getPage(Page.dashboardSettings, req, res));
+            })
+        /*
         app.get('/settings', async (req, res) => {
             res.send(await api.getPage(Page.dashboardSettings, req, res));
         });
         app.post('/settings', async (req, res) => {
             res.send(await api.getPage(Page.dashboardSettings, req, res));
         });
+        */
         // API
         app.get('/api/get_data', async (req, res) => {
             res.send(await api.handle(req, res));
         });
+        // TODO: Stats API
     }
     start() {
         // Start listener

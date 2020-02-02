@@ -1,4 +1,4 @@
-"use strict"
+"use strict";
 
 import * as os from 'os';
 import * as fs from 'fs';
@@ -7,6 +7,7 @@ import * as uuid from 'uuid';
 import { spawn } from 'child_process';
 
 import { Database } from '../data/mysql';
+import { Localizer } from '../utils/localizer';
 import { snooze, readFile } from '../utils/util';
 import config      = require('../config.json');
 const db           = new Database(config);
@@ -16,7 +17,22 @@ const db           = new Database(config);
  */
 class DbController {
     static instance = new DbController();
-    settings = {};
+    
+    // Default database settings
+    static Title: string = "Nodedradamus";
+    static MaxPokemonId: number = 649;
+    static PokemonTimeUnseen: number = 1200;
+    static PokemonTimeReseen: number = 600;
+    static ExRaidBossId: number = 0;
+    static ExRaidBossForm: number = 0;
+    static LureTime: number = 1800;
+    static HostWhitelist: string[];
+    static HostWhitelistUsesProxy: boolean = false;
+    static LoginSecret: string;
+    static DittoDisguises: number[] = [46, 48, 163, 165, 193, 223, 293, 316, 543];
+    static EnableClearing: boolean = false;
+    static WebhookUrls: string[] = [];
+    static WebhookSendDelay: number = 5.0;
 
     private multiStatement: boolean = false;
     private asRoot: boolean = false;
@@ -162,16 +178,64 @@ class DbController {
             .catch(err => {
                 console.error("[DbController] Error retrieving database settings:", err);
             });
-        let settings = {};
         if (results) {
             let keys = Object.keys(results);
             for (let i = 0; i < keys.length; i++) {
                 let row = results[i];
-                settings[row["key"]] = row["value"];
+                let key = row["key"];
+                let value = row["value"];
+                if (key) {
+                    switch (key.toUpperCase()) {
+                        case "TITLE":
+                            DbController.Title = value;
+                            break;
+                        case "POKEMON_TIME_UNSEEN":
+                            DbController.PokemonTimeUnseen = value ? parseInt(value) : 1200;
+                            break;
+                        case "POKEMON_TIME_RESEEN":
+                            DbController.PokemonTimeReseen = value ? parseInt(value) : 600;
+                            break;
+                        case "MAX_POKEMON_ID":
+                            DbController.MaxPokemonId = value ? parseInt(value) : 649;
+                            break;
+                        case "LOCALE":
+                            Localizer.instance.locale = value;
+                            break;
+                        case "EX_RAID_BOSS_ID":
+                            DbController.ExRaidBossId = value ? parseInt(value) : 486;
+                            break;
+                        case "EX_RAID_BOSS_FORM":
+                            DbController.ExRaidBossForm = value ? parseInt(value) : 0;
+                            break;
+                        case "POKESTOP_LURE_TIME":
+                            DbController.LureTime = value ? parseInt(value) : 1800;
+                            break;
+                        case "WEBHOOK_DELAY":
+                            DbController.WebhookSendDelay = parseInt(value || "5.0");
+                            break;
+                        case "WEBHOOK_URLS":
+                            DbController.WebhookUrls = value ? value.split(';') : "";
+                            break;
+                        case "ENABLE_CLEARING":
+                            DbController.EnableClearing = value;
+                            break;
+                        case "DEVICEAPI_HOST_WHITELIST":
+                            DbController.HostWhitelist = value.split(';');
+                            break;
+                        case "DEVICEAPI_HOST_WHITELIST_USES_PROXY":
+                            DbController.HostWhitelistUsesProxy = value !== undefined && value !== null;
+                            break;
+                        case "DEVICEAPI_SECRET":
+                            DbController.LoginSecret = value || "";
+                            break;
+                        case "DITTO_DISGUISES":
+                            DbController.DittoDisguises = value ? value.split(',').map((x: string) => parseInt(x)) : "";
+                            break;
+                    }
+                    console.log(`[DbController] Loaded setting '${key}'=>'${value}'`);
+                }
             }
         }
-        this.settings = settings;
-        console.log("[DbController] Settings:", settings);
     }
     constructor() {
         fs.mkdirSync(this.migrationsRoot, { recursive: true });

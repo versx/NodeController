@@ -1,4 +1,4 @@
-"use strict"
+"use strict";
 
 const POGOProtos = require('../../pogo-protos');
 import * as S2 from 'nodes2ts';
@@ -16,8 +16,6 @@ import { Request, Response } from 'express';
 
 //:haunter:
 //const client = new RedisClient();
-
-let accounts = Account.getAll();
 
 let emptyCells = [];//[UInt64: Int]
 let levelCache = {};
@@ -78,11 +76,7 @@ async function _handleRawData(req: Request, res: Response) {
     if (username && trainerLevel > 0) {
         let oldLevel = levelCache[username];
         if (oldLevel !== trainerLevel) {
-            let account = accounts[username];
-            if (account !== undefined) {
-                account.level = trainerLevel;
-                account.save();
-            }
+            await Account.setLevel(username, trainerLevel);
             levelCache[username] = trainerLevel
         }
     }
@@ -466,13 +460,13 @@ async function _handleControllerData(req: Request, res: Response) {
         //console.log("HandleControllerData Parsed:", jsonO);
     } catch (e) {
         console.error(e);
-        return res.status(400).end();
+        return res.sendStatus(400);
     }
     let typeO = jsonO["type"];
     let uuidO = jsonO["uuid"];
     if (typeO === undefined || uuidO === undefined) {
         console.error("[Controller] Failed to parse controller data");
-        return res.status(400).end();
+        return res.sendStatus(400);
     }
     let type: string = typeO;
     let uuid: string = uuidO;
@@ -481,7 +475,7 @@ async function _handleControllerData(req: Request, res: Response) {
     //let tutorial: number = parseInt(jsonO["tutorial"]);
     let minLevel: number = parseInt(jsonO["min_level"] || 0);
     let maxLevel: number = parseInt(jsonO["max_level"] || 29);
-    let device: Device = getDevice(uuid);
+    let device = await Device.getById(uuid);
 
     switch (type) {
         case "init":
@@ -489,8 +483,8 @@ async function _handleControllerData(req: Request, res: Response) {
             if (device === undefined || device.accountUsername === undefined) {
                 firstWarningTimestamp = null;
             } else {
-                let account = await accounts[device.accountUsername];
-                if (account !== undefined) {
+                let account = await Account.getWithUsername(device.accountUsername);
+                if (account instanceof Account) {
                     firstWarningTimestamp = account.firstWarningTimestamp;
                 } else {
                     firstWarningTimestamp = null;
@@ -539,13 +533,11 @@ async function _handleControllerData(req: Request, res: Response) {
                         data: task
                     });
                 } catch (err) {
-                    res.status(404);
-                    res.end();
+                    res.sendStatus(404);
                 }
             } else {
                 console.info("[Controller] Device", uuid, "not assigned to an instance!");
-                res.status(404);
-                res.end();
+                res.sendStatus(404);
             }
             break;
         case "get_startup":
@@ -557,13 +549,11 @@ async function _handleControllerData(req: Request, res: Response) {
                         data: task
                     });
                 } catch (err) {
-                    res.status(404);
-                    res.end();
+                    res.sendStatus(404);
                 }
             } else {
                 console.info("[Controller] Device", uuid, " failed to get startup location!");
-                res.status(404);
-                res.end();
+                res.sendStatus(404);
             }
             break;
         case "get_account":
@@ -572,10 +562,10 @@ async function _handleControllerData(req: Request, res: Response) {
             if (device === undefined || device === null || 
                 account === undefined || account === null) {
                 console.error("[Controller] Failed to get account, device or account is null.");
-                return res.status(400).end();
+                return res.sendStatus(400);
             }
             if (device.accountUsername) {
-                let oldAccount = await accounts[device.accountUsername];
+                let oldAccount = await Account.getWithUsername(device.accountUsername);
                 if (oldAccount instanceof Account && 
                     oldAccount.level >= minLevel &&
                     oldAccount.level <= maxLevel &&
@@ -623,109 +613,120 @@ async function _handleControllerData(req: Request, res: Response) {
             }
             break;
         case "tutorial_done":
-            accounts[device.accountUsername].then((account: Account) => {
-                if (device === undefined || device === null || 
-                    account === undefined || account === null) {
-                    console.error("[Controller] Failed to get account, device or account is null.");
-                    return res.status(400).end();
+            let tutAccount = await Account.getWithUsername(device.accountUsername);
+            if (tutAccount instanceof Account) {
+                if (tutAccount.level === 0) {
+                    tutAccount.level = 1;
                 }
-                if (account.level === 0) {
-                    account.level = 1;
-                }
-                account.tutorial = 1;
-                account.save(true);
+                tutAccount.tutorial = 1;
+                tutAccount.save(true);
                 res.send('OK');
-            });
+            } else {
+                if (device === undefined || device === null || 
+                    tutAccount === undefined || tutAccount === null) {
+                    console.error("[Controller] Failed to get account, device or account is null.");
+                    return res.sendStatus(400);
+                }
+            }
             break;
         case "account_banned":
-            accounts[device.accountUsername].then((account: Account) => {
-                if (device === undefined || account === undefined) {
+            let banAccount = await Account.getWithUsername(device.accountUsername);
+            if (banAccount instanceof Account) {
+                if (banAccount.failedTimestamp === undefined || banAccount.failedTimestamp === null || 
+                    banAccount.failed === undefined || banAccount.failed === null) {
+                        banAccount.failedTimestamp = getCurrentTimestamp();
+                        banAccount.failed = "banned";
+                        banAccount.save(true);
+                        res.send('OK');
+                }
+            } else {
+                if (device === undefined || device === null ||
+                    banAccount === undefined || banAccount === null) {
                     console.error("[Controller] Failed to get account, device or account is null.");
-                    return res.status(400).end();
+                    return res.sendStatus(400);
                 }
-                if (account.failedTimestamp === undefined || account.failedTimestamp === null || 
-                    account.failed === undefined || account.failed === null) {
-                    account.failedTimestamp = getCurrentTimestamp();
-                    account.failed = "banned";
-                    account.save(true);
-                    res.send('OK');
-                }
-            });
+            }
             break;
         case "account_warning":
-            accounts[device.accountUsername].then((account: Account) => {
-                if (device === undefined || account === undefined) {
-                    console.error("[Controller] Failed to get account, device or account is null.");
-                    return res.status(400).end();
-                }
-                if (account.firstWarningTimestamp === undefined || account.firstWarningTimestamp === null) {
-                    account.firstWarningTimestamp = getCurrentTimestamp();
-                    account.save(true);
+            let warnAccount = await Account.getWithUsername(device.accountUsername);
+            if (warnAccount instanceof Account) {
+                if (warnAccount.firstWarningTimestamp === undefined || warnAccount.firstWarningTimestamp === null) {
+                    warnAccount.firstWarningTimestamp = getCurrentTimestamp();
+                    warnAccount.save(true);
                     res.send('OK');
                 }
-            });
+            } else {
+                if (device === undefined || device === null ||
+                    warnAccount === undefined || warnAccount === null) {
+                    console.error("[Controller] Failed to get account, device or account is null.");
+                    return res.sendStatus(400);
+                }
+            }
             break;
         case "account_invalid_credentials":
-            accounts[device.accountUsername].then((account: Account) => {
-                if (device === undefined || account === undefined) {
+            let invalidAccount = await Account.getWithUsername(device.accountUsername);
+            if (invalidAccount instanceof Account) {
+                if (invalidAccount.failedTimestamp === undefined || invalidAccount.failedTimestamp === null || 
+                    invalidAccount.failed === undefined || invalidAccount.failed === null) {
+                        invalidAccount.failedTimestamp = getCurrentTimestamp();
+                        invalidAccount.failed = "invalid_credentials";
+                        invalidAccount.save(true);
+                        res.send('OK');
+                }
+            } else {
+                if (device === undefined || device === null ||
+                    invalidAccount === undefined || invalidAccount === null) {
                     console.error("[Controller] Failed to get account, device or account is null.");
                     return res.status(400).end();
                 }
-                if (account.failedTimestamp === undefined || account.failedTimestamp === null || 
-                    account.failed === undefined || account.failed === null) {
-                    account.failedTimestamp = getCurrentTimestamp();
-                    account.failed = "invalid_credentials";
-                    account.save(true);
-                    res.send('OK');
-                }
-            });
+            }
             break;
         case "error_26":
-            accounts[device.accountUsername].then((account: Account) => {
-                if (device === undefined || account === undefined) {
+            let errAccount = await Account.getWithUsername(device.accountUsername);
+            if (errAccount instanceof Account) {
+                if (errAccount.failedTimestamp === undefined || errAccount.failedTimestamp === null ||
+                    errAccount.failed === undefined || account.failed === null) {
+                        errAccount.failedTimestamp = getCurrentTimestamp();
+                        errAccount.failed = "error_26";
+                        errAccount.save(true);
+                        res.send('OK');
+                }
+            } else {
+                if (device === undefined || device === null ||
+                    errAccount === undefined || errAccount === null) {
                     console.error("[Controller] Failed to get account, device or account is null.");
                     return res.status(400).end();
                 }
-                if (account.failedTimestamp === undefined || account.failedTimestamp === null ||
-                    account.failed === undefined || account.failed === null) {
-                    account.failedTimestamp = getCurrentTimestamp();
-                    account.failed = "error_26";
-                    account.save(true);
-                    res.send('OK');
-                }
-            });
+            }
             break;
         case "logged_out":
-            // TODO: Redo logged_out with Thor's changes.
-            /*
-            do {
-                guard
-                    let device = try Device.getById(mysql: mysql, id: uuid)
-                else {
-                    response.respondWithError(status: .notFound)
-                    return
+            try {
+                let device = await Device.getById(uuid);
+                if (device instanceof Device) {
+                    if (device.accountUsername === null) {
+                        res.sendStatus(404);
+                        return;
+                    }
+                    let failed = await Account.checkFail(device.accountUsername);
+                    if (failed === false) {
+                        await Account.setInstanceUuid(device.uuid, device.instanceName, device.accountUsername);
+                    }
+                    await Account.setCooldown(device.accountUsername, device.lastLat, device.lastLon);
+                    device.accountUsername = null;
+                    await device.save(device.uuid);
+                    res.send('OK');
+                } else {
+                    res.sendStatus(404);
+                    return;
                 }
-                if device.accountUsername == nil {
-                    response.respondWithError(status: .notFound)
-                    return
-                }
-                let failed = try Account.checkFail(mysql: mysql, username: device.accountUsername!)
-                if !failed {
-                    try Account.setInstanceUuid(uuid: device.uuid, area: device.instanceName!, username: device.accountUsername!)
-                }
-                try Account.cooldownAccount(mysql:mysql, last_lat: device.lastLat! , last_lon: device.lastLon! , username: device.accountUsername!)
-                device.accountUsername = nil
-                try device.save(mysql: mysql, oldUUID: device.uuid)
-                response.respondWithOk()
             } catch {
-                response.respondWithError(status: .internalServerError)
+                res.sendStatus(500);
             }
-            */
             device.accountUsername = null;
             device.save(device.uuid);
             res.send('OK');
             break;
-        case "ptcToken": // TODO: Seriously? Who the hell used camelCasing?
+        case "ptcToken": // TODO: Seriously? Who the hell used camelCasing :joy:?
             try {
                 let device = await Device.getById(uuid);
                 let username = device.accountUsername;
@@ -733,8 +734,7 @@ async function _handleControllerData(req: Request, res: Response) {
                 if (device === undefined || device === null ||
                     username === undefined || username === null || username === "" ||
                     account === undefined || account === null) {
-                        res.status(404);
-                        res.end();
+                        res.sendStatus(404);
                         return;
                 }
                 if (account.ptcToken === undefined || 
@@ -745,8 +745,7 @@ async function _handleControllerData(req: Request, res: Response) {
                 }
                 res.send('OK');
             } catch {
-                res.status(404);
-                res.end();
+                res.sendStatus(404);
             }
             break;
         case "job_failed":
@@ -757,12 +756,6 @@ async function _handleControllerData(req: Request, res: Response) {
             console.error("[Controller] Unhandled Request:", type);
             break;
     }
-}
-
-function getDevice(uuid: string): Device {
-    let devices: Device[] = Object.values(InstanceController.instance.Devices);
-    let device = devices.find(x => x.uuid === uuid);
-    return device;
 }
 
 // Export the class

@@ -1,10 +1,10 @@
-"use strict"
+"use strict";
 
 import { DbController } from './db-controller';
-import { Pokestop } from "src/models/pokestop";
-import { Pokemon } from "src/models/pokemon";
-import { Gym } from "src/models/gym";
-import { Weather } from "src/models/weather";
+import { Pokestop } from '../models/pokestop';
+import { Pokemon } from '../models/pokemon';
+import { Gym } from '../models/gym';
+import { Weather } from '../models/weather';
 import request = require('request');
 //import { winston } from '../utils/logger';
 
@@ -15,10 +15,7 @@ const WebhookRelayInterval: number = 1 * 1000;
  */
 class WebhookController {
     static instance = new WebhookController();
-    
-    webhookURLStrings: string[];
-    webhookSendDelay: number = 5.0;
-    
+       
     private pokemonEvents: Pokemon[] = [];
     private pokestopEvents: Pokestop[] = [];
     private lureEvents: Pokestop[] = [];
@@ -31,75 +28,76 @@ class WebhookController {
     private weatherEvents: Weather[] = [];
 
     constructor() {
-        this.init();
+        //this.init();
     }
+    /*
     private async init(): Promise<void> {
         let webhookUrls: string = await DbController.instance.getValueForKey("WEBHOOK_URLS");
         if (webhookUrls) {
-            this.webhookURLStrings = webhookUrls.split(',');
+            DbController.WebhookUrls = webhookUrls.split(',');
         }
         let webhookDelay: number = parseInt(await DbController.instance.getValueForKey("WEBHOOK_DELAY") || "5.0");
         if (webhookDelay) {
-            this.webhookSendDelay = webhookDelay * 1000;
+            DbController.WebhookSendDelay = webhookDelay * 1000;
         }
     }
-
+    */
     addPokemonEvent(pokemon: Pokemon): void {
-        if (this.webhookURLStrings.length > 0) {
+        if (DbController.WebhookUrls.length > 0) {
             this.pokemonEvents.push(pokemon);
             //this.pokemonEvents[pokemon.id] = pokemon.toJson();
         }
     }
     addPokestopEvent(pokestop: Pokestop): void {
-        if (this.webhookURLStrings.length > 0) {
+        if (DbController.WebhookUrls.length > 0) {
             this.pokestopEvents.push(pokestop);
             //this.pokestopEvents[pokestop.id] = pokestop.toJson("pokestop");
         }
     }
     addLureEvent(pokestop: Pokestop): void {
-        if (this.webhookURLStrings.length > 0) {
+        if (DbController.WebhookUrls.length > 0) {
             this.lureEvents.push(pokestop);
             //this.lureEvents[pokestop.id] = pokestop.toJson("pokestop");
         }
     }
     addInvasionEvent(pokestop: Pokestop): void {
-        if (this.webhookURLStrings.length > 0) {
+        if (DbController.WebhookUrls.length > 0) {
             this.invasionEvents.push(pokestop);
             //this.invasionEvents[pokestop.id] = pokestop.toJson("invasion");
         }
     }
     addQuestEvent(pokestop: Pokestop): void {
-        if (this.webhookURLStrings.length > 0) {
+        if (DbController.WebhookUrls.length > 0) {
             this.questEvents.push(pokestop);
             //this.questEvents[pokestop.id] = pokestop.toJson("quest");
         }
     }
     addGymEvent(gym: Gym): void {
-        if (this.webhookURLStrings.length > 0) {
+        if (DbController.WebhookUrls.length > 0) {
             this.gymEvents.push(gym);
             //this.gymEvents[gym.id] = gym.toJson("gym");
         }
     }
     addGymInfoEvent(gym: Gym): void {
-        if (this.webhookURLStrings.length > 0) {
+        if (DbController.WebhookUrls.length > 0) {
             this.gymInfoEvents.push(gym);
             //this.gymInfoEvents[gym.id] = gym.toJson("gym-info");
         }
     }
     addEggEvent(gym: Gym): void {
-        if (this.webhookURLStrings.length > 0) {
+        if (DbController.WebhookUrls.length > 0) {
             this.eggEvents.push(gym);
             //this.eggEvents[gym.id] = gym.toJson("egg");
         }
     }
     addRaidEvent(gym: Gym): void {
-        if (this.webhookURLStrings.length > 0) {
+        if (DbController.WebhookUrls.length > 0) {
             this.raidEvents.push(gym);
             //this.raidEvents[gym.id] = gym.toJson("raid");
         }
     }
     addWeatherEvent(weather: Weather): void {
-        if (this.webhookURLStrings.length > 0) {
+        if (DbController.WebhookUrls.length > 0) {
             this.weatherEvents.push(weather);
             //this.weatherEvents[weather.id] = weather.toJson();
         }
@@ -109,7 +107,7 @@ class WebhookController {
         setInterval(() => this.loopEvents(), WebhookRelayInterval);
     }
     loopEvents(): void {
-        if (this.webhookURLStrings && this.webhookURLStrings.length > 0) {
+        if (DbController.WebhookUrls && DbController.WebhookUrls.length > 0) {
             let events: any[] = [];
             if (this.pokemonEvents.length > 0) {
                 let pokemonEvent = this.pokemonEvents.pop()
@@ -152,7 +150,7 @@ class WebhookController {
                 events.push(weatherEvent.toJson());
             }
             if (events && events.length > 0) {
-                this.webhookURLStrings.forEach(url => {
+                DbController.WebhookUrls.forEach(url => {
                     this.sendEvents(events, url);
                 });
             }
@@ -180,7 +178,7 @@ class WebhookController {
                 return;
             }
             console.log("[WEBHOOK] Response:", body);
-    });
+        });
     }
 }
 

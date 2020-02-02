@@ -6,17 +6,17 @@ import { getCurrentTimestamp, snooze } from '../../utils/util';
 
 class IVInstanceController {
     private multiPolygon: turf.MultiPolygon;
-    private pokemonQueue: Pokemon[];
+    private pokemonQueue: Pokemon[] = [];
     private scannedPokemon = []; // { date: "", pokemon: {} }
     private startDate: Date;
-    private count: number;
+    private count: number = 0;
     private shouldExit = false;
 
     name: string;
     pokemonList: number[];
     minLevel: number = 0;
     maxLevel: number = 29;
-    ivQueueLimit: number =  100;
+    ivQueueLimit: number = 100;
     scatterList: number[];
 
     constructor(name: string, multiPolygon: turf.MultiPolygon, pokemonList: number[], 
@@ -33,37 +33,39 @@ class IVInstanceController {
     async init() {
         // while (!shouldExit) {
         if (this.scannedPokemon.length > 0) {
-            snooze(5000);
+            await snooze(5000);
             if (this.shouldExit) {
                 return;
             }
         } else {
             let first = this.scannedPokemon.pop();
-            let timeSince = getCurrentTimestamp() - (first["date"].getTime() / 1000);
-            if (timeSince < 120) {
-                snooze((120 - timeSince) * 1000);
-                if (this.shouldExit) {
-                    return;
-                }
-            }
-            let success = false;
-            let pokemonReal: Pokemon;
-            while (!success) {
-                try {
-                    pokemonReal = await Pokemon.getById(first["pokemon"].id);
-                    success = true;
-                } catch (err) {
-                    snooze(1000);
+            if (first) {
+                let timeSince = getCurrentTimestamp() - (first["date"].getTime() / 1000);
+                if (timeSince < 120) {
+                    await snooze((120 - timeSince) * 1000);
                     if (this.shouldExit) {
                         return;
                     }
                 }
-            }
-            if (pokemonReal instanceof Pokemon && pokemonReal !== undefined) {
-                if (pokemonReal.atkIv === undefined) {
-                    console.log("[IVInstanceController] Checked Pokemon doesn't have IV.");
-                } else {
-                    console.log("[IVInstanceController] Checked Pokemon has IV.");
+                let success = false;
+                let pokemonReal: Pokemon;
+                while (!success) {
+                    try {
+                        pokemonReal = await Pokemon.getById(first["pokemon"].id);
+                        success = true;
+                    } catch (err) {
+                        await snooze(1000);
+                        if (this.shouldExit) {
+                            return;
+                        }
+                    }
+                }
+                if (pokemonReal instanceof Pokemon) {
+                    if (pokemonReal.atkIv === undefined) {
+                        console.log("[IVInstanceController] Checked Pokemon doesn't have IV.");
+                    } else {
+                        console.log("[IVInstanceController] Checked Pokemon has IV.");
+                    }
                 }
             }
         }
@@ -96,7 +98,7 @@ class IVInstanceController {
         }
         if (formatted) {
             let ivhString = ivh || "-";
-            return `<a href="/instance/ivqueue/${encodeURI(name) || ""}">Queue</a>: ${this.pokemonQueue.length}, IV/h: ${ivhString}`;
+            return `<a href="/instance/ivqueue/${encodeURI(this.name) || ""}">Queue</a>: ${this.pokemonQueue.length}, IV/h: ${ivhString}`;
         }
         return { iv_per_hour: ivh };
     }

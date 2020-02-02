@@ -216,7 +216,6 @@ class Instance implements IInstance {
                     data
                 );
                 instances.push(instance);
-                InstanceController.instance.Instances[key.name] = instance;
             });
         }
         return instances;

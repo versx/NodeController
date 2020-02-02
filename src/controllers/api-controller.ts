@@ -13,12 +13,10 @@ import { Account } from '../models/account';
 import { Assignment } from '../models/assignment';
 import { Device } from '../models/device';
 import { DeviceGroup } from '../models/device-group';
-import { Gym } from '../models/gym';
 import { Instance, InstanceType, IInstanceData } from '../models/instance';
 import { Pokestop } from '../models/pokestop';
-import { Pokemon } from '../models/pokemon';
 import { Localizer } from '../utils/localizer';
-import { readFile, getCurrentTimestamp } from '../utils/util';
+import { readFile, getCurrentTimestamp, toThreeDigits } from '../utils/util';
 
 enum Page {
     setup = "setup.mustache",
@@ -51,12 +49,20 @@ enum Page {
 
 class ApiController {
     private webroot: string = path.resolve('./webroot/');
+    static hostWhitelist: string[];
+    static hostWhitelistUsesProxy: boolean = false;
+    static loginSecret: string;
 
     constructor() {
     }
     async handle(req: express.Request, res: express.Response) {
+        if (this.checkHost(req, res) === false) {
+            res.sendStatus(401);
+            return;
+        }
+
         let data: any = {};
-        //let instance = req.param("instance");
+        let instance = req.param("instance");
         //let lastUpdate = parseInt(req.param("last_update", 0));
         let showDevices =  req.param("show_devices", false);
         let showInstances =  req.param("show_instances", false);
@@ -97,13 +103,14 @@ class ApiController {
         }
         if (showInstances) {
             let instances = await Instance.getAll();
+            let devices = await Device.load() || [];
             let jsonArray = [];
             if (instances) {
                 instances.forEach(async instance => {
                     let instanceData = {};
                     instanceData["name"] = instance.name;
-                    let count = Object.values(InstanceController.instance.Devices)
-                        .filter((device: Device) => device.instanceName === instance.name)
+                    let count = devices
+                        .filter(device => device.instanceName === instance.name)
                         .length;
                     instanceData["count"] = count || 0;
                     let type = "";
@@ -130,7 +137,7 @@ class ApiController {
                     jsonArray.push(instanceData);
                 });
             }
-            data["instances"] = jsonArray
+            data["instances"] = jsonArray;
         }
         if (showAssignments) {
             let assignments = await Assignment.getAll();
@@ -184,6 +191,25 @@ class ApiController {
             data["devicegroups"] = jsonArray;
         }
         if (showIVQueue) {
+            let queue = InstanceController.instance.getIVQueue(decodeURI(instance) || "");
+            let jsonArray = [];
+            let i = 1;
+            queue.forEach(pokemon => {
+                let json = {
+                    id: i,
+                    pokemon_id: toThreeDigits(pokemon.pokemonId),
+                    pokemon_name: Localizer.instance.get(`poke_${pokemon.pokemonId}`),
+                    pokemon_spawn_id: pokemon.id,
+                    location: `${pokemon.lat}, ${pokemon.lon}`
+                };
+                if (formatted) {
+                    // TODO: Set pokemon image url (optional)
+                    json["pokemon_image"] = `<img src="/static/img/pokemon/${pokemon.pokemonId}.png" style="height:50px; width:50px;">`;
+                }
+                jsonArray.push(json);
+                i++;
+            });
+            data["ivqueue"] = jsonArray;
         }
         data["timestamp"] = getCurrentTimestamp();
         return {
@@ -191,8 +217,19 @@ class ApiController {
         };
     }
     async getPage(page: Page, req: express.Request, res: express.Response) {
+        if (this.checkHost(req, res) === false) {
+            res.sendStatus(401);
+            return;
+        }
+
+        res.setHeader("AllowHeaders", "*");
+        res.setHeader("AllowMethods", "GET");
+        let host = req.header("Host");
+        if (host) {
+            res.setHeader("AllowOrigin", `http://${host}}`); //"http://\(host), https://\(host)"
+        }
         var data = {
-            title: DbController.instance.settings["title"] || "NodeController",
+            title: DbController.Title || "NodeController",
             locale: Localizer.instance.locale,
             page: "Dashboard"
         };
@@ -261,7 +298,8 @@ class ApiController {
                 if (req.param("delete") === "true") {
                     try {
                         await Instance.delete(instanceName);
-                        InstanceController.instance.removeInstance(InstanceController.instance.Instances[instanceName]); // REVIEW: Make sure this works.
+                        let instance = InstanceController.instance.getInstanceControllerByInstanceName(instanceName);
+                        InstanceController.instance.removeInstance(instance); // REVIEW: Make sure this works.
                         res.redirect('/instances');
                         return;
                     } catch {
@@ -482,21 +520,20 @@ class ApiController {
                     await this.updateSettings(req, res);
                     // TODO: show_success/show_error
                 }
-                data["max_pokemon_id"] = DbController.instance.settings["MAP_MAX_POKEMON_ID"] || 649;
+                data["max_pokemon_id"] = DbController.MaxPokemonId;
                 data["locale_new"] = Localizer.instance.locale;
-                data["enable_register_new"] = DbController.instance.settings["ENABLE_REGISTER"] || "false";
-                data["enable_clearing"] = DbController.instance.settings["ENABLE_CLEARING"] || "false";
-                data["webhook_urls"] = DbController.instance.settings["WEBHOOK_URLS"] || "";
-                data["webhook_delay"] = DbController.instance.settings["WEBHOOK_DELAY"] || 5.0;
-                data["pokemon_time_new"] = Pokemon.DefaultTimeUnseen;
-                data["pokemon_time_old"] = Pokemon.DefaultTimeReseen;
-                data["pokestop_lure_time"] = Pokestop.LureTime;
-                data["ex_raid_boss_id"] = Gym.ExRaidBossId || 0;
-                data["ex_raid_boss_form"] = Gym.ExRaidBossForm || 0;
-                data["deviceapi_host_whitelist"] = DbController.instance.settings["DEVICEAPI_HOST_WHITELIST"] || "";
-                data["deviceapi_host_whitelist_uses_proxy"] = DbController.instance.settings["DEVICEAPI_HOST_WHITELIST_USES_PROXY"] || "";
-                data["deviceapi_secret"] = DbController.instance.settings["DEVICEAPI_SECRET"] || "";
-                data["ditto_disguises"] = DbController.instance.settings["DITTO_DISGUISES"] || Pokemon.DittoDisguises.map(x => x.toString()).join(',');
+                data["enable_clearing"] = DbController.EnableClearing;
+                data["webhook_urls"] = DbController.WebhookUrls;
+                data["webhook_delay"] = DbController.WebhookSendDelay;
+                data["pokemon_time_new"] = DbController.PokemonTimeUnseen;
+                data["pokemon_time_old"] = DbController.PokemonTimeReseen;
+                data["pokestop_lure_time"] = DbController.LureTime;
+                data["ex_raid_boss_id"] = DbController.ExRaidBossId;
+                data["ex_raid_boss_form"] = DbController.ExRaidBossForm;
+                data["deviceapi_host_whitelist"] = DbController.HostWhitelist || "";
+                data["deviceapi_host_whitelist_uses_proxy"] = DbController.HostWhitelistUsesProxy || "";
+                data["deviceapi_secret"] = DbController.LoginSecret || "";
+                data["ditto_disguises"] = DbController.DittoDisguises || [];
                 break;
         }
         try {
@@ -510,6 +547,47 @@ class ApiController {
         } catch (err) {
             console.error("[ApiController] Failed to get page:", err);
         }
+    }
+    checkHost(req: express.Request, res: express.Response): boolean {
+        let hostWhitelist = ApiController.hostWhitelist;
+        if (hostWhitelist) {
+            let host: string;
+            let ff = req.header("X-Forwarded-For") || "";
+            if (ff === '' || ff === undefined || ff === null || ApiController.hostWhitelistUsesProxy === false) {
+                host = req.hostname;
+            } else {
+                host = ff;
+            }
+
+            if (hostWhitelist.includes(host) === false) {
+                //return res.sendStatus(401);
+                return false;
+            }
+        }
+        
+        let loginSecret = ApiController.loginSecret;
+        if (loginSecret) {
+            let host: string;
+            let ff = req.header("X-Forwarded-For") || "";
+            if (ff === '' || ff === undefined || ff === null || ApiController.hostWhitelistUsesProxy === false) {
+                host = req.hostname;
+            } else {
+                host = ff;
+            }
+            
+            //if (WebHookRequestHandler.limiter.allowed(host) === false) {
+            //    return res.sendStatus(401);
+            //}
+            
+            let loginSecretHeader = req.header("Authorization");
+            if (loginSecretHeader !== `Bearer ${loginSecret}`) {
+                //WebHookRequestHandler.limiter.failed(host);
+                //return res.sendStatus(401);
+                return false;
+            }
+        }
+
+        return true;
     }
     async assignDeviceGet(data: any, req: express.Request, res: express.Response, deviceUUID: string): Promise<any> {
         var data = data;
@@ -588,7 +666,7 @@ class ApiController {
         try {
             name = req.param("name"),
             area = req.param("area")
-                .replace("<br>", "")
+                .replace("<br>", "\n")
                 .replace("\r\n", "\n");//, options: .regularExpression),
             minLevel = parseInt(req.param("min_level")) || 0;
             maxLevel = parseInt(req.param("max_level")) || 29;
@@ -600,11 +678,11 @@ class ApiController {
 
         let timezoneOffset = parseInt(req.param("timezone_offset") || "0" ) || 0;
         let pokemonIDsText = req.param("pokemon_ids")
-                                    .replace("<br>", ",")
-                                    .replace("\r\n", ",");//, options: .regularExpression)
-        let scatterPokemonIDsText = req.param("scatter_pokemon_ids")
-                                    .replace("<br>", ",")
-                                    .replace("\r\n", ",");//, options: .regularExpression)
+                                    .split('<br>').join(',')
+                                    .split('\n').join(',');
+        let scatterPokemonIDsText = req.param('scatter_pokemon_ids')
+                                    .split('<br>').join(',')
+                                    .split('\n').join(',');
 
         let pokemonIDs: number[] = [];
         if (pokemonIDsText.trim() === "*") {
@@ -612,10 +690,10 @@ class ApiController {
         } else {
             let pokemonIDsSplit = pokemonIDsText.split(',');
             if (pokemonIDsSplit) {
-                pokemonIDsSplit.forEach(pokemonIDText => {
-                    let pokemonID = parseInt(pokemonIDText.trim());
+                pokemonIDs = pokemonIDsSplit.map((x: string) => {
+                    let pokemonID = parseInt(x.trim());
                     if (Number.isInteger(pokemonID)) {
-                        pokemonIDs.push(pokemonID);
+                        return pokemonID;
                     }
                 });
             }
@@ -627,10 +705,10 @@ class ApiController {
         } else {
             let scatterPokemonIDsSplit = scatterPokemonIDsText.split(',');
             if (scatterPokemonIDsSplit) {
-                scatterPokemonIDsSplit.forEach(pokemonIDText => {
-                    let pokemonID = parseInt(pokemonIDText.trim());
+                scatterPokemonIDs = scatterPokemonIDsSplit.map((x: string) => {
+                    let pokemonID = parseInt(x.trim());
                     if (Number.isInteger(pokemonID)) {
-                        scatterPokemonIDs.push(pokemonID);
+                        return pokemonID;
                     }
                 });
             }
@@ -643,7 +721,7 @@ class ApiController {
         data["name"] = name;
         data["area"] = area;
         data["pokemon_ids"] = pokemonIDsText;
-        data["scatter_pokemon_ids"] = scatterPokemonIDs;
+        data["scatter_pokemon_ids"] = scatterPokemonIDsText;
         data["min_level"] = minLevel;
         data["max_level"] = maxLevel;
         data["timezone_offset"] = timezoneOffset;
@@ -683,8 +761,8 @@ class ApiController {
             areaRows.forEach(areaRow => {
                 let rowSplit = areaRow.split(',');
                 if (rowSplit.length === 2) {
-                    let lat = parseInt(rowSplit[0].trim());
-                    let lon = parseInt(rowSplit[1].trim());
+                    let lat = parseFloat(rowSplit[0].trim());
+                    let lon = parseFloat(rowSplit[1].trim());
                     if (lat && lon) {
                         coords.push(new Coord(lat, lon));
                     }
@@ -696,9 +774,7 @@ class ApiController {
                 data["error"] = "Failed to parse coords.";
                 return data;
             }
-
             newCoords = coords
-
         } else if (type && type === InstanceType.AutoQuest || type === InstanceType.PokemonIV) {
             var coordArray: Coord[][] = [];
             let areaRows = area.split('\n');
@@ -706,8 +782,8 @@ class ApiController {
             areaRows.forEach(areaRow => {
                 let rowSplit = areaRow.split(',');
                 if (rowSplit.length === 2) {
-                    let lat = parseInt(rowSplit[0].trim());
-                    let lon = parseInt(rowSplit[1].trim());
+                    let lat = parseFloat(rowSplit[0].trim());
+                    let lon = parseFloat(rowSplit[1].trim());
                     if (lat && lon) {
                         while (coordArray.length !== currentIndex + 1) {
                             coordArray.push([]);
@@ -814,25 +890,33 @@ class ApiController {
         } else {
             let areaString = "";
             let oldInstanceData = JSON.parse(String(oldInstance.data));
-            let areaType1 = oldInstanceData["area"];// as? [[String: Double]];
-            let areaType2 = oldInstanceData["area"];// as? [[[String: Double]]];
-            if (areaType1) {
-                areaType1.forEach(coordLine => {
-                    let lat = coordLine["lat"];
-                    let lon = coordLine["lon"];
-                    areaString += `${lat},${lon}\n`;
-                });
-            } else if (areaType2) {
-                let index = 1;
-                areaType2.forEach(geofence => {
-                    areaString += `[Geofence ${index}]\n`;
-                    index++;
-                    geofence.forEach(coordLine => {
-                        let lat = coordLine["lat"];
-                        let lon = coordLine["lon"];
-                        areaString += `${lat},${lon}\n`;
-                    });
-                });
+            switch (oldInstance.type) {
+                case InstanceType.AutoQuest:
+                case InstanceType.PokemonIV:
+                    let areaType2 = oldInstanceData["area"]; // [[String: Double]];
+                    if (areaType2) {
+                        let index = 1;
+                        areaType2.forEach(geofence => {
+                            areaString += `[Geofence ${index}]\n`;
+                            index++;
+                            geofence.forEach(coordLine => {
+                                let lat = coordLine["lat"];
+                                let lon = coordLine["lon"];
+                                areaString += `${lat},${lon}\n`;
+                            });
+                        });
+                    }
+                    break;
+                default:
+                    let areaType1 = oldInstanceData["area"]; // [[[String: Double]]];
+                    if (areaType1) {
+                        areaType1.forEach(coordLine => {
+                            let lat = coordLine["lat"];
+                            let lon = coordLine["lon"];
+                            areaString += `${lat},${lon}\n`;
+                        });
+                    }
+                    break;
             }
 
             data["name"] = oldInstance.name;
@@ -845,33 +929,34 @@ class ApiController {
 
             let pokemonIDs: number[] = oldInstanceData["pokemon_ids"];
             if (pokemonIDs) {
-                let text = "";
-                pokemonIDs.forEach(id => {
-                    text += `${id}\n`;
-                });
+                let text = pokemonIDs.join('\n');
                 data["pokemon_ids"] = text;
             }
-
             let scatterPokemonIDs: number[] = oldInstanceData["scatter_pokemon_ids"];
             if (scatterPokemonIDs) {
-                let text = "";
-                scatterPokemonIDs.forEach(id => {
-                    text += `${id}\n`;
-                });
+                let text = scatterPokemonIDs.join(`\n`);
                 data["scatter_pokemon_ids"] = text;
             }
 
             switch (oldInstance.type) {
                 case InstanceType.CirclePokemon:
                     data["circle_pokemon_selected"] = true;
+                    break;
                 case InstanceType.CircleRaid:
                     data["circle_raid_selected"] = true;
+                    break;
                 case InstanceType.SmartCircleRaid:
                     data["circle_smart_raid_selected"] = true;
+                    break;
                 case InstanceType.AutoQuest:
                     data["auto_quest_selected"] = true;
+                    break;
                 case InstanceType.PokemonIV:
                     data["pokemon_iv_selected"] = true;
+                    break;
+                case InstanceType.GatherToken:
+                case InstanceType.Leveling:
+                    break;                
             }
             return data;
         }
@@ -1167,7 +1252,7 @@ class ApiController {
             return data;
         }
 
-        let deviceUUIDs = req.body["devices"]; // TODO: Confirm working
+        let deviceUUIDs = req.body["devices"];
         let deviceGroup = new DeviceGroup(groupName, instanceName, []);
         try {
             await deviceGroup.create();
@@ -1343,16 +1428,15 @@ class ApiController {
     }
     async addAccounts(data: any, req: express.Request, res: express.Response): Promise<any> { 
         var data = data
-
-            let level = parseInt(req.body["level"] || 0);
-            let accounts: string = req.body["accounts"];
-            if (accounts === undefined || accounts === null) {
-                data["show_error"] = true;
-                data["error"] = "Invalid Request.";
-                return data
-            }
-            accounts = accounts.replace("<br>", "")
-                           .replace("\r\n", "\n")//, options: .regularExpression)
+        let level = parseInt(req.body["level"] || 0);
+        let accounts: string = req.body["accounts"];
+        if (accounts === undefined || accounts === null) {
+            data["show_error"] = true;
+            data["error"] = "Invalid Request.";
+            return data
+        }
+        accounts = accounts.replace("<br>", "")
+                           .replace("\r\n", "\n")
                            .replace(";", ",")
                            .replace(":", ",");
 
@@ -1400,13 +1484,11 @@ class ApiController {
 
         let webhookDelay = parseInt(obj["webhook_delay"]) || 5.0;
         let webhookUrlsString = obj["webhook_urls"] || "";
-        //let webhookUrls = webhookUrlsString.split(";");
-        let enableRegister = obj["enable_register_new"] !== null;
         let enableClearing = obj["enable_clearing"] !== null;
-        let deviceAPIhostWhitelist = obj["deviceapi_host_whitelist"].split(';');
+        let deviceAPIhostWhitelist: string[] = obj["deviceapi_host_whitelist"].split(';');
         let deviceAPIhostWhitelistUsesProxy = obj["deviceapi_host_whitelist_uses_proxy"] !== null;
-        let deviceAPIloginSecret = obj["deviceapi_secret"];
-        let dittoDisguises = obj["ditto_disguises"].split(',').map((x: string) => parseInt(x)) || [];
+        let deviceAPIloginSecret: string = obj["deviceapi_secret"];
+        let dittoDisguises: number[] = obj["ditto_disguises"].split(',').map((x: string) => parseInt(x)) || [];
 
         try {
             await DbController.instance.setValueForKey("TITLE", title);
@@ -1419,7 +1501,6 @@ class ApiController {
             await DbController.instance.setValueForKey("GYM_EX_BOSS_FORM", exRaidBossForm.toString());
             await DbController.instance.setValueForKey("MAP_MAX_POKEMON_ID", maxPokemonId.toString());
             await DbController.instance.setValueForKey("LOCALE", locale);
-            await DbController.instance.setValueForKey("ENABLE_REGISTER", enableRegister.toString());
             await DbController.instance.setValueForKey("ENABLE_CLEARING", enableClearing.toString());
             await DbController.instance.setValueForKey("DEVICEAPI_HOST_WHITELIST", deviceAPIhostWhitelist.join(';') || "");
             await DbController.instance.setValueForKey("DEVICEAPI_HOST_WHITELIST_USES_PROXY", deviceAPIhostWhitelistUsesProxy.toString());
@@ -1430,7 +1511,6 @@ class ApiController {
                 show_error: true
             };
         }
-        await DbController.instance.loadSettings();
         return {
             title: title,
             show_success: true

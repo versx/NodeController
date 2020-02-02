@@ -1,5 +1,6 @@
 "use strict"
 
+import { DbController } from '../controllers/db-controller';
 import { WebhookController } from '../controllers/webhook-controller';
 import { Database } from '../data/mysql';
 import { getCurrentTimestamp } from '../utils/util';
@@ -12,8 +13,6 @@ const db           = new Database(config);
  */
 class Gym {
     static Gyms = {};
-    static ExRaidBossId = 486;
-    static ExRaidBossForm = 0;
 
     id: string;
     lat: number;
@@ -421,9 +420,9 @@ class Gym {
             oldGym = null;
         }
 
-        if (this.raidIsExclusive && Gym.ExRaidBossId) {
-            this.raidPokemonId = Gym.ExRaidBossId;
-            this.raidPokemonForm = Gym.ExRaidBossForm || 0;
+        if (this.raidIsExclusive && DbController.ExRaidBossId) {
+            this.raidPokemonId = DbController.ExRaidBossId;
+            this.raidPokemonForm = DbController.ExRaidBossForm || 0;
         }
         
         let sql: string = "";

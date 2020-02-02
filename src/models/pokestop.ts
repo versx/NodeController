@@ -1,9 +1,10 @@
 "use strict"
 
+import { DbController } from '../controllers/db-controller';
 import { WebhookController } from '../controllers/webhook-controller';
 import { Database } from '../data/mysql';
 import { Instance } from './instance';
-import { getCurrentTimestamp } from '../utils/util';
+import { getCurrentTimestamp, flattenCoords } from '../utils/util';
 //import { winston } from '../utils/logger';
 import config      = require('../config.json');
 const db           = new Database(config);
@@ -58,7 +59,6 @@ enum ConditionType {
  */
 class Pokestop {
     static Pokestops = {};
-    static LureTime = 1800;
 
     id: string;
     lat: number;
@@ -101,7 +101,7 @@ class Pokestop {
                     data.fort.active_fort_modifier.includes(502) ||
                     data.fort.active_fort_modifier.includes(503) ||
                     data.fort.active_fort_modifier.includes(504)) {
-                    this.lureExpireTimestamp = lastModifiedTimestamp + Pokestop.LureTime;
+                    this.lureExpireTimestamp = lastModifiedTimestamp + DbController.LureTime;
                     this.lureId = data.fort.active_fort_modifier[0].item_id;
                 }
             }
@@ -424,8 +424,8 @@ class Pokestop {
         this.questTarget = parseInt(quest.goal.target);
         this.questTemplate = quest.template_id.toLowerCase();
         
-        let conditions = []; //[[String: Any]]()
-        let rewards = [];//[[String: Any]]()
+        let conditions = [];
+        let rewards = [];
         quest.goal.condition.forEach(condition => {
             let conditionData = {};
             let infoData = {};
@@ -788,27 +788,6 @@ class Pokestop {
                 };
         }
     }
-}
-
-function flattenCoords(area: string): string {
-    let coords: string = "";
-    let areaRows: string[] = area.split('\n');
-    let firstCoord: string = null;
-    areaRows.forEach(areaRow => {
-        let split = areaRow.split(',');
-        if (split.length === 2) {
-            let lat = parseFloat(split[0].replace(' ', ''));
-            let lon = parseFloat(split[1].replace(' ', ''));
-            if (lat && lon) {
-                let coord: string = `${lat} {lon}`;
-                if (firstCoord === null) {
-                    firstCoord = coord;
-                }
-                coords += `${coord},`;
-            }
-        }
-    });
-    return `${coords}${firstCoord}`;
 }
 
 // Export the class

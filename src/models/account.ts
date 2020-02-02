@@ -485,6 +485,34 @@ class Account {
         console.log("[Account] Results:", result);
         return Object.keys(result).length; // Return num_rows instead.
     }
+    static async checkFail(username: string): Promise<boolean> {
+        let sql = `
+        SELECT first_warning_timestamp, failed_timestamp
+        FROM account
+        WHERE username = ?
+        `;
+        let args = [username];
+        let result = db.query(sql, args)
+            .then(x => x)
+            .catch(err => {
+                console.error(`[ACCOUNT] Failed to execute query. (${err})`);
+                return;
+            });
+        /*
+        if (result.num_rows === 0) {
+            return false;
+        }
+        */
+        if (result) {
+            let values = Object.values(result);
+            let firstWarningTimestamp = parseInt(values[0]);
+            let failedTimestamp = parseInt(values[1]);
+            if (firstWarningTimestamp || failedTimestamp) {
+                return true;
+            }
+        }
+        return false;
+    }
     /**
      * Save account.
      * @param update 

@@ -15,8 +15,10 @@ import { AssignmentController } from "../assignment-controller"
 
 class InstanceController implements IInstanceController {
     static instance = new InstanceController();
-    Devices = {};
-    Instances = {};
+    static DefaultMinLevel: number = 0;
+    static DefaultMaxLevel: number = 29;
+    static DefaultIVQueueLimit: number = 100;
+    static DefaultSpinLimit: number = 500;
 
     private instancesByInstanceName = {};
     private devicesByDeviceUUID = {};
@@ -24,20 +26,14 @@ class InstanceController implements IInstanceController {
     constructor() { }
     async setup() {
         console.info("[InstanceController] Starting up...");
-        this.Devices = await Device.load();
-        this.Instances = await Instance.load();
+        let devices = await Device.load();
+        let instances = await Instance.load();
 
-        let keys = Object.keys(this.Devices);
-        if (keys) {
-            keys.forEach((uuid: string) => {
-                this.addDevice(this.Devices[uuid]);
-            });
+        if (devices) {
+            devices.forEach(device => this.addDevice(device));
         }
-        if (keys) {
-            keys = Object.keys(this.Instances);
-            keys.forEach((name: string) => {
-                this.addInstance(this.Instances[name]);
-            });
+        if (instances) {
+            instances.forEach(instance => this.addInstance(instance));
         }
     }
     getInstanceControllerByInstanceName(instanceName: string) {
@@ -71,27 +67,27 @@ class InstanceController implements IInstanceController {
                         coordsArray.push(new Coord(coord["lat"], coord["lon"]));
                     });
                 }
-                let minLevel = instance.data.min_level || 0;
-                let maxLevel = instance.data.max_level || 29;
+                let circleMinLevel = instance.data.min_level || InstanceController.DefaultMinLevel;
+                let circleMaxLevel = instance.data.max_level || InstanceController.DefaultMaxLevel;
                 switch (instance.type) {
                     case InstanceType.CirclePokemon:
                     case InstanceType.CircleRaid:
                     case InstanceType.Leveling:
                     case InstanceType.GatherToken:                        
-                        instanceController = new CircleInstanceController(instance.name, instance.type, minLevel, maxLevel, coordsArray);
+                        instanceController = new CircleInstanceController(instance.name, instance.type, circleMinLevel, circleMaxLevel, coordsArray);
                         break;
                     default:
-                        instanceController = new CircleSmartRaidInstanceController(instance.name, minLevel, maxLevel, coordsArray);
+                        instanceController = new CircleSmartRaidInstanceController(instance.name, circleMinLevel, circleMaxLevel, coordsArray);
                         break;
                 }
                 break;
             case InstanceType.PokemonIV:
             case InstanceType.AutoQuest:
                 let areaArray: Coord[][] = [];
-                if (instance.data.area) {
-                    areaArray = instance.data.area;
+                if (instance.data["area"]) {
+                    areaArray = instance.data["area"];
                 } else {
-                    let areas = instance.data.area;
+                    let areas = instance.data["area"];
                     let i = 0;
                     areas.forEach((coords: any) => {
                         coords.forEach((coord: any) => {
@@ -102,28 +98,44 @@ class InstanceController implements IInstanceController {
                         });
                         i++;
                     });
-                    let timeZoneOffset = instance.data.timezone_offset || 0;
-                    let areaArrayEmptyInner = [];
-                    areaArray.forEach((coords: Coord[]) => {
-                        let polyCoords = [];
-                        coords.forEach(coord => {
-                            polyCoords.push(turf.point([coord["lat"], coord["lon"]]));
-                        });
-                        areaArrayEmptyInner.push(polyCoords);
-                    });
-
-                    let minLevel = instance.data.min_level || 0;
-                    let maxLevel = instance.data.max_level || 29;
-                    if (instance.type == InstanceType.PokemonIV) {
-                        let pokemonList: number[] = instance.data["pokemon_ids"] || [];
-                        let ivQueueLimit = instance.data["iv_queue_limit"] || 100;
-                        let scatterList = instance.data["scatter_pokemon_ids"] || [];
-                        instanceController = new IVInstanceController(instance.name, turf.multiPolygon(areaArrayEmptyInner).geometry, pokemonList, minLevel, maxLevel, ivQueueLimit, scatterList);
-                    } else {
-                        let spinLimit = instance.data["spin_limit"] || 500
-                        instanceController = new AutoInstanceController(instance.name, turf.multiPolygon(areaArrayEmptyInner).geometry, AutoInstanceType.Quest, timeZoneOffset, minLevel, maxLevel, spinLimit);
-                    }                    
                 }
+                let timeZoneOffset = instance.data.timezone_offset || 0;
+                let areaArrayEmptyInner = [];
+                areaArray.forEach((coords: Coord[]) => {
+                    let polyCoords = [];
+                    coords.forEach(coord => {
+                        polyCoords.push(turf.point([coord["lat"], coord["lon"]]));
+                    });
+                    areaArrayEmptyInner.push(polyCoords);
+                });
+
+                let ivMinLevel = instance.data.min_level || InstanceController.DefaultMinLevel;
+                let ivMaxLevel = instance.data.max_level || InstanceController.DefaultMaxLevel;
+                if (instance.type == InstanceType.PokemonIV) {
+                    let pokemonList: number[] = instance.data["pokemon_ids"] || [];
+                    let ivQueueLimit = instance.data["iv_queue_limit"] || InstanceController.DefaultIVQueueLimit;
+                    let scatterList = instance.data["scatter_pokemon_ids"] || [];
+                    instanceController = new IVInstanceController(
+                        instance.name,
+                        turf.multiPolygon(areaArrayEmptyInner).geometry,
+                        pokemonList,
+                        ivMinLevel,
+                        ivMaxLevel,
+                        ivQueueLimit,
+                        scatterList
+                    );
+                } else {
+                    let spinLimit = instance.data["spin_limit"] || InstanceController.DefaultSpinLimit;
+                    instanceController = new AutoInstanceController(
+                        instance.name,
+                        turf.multiPolygon(areaArrayEmptyInner).geometry,
+                        AutoInstanceType.Quest,
+                        timeZoneOffset,
+                        ivMinLevel,
+                        ivMaxLevel,
+                        spinLimit
+                    );
+                }                    
                 break;
         }
         // TODO: instanceController.delegate = AssignmentController.instance;
@@ -163,7 +175,6 @@ class InstanceController implements IInstanceController {
             }
         });
         AssignmentController.instance.setup();
-
     }
     removeInstanceByName(instanceName: string) {
         this.instancesByInstanceName[instanceName].stop();
@@ -176,7 +187,6 @@ class InstanceController implements IInstanceController {
             }
         });
         AssignmentController.instance.setup();
-
     }
     addDevice(device: Device) {
         if (device.instanceName !== null && this.instancesByInstanceName[device.instanceName] !== null) {
