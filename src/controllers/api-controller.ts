@@ -191,28 +191,31 @@ class ApiController {
             data["devicegroups"] = jsonArray;
         }
         if (showIVQueue) {
-            let queue = InstanceController.instance.getIVQueue(decodeURI(instance) || "");
             let jsonArray = [];
-            let i = 1;
-            queue.forEach(pokemon => {
-                let json = {
-                    id: i,
-                    pokemon_id: toThreeDigits(pokemon.pokemonId),
-                    pokemon_name: Localizer.instance.get(`poke_${pokemon.pokemonId}`),
-                    pokemon_spawn_id: pokemon.id,
-                    location: `${pokemon.lat}, ${pokemon.lon}`
-                };
-                if (formatted) {
-                    // TODO: Set pokemon image url (optional)
-                    json["pokemon_image"] = `<img src="/static/img/pokemon/${pokemon.pokemonId}.png" style="height:50px; width:50px;">`;
-                }
-                jsonArray.push(json);
-                i++;
-            });
+            let queue = InstanceController.instance.getIVQueue(decodeURI(instance) || "");
+            if (queue) {
+                let i = 1;
+                queue.forEach(pokemon => {
+                    let json = {
+                        id: i,
+                        pokemon_id: toThreeDigits(pokemon.pokemonId),
+                        pokemon_name: Localizer.instance.get(`poke_${pokemon.pokemonId}`),
+                        pokemon_spawn_id: pokemon.id,
+                        location: `${pokemon.lat}, ${pokemon.lon}`
+                    };
+                    if (formatted) {
+                        // TODO: Set pokemon image url (optional)
+                        json["pokemon_image"] = `<img src="/static/img/pokemon/${pokemon.pokemonId}.png" style="height:50px; width:50px;">`;
+                    }
+                    jsonArray.push(json);
+                    i++;
+                });
+            }
             data["ivqueue"] = jsonArray;
         }
         data["timestamp"] = getCurrentTimestamp();
         return {
+            title: DbController.Title,
             data: data
         };
     }
@@ -331,6 +334,13 @@ class ApiController {
                         return;
                     }
                 }
+                break;
+            case Page.dashboardInstanceIVQueue:
+                data["page_is_dashboard"] = true;
+                data["page"] = "Dashboard - IV Queue";
+                let ivInstanceName = req.param("instance_name") || "";
+                data["instance_name_url"] = ivInstanceName;
+                data["instance_name"] = decodeURI(ivInstanceName);
                 break;
             case Page.dashboardAssignments:
                 data["page_is_dashboard"] = true;
