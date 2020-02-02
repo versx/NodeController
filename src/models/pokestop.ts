@@ -334,10 +334,7 @@ class Pokestop {
      * Clear quests for pokestops by id.
      * @param ids 
      */
-    static async clearQuests(ids: string[]): Promise<void> {
-        if (ids.length === 0) {
-            return;
-        }
+    static async clearQuests(ids?: string[]): Promise<void> {
         let whereSQL: String
         if (ids && ids.length > 0) {
             let inSQL = "(";

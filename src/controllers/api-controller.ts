@@ -442,6 +442,21 @@ class ApiController {
                     }
                 }    
                 break;
+            case Page.dashboardClearQuests:
+                data["page_is_dashboard"] = true;
+                data["page"] = "Dashboard - Clear All Quests";
+                if (req.method === "POST") {
+                    try {
+                        await Pokestop.clearQuests();
+                        InstanceController.instance.reloadAllInstances();
+                        res.redirect('/dashboard');
+                        return
+                    } catch {
+                        data["show_error"] = true;
+                        data["error"] = "Failed to clear Quests. Please try again later.";
+                    }
+                }    
+                break;
             case Page.dashboardAccounts:
                 data["page_is_dashboard"] = true;
                 data["page"] = "Dashboard - Accounts";
