@@ -1,11 +1,12 @@
-"use strict"
+"use strict";
 
+import * as moment from 'moment';
+import { DbController } from '../controllers/db-controller';
 import { InstanceController } from '../controllers/instances/instance-controller';
 import { WebhookController } from '../controllers/webhook-controller';
 import { Database } from '../data/mysql';
 import { Pokestop } from './pokestop';
 import { Spawnpoint } from "./spawnpoint";
-import * as moment from 'moment';
 import { getCurrentTimestamp } from '../utils/util';
 //import { winston } from '../utils/logger';
 import config = require('../config.json');
@@ -17,9 +18,6 @@ const db = new Database(config);
 class Pokemon /*extends Consumable*/ {
     static Pokemon = {};
     static DittoPokemonId: number = 132;
-    static DittoDisguises: number[] = [46, 48, 163, 165, 193, 223, 293, 316, 543];
-    static DefaultTimeUnseen: number = 1200;
-    static DefaultTimeReseen: number = 600;
     static WeatherBoostMinLevel: number = 6;
     static WeatherBoostMinIvStat: number = 4;
 
@@ -404,7 +402,7 @@ class Pokemon /*extends Consumable*/ {
      * @param pokemon 
      */
     static isDittoDisguisedFromPokemon(pokemon: Pokemon): boolean {
-        let isDisguised = (pokemon.pokemonId == Pokemon.DittoPokemonId) || (Pokemon.DittoDisguises.includes(pokemon.pokemonId) || false);
+        let isDisguised = (pokemon.pokemonId == Pokemon.DittoPokemonId) || (DbController.DittoDisguises.includes(pokemon.pokemonId) || false);
         let isUnderLevelBoosted = pokemon.level > 0 && pokemon.level < Pokemon.WeatherBoostMinLevel;
         let isUnderIvStatBoosted = pokemon.level > 0 && (pokemon.atkIv < Pokemon.WeatherBoostMinIvStat || pokemon.defIv < Pokemon.WeatherBoostMinIvStat || pokemon.staIv < Pokemon.WeatherBoostMinIvStat);
         let isWeatherBoosted = pokemon.weather > 0;
@@ -420,7 +418,7 @@ class Pokemon /*extends Consumable*/ {
      * @param staIv 
      */
     static isDittoDisguised(pokemonId: number, level: number, weather: number, atkIv: number, defIv: number, staIv: number) {
-        let isDisguised = (pokemonId == Pokemon.DittoPokemonId) || (Pokemon.DittoDisguises.includes(pokemonId) || false);
+        let isDisguised = (pokemonId == Pokemon.DittoPokemonId) || (DbController.DittoDisguises.includes(pokemonId) || false);
         let isUnderLevelBoosted = level > 0 && level < Pokemon.WeatherBoostMinLevel;
         let isUnderIvStatBoosted = level > 0 && (atkIv < Pokemon.WeatherBoostMinIvStat || defIv < Pokemon.WeatherBoostMinIvStat || staIv < Pokemon.WeatherBoostMinIvStat);
         let isWeatherBoosted = weather > 0;
@@ -468,7 +466,7 @@ class Pokemon /*extends Consumable*/ {
             bindFirstSeen = false;
             bindChangedTimestamp = false;
             if (this.expireTimestamp === undefined || this.expireTimestamp === null) {
-                this.expireTimestamp = getCurrentTimestamp() + Pokemon.DefaultTimeUnseen;
+                this.expireTimestamp = getCurrentTimestamp() + DbController.PokemonTimeUnseen;
             }
             this.firstSeenTimestamp = this.updated;
             sql = `
@@ -482,8 +480,8 @@ class Pokemon /*extends Consumable*/ {
             if (this.expireTimestamp === undefined || this.expireTimestamp === null) {
                 let now = getCurrentTimestamp();
                 let oldExpireDate: number = oldPokemon.expireTimestamp;
-                if ((oldExpireDate - now) < Pokemon.DefaultTimeReseen) {
-                    this.expireTimestamp = getCurrentTimestamp() + Pokemon.DefaultTimeReseen;
+                if ((oldExpireDate - now) < DbController.PokemonTimeReseen) {
+                    this.expireTimestamp = getCurrentTimestamp() + DbController.PokemonTimeReseen;
                 } else {
                     this.expireTimestamp = oldPokemon.expireTimestamp;
                 }
@@ -639,7 +637,6 @@ class Pokemon /*extends Consumable*/ {
 
         if (this.lat === undefined) {
             if (this.pokestopId) {
-                // TODO: Find out why pokestop_id is sometimes null
                 let pokestop: Pokestop;
                 try {
                     pokestop = await Pokestop.getById(this.pokestopId);
@@ -663,7 +660,6 @@ class Pokemon /*extends Consumable*/ {
             }
         }
 
-        // TODO: Error: ER_BAD_NULL_ERROR: Column 'lat' cannot be null
         // TODO: Error: ER_NO_REFERENCED_ROW_2: Cannot add or update a child row: a foreign key constraint fails (`rdmdb`.`pokemon`, CONSTRAINT `fk_pokemon_cell_id` FOREIGN KEY (`cell_id`) REFERENCES `s2cell` (`id`) ON DELETE CASCADE ON UPDATE CASCADE)
         await db.query(sql, args)
             .then(x => x)

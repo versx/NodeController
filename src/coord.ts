@@ -1,4 +1,4 @@
-"use strict"
+"use strict";
 
 /**
  * 
@@ -13,4 +13,5 @@ class Coord {
     }
 }
 
+// Export class.
 export { Coord };

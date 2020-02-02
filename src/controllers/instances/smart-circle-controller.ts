@@ -10,7 +10,7 @@ import { getCurrentTimestamp, snooze } from '../../utils/util';
 class CircleSmartRaidInstanceController extends CircleInstanceController {
     private smartRaidInterval: number = 30 * 1000; // 30 seconds
     private smartRaidGyms: Map<string, Gym>;
-    private smartRaidGymsInPoint: Map<Coord, string>;
+    private smartRaidGymsInPoint: Map<Coord, string[]>;
     private smartRaidPointsUpdated: Map<Coord, Date>;
 
     private startDate: Date;
@@ -42,7 +42,7 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
                     if (this.smartRaidGymsInPoint.has(point)) {
                         let gym = gyms.map(gym => gym.id.toString());
                         if (gym.length > 0) {
-                            this.smartRaidGymsInPoint.set(point, gym[0]);
+                            this.smartRaidGymsInPoint.set(point, gym);
                         }
                     }
                     if (this.smartRaidPointsUpdated.has(point)) {
@@ -63,18 +63,22 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
         setInterval(() => this.raidUpdaterRun(), this.smartRaidInterval);
     }
     async raidUpdaterRun() {
-        while (!this.shouldExit) {
-            let ids: string[] = Array.from(this.smartRaidGyms.keys());
-            let gyms = await Gym.getByIds(ids);
-            if (gyms === null) {
-                snooze(5000);
-                continue;
-            }
+        if (this.shouldExit) {
+            return;
+        }
+        let ids: string[] = this.smartRaidGyms ? Array.from(this.smartRaidGyms.keys()) : [];
+        if (ids.length === 0) {
+            return;
+        }
+        let gyms = await Gym.getByIds(ids);
+        if (gyms) {
             gyms.forEach(gym => {
                 this.smartRaidGyms[gym.id] = gym;
             });
-            snooze(30 * 1000);
+            await snooze(5000);
+            return;
         }
+        await snooze(30 * 1000);
     }
     stop() {
         this.shouldExit = true;
@@ -85,21 +89,25 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
     }
     getTask(uuid: string, username: string) {
         // Get gyms without raid and gyms without boss where updated ago > ignoreTime
-        let gymsNoRaid: [Gym, Date, Coord][];
-        let gymsNoBoss: [Gym, Date, Coord][];
-        this.smartRaidGymsInPoint.forEach(function(gymsInPoint) {
-            let updated = this.smartRaidPointsUpdated.get(gymsInPoint);
+        let gymsNoRaid: [Gym, Date, Coord][] = [];
+        let gymsNoBoss: [Gym, Date, Coord][] = [];
+        this.smartRaidGymsInPoint.forEach((value: string[], key: Coord, map: Map<Coord, string[]>) => {
+            let updated = this.smartRaidPointsUpdated.get(key);
             let nowTimestamp = getCurrentTimestamp();
-            if (updated === null || nowTimestamp >= updated + CircleSmartRaidInstanceController.ignoreTime) {
-                this.gymsInPoint.forEach(id => {
+            if (updated === undefined || 
+                updated === null || 
+                nowTimestamp >= (/*TODO: Verify this is correct*/updated.getTime() / 1000) + CircleSmartRaidInstanceController.ignoreTime) {
+                value.forEach(id => {
                     let gym = this.smartRaidGyms[id];
-                    if (gym.raidEndTimestamp === null ||
+                    if (gym.raidEndTimestamp === undefined || 
+                        gym.raidEndTimestamp === null ||
                         nowTimestamp >= parseInt(gym.raidEndTimestamp) + CircleSmartRaidInstanceController.noRaidTime) {
-                        gymsNoRaid.push([gym, updated, null]);/*TODO: gymsInPoint*/
-                    } else if (gym.raidPokemonId === null &&
-                        gym.raidBattleTimestamp !== null &&
+                        gymsNoRaid.push([gym, updated, key]);
+                    } else if (gym.raidPokemonId === undefined ||
+                        gym.raidPokemonId === null &&
+                        gym.raidBattleTimestamp &&
                         nowTimestamp >= parseInt(gym.raidBattleTimestamp) - CircleSmartRaidInstanceController.raidInfoBeforeHatch) {
-                        gymsNoBoss.push([gym, updated, null]);/*TODO: gymsInPoint*/
+                        gymsNoBoss.push([gym, updated, key]);
                     }
                 });
             }
@@ -107,17 +115,16 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
 
         // Get coord to scan
         let coord: Coord;
+        // TODO: Type 'Coord' cannot be used as an index type.
         if (!(gymsNoBoss.length > 0)) {
-            // TODO: gymsNoBoss.sort((lhs, rhs) => lhs.1 < rhs.1);
+            //gymsNoBoss.sort((lhs, rhs) => lhs[1] < rhs[1]);
             let first = gymsNoBoss.pop();
-            // TODO: Type 'Coord' cannot be used as an index type.
-            // smartRaidPointsUpdated[first[2]] = new Date();
+            //this.smartRaidPointsUpdated[first[2]] = new Date().getTime();
             coord = first[2];
         } else if (!(gymsNoRaid.length > 0)) {
-            // TODO: gymsNoRaid.sort((lhs, rhs) => lhs.1 < rhs.1);
+            //gymsNoRaid.sort((lhs, rhs) => lhs[1] < rhs[1]);
             let first = gymsNoRaid.pop();
-            // TODO: Type 'Coord' cannot be used as an index type.
-            // smartRaidPointsUpdated[first[2]] = new Date();
+            //this.smartRaidPointsUpdated[first[2]] = new Date().getTime();
             coord = first[2];
         }
         
@@ -141,19 +148,17 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
             };
         }
     }
-    getStatus() {//formatted: boolean) {
+    getStatus(formatted: boolean): any {
         let scansh: number;
-        if (this.startDate !== undefined && this.startDate !== null) {
+        if (this.startDate instanceof Date) {
             scansh = this.count / getCurrentTimestamp() - (this.startDate.getTime() / 1000) * 3600;
         } else {
             scansh = null;
         }
-        //if (formatted) {
-            //return "Scans/h: " + (scansh === null ? "-" : scansh);
-        //} else {
-            //return { scans_per_h: scansh };
-            return { round_time: scansh };
-        //}
+        if (formatted) {
+            return "Scans/h: " + (scansh === null ? "-" : scansh);
+        }
+        return { scans_per_h: scansh };
     }
 }
 

@@ -1,10 +1,10 @@
 /**
  * Author: versx
  * Date: January 4th 2020
- * Version: 0.0.4
+ * Version: 0.8.3
  */
 
-"use strict"
+"use strict";
 
 import { AccountController } from './controllers/account-controller';
 import { AssignmentController } from './controllers/assignment-controller';

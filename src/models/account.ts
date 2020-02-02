@@ -42,13 +42,19 @@ class Account {
         spins: number, tutorial: number, ptcToken: string) {
         this.username = username;
         this.password = password;
-        this.firstWarningTimestamp = firstWarningTimestamp;
-        this.failedTimestamp = failedTimestamp;
+        if (firstWarningTimestamp > 0) {
+            this.firstWarningTimestamp = firstWarningTimestamp;
+        }
+        if (failedTimestamp > 0) {
+            this.failedTimestamp = failedTimestamp;
+        }
         this.failed = failed;
         this.level = level;
         this.lastEncounterLat = lastEncounterLat;
         this.lastEncounterLon = lastEncounterLon;
-        this.lastEncounterTime = lastEncounterTime;
+        if (lastEncounterTime > 0) {
+            this.lastEncounterTime = lastEncounterTime;
+        }
         this.spins = spins;
         this.tutorial = tutorial;
         this.ptcToken = ptcToken;
@@ -75,8 +81,8 @@ class Account {
         `;
         let result = await db.query(sql, [minLevel, maxLevel])
             .then(x => x)
-            .catch(x => { 
-                console.log("[ACCOUNT] Failed to get new Account");
+            .catch(err => { 
+                console.log("[Account] Failed to get new Account", err);
                 return null;
             });
         let account: Account;
@@ -95,12 +101,164 @@ class Account {
                     key.last_encounter_time,
                     key.spins,
                     key.tutorial,
-                    null//key.ptc_token
+                    key.ptcToken
                 );
             });
         }
         return account;
     }
+    /*
+    getNewAccount(mysql: MySQL?=nil, uuid: String, area: String, minLevel: Int, maxLevel: Int) throws -> Account? {
+        guard let mysql = mysql ?? DBController.global.mysql else {
+            Log.error(message: "[ACCOUNT] Failed to connect to database.")
+            throw DBController.DBError()
+        }
+        var newLat: Double = 0
+        var newLon: Double = 0
+        var spinLimit: Int = 0
+        var findAccount = false
+        var action: String = ""
+        var username: String = ""
+        var password: String = ""
+        var level: UInt8 = 0
+        var firstWarningTimestamp: UInt32 = 0
+        var failedTimestamp: UInt32 = 0
+        var failed: String = ""
+        var lastEncounterLat: Double = 0
+        var lastEncounterLon: Double = 0
+        var lastEncounterTime: UInt32 = 0
+        var spins: UInt16 = 0
+        var tutorial: UInt8 = 0
+        var ptcToken: String = ""
+        let controller = InstanceController.global.getInstanceController(deviceUUID: uuid)
+        if controller != nil {
+            let newTask = controller!.getTask(uuid: uuid, username: nil, startup: true)
+            newLat = newTask["lat"] as! Double
+            newLon = newTask["lon"] as! Double
+            action = newTask["action"] as! String
+            if action == "scan_quest" {
+                spinLimit = newTask["spin_limit"] as! Int
+            }
+        }
+        let sql = """
+        SELECT username, password, level, first_warning_timestamp, failed_timestamp, failed, last_encounter_lat, last_encounter_lon, last_encounter_time, spins, tutorial, ptcToken
+        FROM account
+        LEFT JOIN device ON username = account_username
+        WHERE (first_warning_timestamp < UNIX_TIMESTAMP() - 604801 OR first_warning_timestamp IS NULL)  AND (failed_timestamp < UNIX_TIMESTAMP() - 2592001 OR failed_timestamp IS NULL) AND device.uuid IS NULL AND level >= ? AND level <= ? AND failed IS NULL AND last_uuid = ? AND last_instance = ? AND spins < ?
+        ORDER BY level DESC, RAND()
+        """
+        
+        let mysqlStmt = MySQLStmt(mysql)
+        _ = mysqlStmt.prepare(statement: sql)
+        mysqlStmt.bindParam(minLevel)
+        mysqlStmt.bindParam(maxLevel)
+        mysqlStmt.bindParam(uuid)
+        mysqlStmt.bindParam(area)
+        if action == "scan_quest" {
+            mysqlStmt.bindParam(spinLimit)
+        } else {
+            mysqlStmt.bindParam(99999)
+        }
+        guard mysqlStmt.execute() else {
+            Log.error(message: "[ACCOUNT] Failed to execute query. (\(mysqlStmt.errorMessage())")
+            throw DBController.DBError()
+        }
+        let results = mysqlStmt.results()
+        
+        _ = results.forEachRow {
+            sqlResult in
+            if !findAccount {
+                var logDelay: Double = 0
+                var newCoords = CLLocationCoordinate2D(latitude: 0, longitude: 0)
+                var oldCoords = CLLocationCoordinate2D(latitude: 0, longitude: 0)
+                var lastEncounter: UInt32 = 0
+                let timeNow = UInt32(Date().timeIntervalSince1970)
+                
+                username = sqlResult[0] as! String
+                password = sqlResult[1] as! String
+                level = sqlResult[2] as! UInt8
+                firstWarningTimestamp = sqlResult[3] as? UInt32 ?? 0
+                failedTimestamp = sqlResult[4] as? UInt32 ?? 0
+                failed = sqlResult[5] as? String ?? ""
+                lastEncounterLat = sqlResult[6] as? Double ?? 0
+                lastEncounterLon = sqlResult[7] as? Double ?? 0
+                lastEncounterTime = sqlResult[8] as? UInt32 ?? 1
+                spins = sqlResult[9] as! UInt16
+                tutorial = sqlResult[10] as! UInt8
+                ptcToken = sqlResult[11] as? String ?? ""
+            
+                newCoords = CLLocationCoordinate2D(latitude: newLat, longitude: newLon)
+                if lastEncounterLat != 0 && lastEncounterLon != 0 {
+                    oldCoords = CLLocationCoordinate2D(latitude: lastEncounterLat, longitude: lastEncounterLon)
+                    lastEncounter = lastEncounterTime
+                } else {
+                    oldCoords = newCoords
+                    lastEncounter = 0
+                }
+                let dist = oldCoords.distance(to: newCoords) / 1000
+                for data in Account.cooldownDataArray {
+                    if data.key >= dist {
+                        logDelay = (data.value * 60) - 10
+                        break
+                    }
+                }
+                let finalDelay = UInt32(logDelay)
+                let checkDelay = timeNow - lastEncounter
+                if checkDelay >= finalDelay {
+                    findAccount = true
+
+                } else {
+                    findAccount = false
+                }
+            }
+        }
+        if !findAccount {
+            let sql = """
+                SELECT username, password, level, first_warning_timestamp, failed_timestamp, failed, last_encounter_lat, last_encounter_lon, last_encounter_time, spins, tutorial, ptcToken
+                FROM account
+                LEFT JOIN device ON username = account_username
+                WHERE (first_warning_timestamp < UNIX_TIMESTAMP() - 604801 OR first_warning_timestamp IS NULL)  AND (failed_timestamp < UNIX_TIMESTAMP() - 2592001 OR failed_timestamp IS NULL) AND device.uuid IS NULL AND level >= ? AND level <= ? AND failed IS NULL AND last_uuid is NULL AND last_instance is NULL AND spins = ?
+                ORDER BY level DESC, RAND()
+                LIMIT 1
+            """
+
+            let mysqlStmt = MySQLStmt(mysql)
+            _ = mysqlStmt.prepare(statement: sql)
+            mysqlStmt.bindParam(minLevel)
+            mysqlStmt.bindParam(maxLevel)
+
+            guard mysqlStmt.execute() else {
+                Log.error(message: "[ACCOUNT] Failed to execute query. (\(mysqlStmt.errorMessage())")
+                throw DBController.DBError()
+            }
+            let results = mysqlStmt.results()
+            if results.numRows == 0 {
+                return nil
+            }
+
+            let result = results.next()!
+
+            username = result[0] as! String
+            password = result[1] as! String
+            level = result[2] as! UInt8
+            firstWarningTimestamp = result[3] as? UInt32 ?? 0
+            failedTimestamp = result[4] as? UInt32 ?? 0
+            failed = result[5] as? String ?? ""
+            lastEncounterLat = result[6] as? Double ?? 0
+            lastEncounterLon = result[7] as? Double ?? 0
+            lastEncounterTime = result[8] as? UInt32 ?? 1
+            spins = result[9] as! UInt16
+            tutorial = result[10] as! UInt8
+            ptcToken = result[11] as? String ?? ""
+            if action == "scan_quest" {
+                mysqlStmt.bindParam(spinLimit)
+            } else {
+                mysqlStmt.bindParam(99999)
+            }
+        }
+        return Account(username: username, password: password, level: level, firstWarningTimestamp: firstWarningTimestamp, failedTimestamp: failedTimestamp, failed: failed, lastEncounterLat: lastEncounterLat, lastEncounterLon: lastEncounterLon, lastEncounterTime: lastEncounterTime, spins: spins, tutorial: tutorial, ptcToken: ptcToken)
+    }
+    */
     /**
      * Increment spin for account with username.
      * @param username 
@@ -113,11 +271,11 @@ class Account {
         `;
         let result = await db.query(sql, username)
             .then(x => x)
-            .catch(x => {
-                console.log("[ACCOUNT] Failed to increment spin count for account with username " + username);
+            .catch(err => {
+                console.log("[Account] Failed to increment spin count for account with username", username, "Error:", err);
                 return null;
             });
-        console.log("[ACCOUNT] Spin: " + result);
+        console.log("[Account] Spin:", result);
     }
     /**
      * Get account with username.
@@ -125,15 +283,16 @@ class Account {
      */
     static async getWithUsername(username: string): Promise<Account> {
         let sql = `
-        SELECT username, password, first_warning_timestamp, failed_timestamp, failed, level, last_encounter_lat, last_encounter_lon, last_encounter_time, spins, tutorial, ptc_token
+        SELECT username, password, first_warning_timestamp, failed_timestamp, failed, level, last_encounter_lat, last_encounter_lon, last_encounter_time, spins, tutorial, ptcToken
         FROM account
         WHERE username = ?
         LIMIT 1
         `;
-        let result = await db.query(sql, username)
+        let args = [username];
+        let result = await db.query(sql, args)
             .then(x => x)
-            .catch(x => { 
-                console.log("[ACCOUNT] Failed to get Account with username " + username);
+            .catch(err => { 
+                console.log("[Account] Failed to get Account with username", username, "Error:", err);
                 return null;
             });
         let account: Account;
@@ -151,7 +310,43 @@ class Account {
                 key.last_encounter_time,
                 key.spins,
                 key.tutorial,
-                null//key.ptc_token
+                key.ptcToken
+            );
+        })
+        return account;
+    }
+    static async getNewAccountNoToken(minLevel: number, maxLevel: number): Promise<Account> {
+        let sql = `
+        SELECT username, password, first_warning_timestamp, failed_timestamp, failed, level, last_encounter_lat, last_encounter_lon, last_encounter_time, spins, tutorial, ptcToken
+        FROM account
+        LEFT JOIN device ON username = account_username
+        WHERE first_warning_timestamp is NULL AND failed_timestamp is NULL and device.uuid IS NULL AND level >= ? AND level <= ? AND failed IS NULL AND (last_encounter_time IS NULL OR UNIX_TIMESTAMP() -  CAST(last_encounter_time AS SIGNED INTEGER) >= 7200 AND spins < 400) AND ptcToken IS NULL
+        ORDER BY level DESC, RAND()
+        LIMIT 1
+        `;
+        let args = [minLevel, maxLevel];
+        let result = await db.query(sql, args)
+            .then(x => x)
+            .catch(err => { 
+                console.log("[Account] Failed to get Account between level ", minLevel, "-", maxLevel, "Error:", err);
+                return null;
+            });
+        let account: Account;
+        let keys = Object.values(result);
+        keys.forEach(key => {
+            account = new Account(
+                key.username,
+                key.password,
+                key.first_warning_timestamp,
+                key.failed_timestamp,
+                key.failed,
+                key.level,
+                key.last_encounter_lat,
+                key.last_encounter_lon,
+                key.last_encounter_time,
+                key.spins,
+                key.tutorial,
+                key.ptcToken
             );
         })
         return account;
@@ -173,10 +368,10 @@ class Account {
         let result = await db.query(sql, args)
             .then(x => x)
             .catch(err => {
-                console.log("[ACCOUNT] Failed to set encounter info for account with username " + username);
+                console.log("[Account] Failed to set encounter info for account with username", username, "Error:", err);
                 return null;
             });
-        console.log("[ACCOUNT] DidEncounter: " + result);
+        console.log("[Account] DidEncounter:", result);
     }
     /**
      * Clear spins for account.
@@ -188,11 +383,11 @@ class Account {
         `;
         let result = await db.query(sql)
             .then(x => x)
-            .catch(x => {
-                console.log("[ACCOUNT] Failed to set clear spins for accounts.");
+            .catch(err => {
+                console.log("[Account] Failed to set clear spins for accounts:", err);
                 return null;
             });
-        console.log("[ACCOUNT] ClearSpins: " + result);
+        console.log("[Account] ClearSpins:", result);
     }
     /**
      * Set account level.
@@ -205,13 +400,118 @@ class Account {
         SET level = ?
         WHERE username = ?
         `;
-        let result = await db.query(sql, username)
+        let args = [level, username];
+        let result = await db.query(sql, args)
             .then(x => x)
-            .catch(x => { 
-                console.log("[ACCOUNT] Failed to set Account level for username " + username);
+            .catch(err => { 
+                console.log("[Account] Failed to set Account level for username", username, "Error:", err);
                 return null;
             });
-        console.log("[ACCOUNT] Results: " + result);
+        console.log("[Account] Results:", result);
+    }
+    static async setCooldown(username: string, lastLat: number, lastLon: number): Promise<void> {
+        let sql = `
+        UPDATE account
+        SET last_encounter_lat = ?, last_encounter_lon = ?, last_encounter_time = UNIX_TIMESTAMP()
+        WHERE username = ?
+        `;
+        let args = [lastLat, lastLon, username];
+        let result = await db.query(sql, args)
+            .then(x => x)
+            .catch(err => { 
+                console.log("[Account] Failed to set cooldown on Account with username", username, "Error:", err);
+                return null;
+            });
+        console.log("[Account] Results:", result);
+    }
+    static async setTutorial(username: string, tutorial: number): Promise<void> {
+        let sql = `
+        UPDATE account
+        SET tutorial = ?
+        WHERE username = ?
+        `;
+        let args = [tutorial, username];
+        let result = await db.query(sql, args)
+            .then(x => x)
+            .catch(err => { 
+                console.log("[Account] Failed to set tutorial for Account with username", username, "Error:", err);
+                return null;
+            });
+        console.log("[Account] Results:", result);
+    }
+    static async setInstanceUuid(uuid: string, area: string, username: string): Promise<void> {
+        let sql = `
+        UPDATE account
+        SET last_uuid = ?,
+            last_instance = ?
+        WHERE username = ?
+        `;
+        let args = [uuid, area, username];
+        let result = await db.query(sql, args)
+            .then(x => x)
+            .catch(err => { 
+                console.log("[Account] Failed to set Account intance for username", username, "and device", uuid, "Error:", err);
+                return null;
+            });
+        console.log("[Account] Results:", result);
+    }
+    static async convertAccountLock(): Promise<number> {
+        let sql = `
+        UPDATE account
+        SET last_uuid = NULL, last_instance = NULL
+        WHERE (last_encounter_time < UNIX_TIMESTAMP() - 86400) AND last_uuid IS NOT NULL AND last_instance IS NOT NULL
+        `;
+        let result = await db.query(sql)
+            .then(x => x)
+            .catch(err => { 
+                console.log("[Account] Failed to convert account lock count.\r\nError:", err);
+                return null;
+            });
+        console.log("[Account] Results:", result);
+        return Object.keys(result).length; // Return affected_rows instead.
+    }
+    static async convertAccountLockCount(): Promise<number> {
+        let sql = `
+        SELECT username
+        FROM account
+        WHERE (last_encounter_time < UNIX_TIMESTAMP() - 86400) AND last_uuid IS NOT NULL AND last_instance IS NOT NULL
+        `;
+        let result = await db.query(sql)
+            .then(x => x)
+            .catch(err => { 
+                console.log("[Account] Failed to convert account lock count.\r\nError:", err);
+                return null;
+            });
+        console.log("[Account] Results:", result);
+        return Object.keys(result).length; // Return num_rows instead.
+    }
+    static async checkFail(username: string): Promise<boolean> {
+        let sql = `
+        SELECT first_warning_timestamp, failed_timestamp
+        FROM account
+        WHERE username = ?
+        `;
+        let args = [username];
+        let result = db.query(sql, args)
+            .then(x => x)
+            .catch(err => {
+                console.error(`[ACCOUNT] Failed to execute query. (${err})`);
+                return;
+            });
+        /*
+        if (result.num_rows === 0) {
+            return false;
+        }
+        */
+        if (result) {
+            let values = Object.values(result);
+            let firstWarningTimestamp = parseInt(values[0]);
+            let failedTimestamp = parseInt(values[1]);
+            if (firstWarningTimestamp || failedTimestamp) {
+                return true;
+            }
+        }
+        return false;
     }
     /**
      * Save account.
@@ -220,41 +520,41 @@ class Account {
     async save(update: boolean): Promise<void> {
 
         let sql: string = "";
-        let args: any = {};
+        let args = [];
         if (update) {
             sql = `
             UPDATE account
-            SET password = ?, level = ?, first_warning_timestamp = ?, failed_timestamp = ?, failed = ?, last_encounter_lat = ?, last_encounter_lon = ?, last_encounter_time = ?, spins = ?
+            SET password = ?, level = ?, first_warning_timestamp = ?, failed_timestamp = ?, failed = ?, last_encounter_lat = ?, last_encounter_lon = ?, last_encounter_time = ?, spins = ?, ptcToken = ?
             WHERE username = ?
             `;
             args = [this.password, this.level, this.firstWarningTimestamp, this.failedTimestamp, this.failed, this.lastEncounterLat, this.lastEncounterLon, this.lastEncounterTime, this.spins];
         } else {
             sql = `
-            INSERT INTO account (username, password, level, first_warning_timestamp, failed_timestamp, failed, last_encounter_lat, last_encounter_lon, last_encounter_time, spins)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO account (username, password, level, first_warning_timestamp, failed_timestamp, failed, last_encounter_lat, last_encounter_lon, last_encounter_time, spins, ptcToken)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
-            args = [this.username, this.password, this.level, this.firstWarningTimestamp, this.failedTimestamp, this.failed, this.lastEncounterLat, this.lastEncounterLon, this.lastEncounterTime, this.spins];
+            args = [this.username, this.password, this.level, this.firstWarningTimestamp, this.failedTimestamp, this.failed, this.lastEncounterLat, this.lastEncounterLon, this.lastEncounterTime, this.spins, this.ptcToken];
         }
         let result = await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.log("[ACCOUNT] Error: " + x);
+            .catch(err => {
+                console.log("[Account] Error:", err);
                 return null;
             });
-        console.log("[ACCOUNT] Save: " + result)
+        console.log("[Account] Save:", result)
     }
     /**
      * Load all accounts.
      */
     static async load(): Promise<Account[]> {
         let sql = `
-        SELECT username, password, first_warning_timestamp, failed_timestamp, failed, level, last_encounter_lat, last_encounter_lon, last_encounter_time, spins, tutorial
+        SELECT username, password, first_warning_timestamp, failed_timestamp, failed, level, last_encounter_lat, last_encounter_lon, last_encounter_time, spins, tutorial, ptcToken
         FROM account
-        `; //TODO: ptc_token
+        `;
         let results: any = await db.query(sql)
             .then(x => x)
-            .catch(x => {
-                console.log("[ACCOUNT] Error: " + x);
+            .catch(err => {
+                console.log("[Account] Error:", err);
                 return null;
             });
         let accounts: Account[] = [];
@@ -273,7 +573,7 @@ class Account {
                     row.last_encounter_time,
                     row.spins,
                     row.tutorial,
-                    null//key.ptc_token
+                    row.ptcToken
                 ));
             }
         }
@@ -300,7 +600,7 @@ class Account {
         let results: any = await db.query(sql)
             .then(x => x)
             .catch(err => {
-                console.error(`[ACCOUNT] Failed to execute query. (${err})`);
+                console.error(`[Account] Failed to execute query. (${err})`);
             });
         let stats = [];
         if (results && results.length > 0) {
@@ -322,7 +622,6 @@ class Account {
         }       
         return stats;
     }
-
 }
 
 // Export the class

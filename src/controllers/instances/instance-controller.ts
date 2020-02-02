@@ -15,8 +15,10 @@ import { AssignmentController } from "../assignment-controller"
 
 class InstanceController implements IInstanceController {
     static instance = new InstanceController();
-    Devices = {};
-    Instances = {};
+    static DefaultMinLevel: number = 0;
+    static DefaultMaxLevel: number = 29;
+    static DefaultIVQueueLimit: number = 100;
+    static DefaultSpinLimit: number = 500;
 
     private instancesByInstanceName = {};
     private devicesByDeviceUUID = {};
@@ -24,20 +26,14 @@ class InstanceController implements IInstanceController {
     constructor() { }
     async setup() {
         console.info("[InstanceController] Starting up...");
-        this.Devices = await Device.load();
-        this.Instances = await Instance.load();
+        let devices = await Device.load();
+        let instances = await Instance.load();
 
-        let keys = Object.keys(this.Devices);
-        if (keys) {
-            keys.forEach((uuid: string) => {
-                this.addDevice(this.Devices[uuid]);
-            });
+        if (devices) {
+            devices.forEach(device => this.addDevice(device));
         }
-        if (keys) {
-            keys = Object.keys(this.Instances);
-            keys.forEach((name: string) => {
-                this.addInstance(this.Instances[name]);
-            });
+        if (instances) {
+            instances.forEach(instance => this.addInstance(instance));
         }
     }
     getInstanceControllerByInstanceName(instanceName: string) {
@@ -64,34 +60,34 @@ class InstanceController implements IInstanceController {
             case InstanceType.GatherToken:
                 let coordsArray: Coord[] = [];
                 if (instance.data.area) {
-                    coordsArray = instance.data.area; //TODO: Check
+                    coordsArray = instance.data.area; //TODO: Confirm working
                 } else {
                     let coords = instance.data.area;
                     coords.forEach((coord: any) => {
                         coordsArray.push(new Coord(coord["lat"], coord["lon"]));
                     });
                 }
-                let minLevel = instance.data.minLevel || 0;
-                let maxLevel = instance.data.maxLevel || 29;
+                let circleMinLevel = instance.data.min_level || InstanceController.DefaultMinLevel;
+                let circleMaxLevel = instance.data.max_level || InstanceController.DefaultMaxLevel;
                 switch (instance.type) {
                     case InstanceType.CirclePokemon:
                     case InstanceType.CircleRaid:
                     case InstanceType.Leveling:
                     case InstanceType.GatherToken:                        
-                        instanceController = new CircleInstanceController(instance.name, instance.type, minLevel, maxLevel, coordsArray);
+                        instanceController = new CircleInstanceController(instance.name, instance.type, circleMinLevel, circleMaxLevel, coordsArray);
                         break;
                     default:
-                        instanceController = new CircleSmartRaidInstanceController(instance.name, minLevel, maxLevel, coordsArray);
+                        instanceController = new CircleSmartRaidInstanceController(instance.name, circleMinLevel, circleMaxLevel, coordsArray);
                         break;
                 }
                 break;
             case InstanceType.PokemonIV:
             case InstanceType.AutoQuest:
                 let areaArray: Coord[][] = [];
-                if (instance.data.area) {
-                    areaArray = instance.data.area;
+                if (instance.data["area"]) {
+                    areaArray = instance.data["area"];
                 } else {
-                    let areas = instance.data.area;
+                    let areas = instance.data["area"];
                     let i = 0;
                     areas.forEach((coords: any) => {
                         coords.forEach((coord: any) => {
@@ -102,28 +98,44 @@ class InstanceController implements IInstanceController {
                         });
                         i++;
                     });
-                    let timeZoneOffset = instance.data.timeZoneOffset || 0;
-                    let areaArrayEmptyInner = [];
-                    areaArray.forEach((coords: Coord[]) => {
-                        let polyCoords = [];
-                        coords.forEach(coord => {
-                            polyCoords.push(turf.point([coord["lat"], coord["lon"]]));
-                        });
-                        areaArrayEmptyInner.push(polyCoords);
-                    });
-
-                    let minLevel = instance.data.minLevel || 0;
-                    let maxLevel = instance.data.maxLevel || 29;
-                    if (instance.type == InstanceType.PokemonIV) {
-                        let pokemonList: number[] = instance.data["pokemon_ids"] || [];
-                        let ivQueueLimit = instance.data["iv_queue_limit"] || 100;
-                        let scatterList = instance.data["scatter_pokemon_ids"] || [];
-                        instanceController = new IVInstanceController(instance.name, turf.multiPolygon(areaArrayEmptyInner).geometry, pokemonList, minLevel, maxLevel, ivQueueLimit, scatterList);
-                    } else {
-                        let spinLimit = instance.data["spin_limit"] || 500
-                        instanceController = new AutoInstanceController(instance.name, turf.multiPolygon(areaArrayEmptyInner).geometry, AutoInstanceType.Quest, timeZoneOffset, minLevel, maxLevel, spinLimit);
-                    }                    
                 }
+                let timeZoneOffset = instance.data.timezone_offset || 0;
+                let areaArrayEmptyInner = [];
+                areaArray.forEach((coords: Coord[]) => {
+                    let polyCoords = [];
+                    coords.forEach(coord => {
+                        polyCoords.push(turf.point([coord["lat"], coord["lon"]]));
+                    });
+                    areaArrayEmptyInner.push(polyCoords);
+                });
+
+                let ivMinLevel = instance.data.min_level || InstanceController.DefaultMinLevel;
+                let ivMaxLevel = instance.data.max_level || InstanceController.DefaultMaxLevel;
+                if (instance.type == InstanceType.PokemonIV) {
+                    let pokemonList: number[] = instance.data["pokemon_ids"] || [];
+                    let ivQueueLimit = instance.data["iv_queue_limit"] || InstanceController.DefaultIVQueueLimit;
+                    let scatterList = instance.data["scatter_pokemon_ids"] || [];
+                    instanceController = new IVInstanceController(
+                        instance.name,
+                        turf.multiPolygon(areaArrayEmptyInner).geometry,
+                        pokemonList,
+                        ivMinLevel,
+                        ivMaxLevel,
+                        ivQueueLimit,
+                        scatterList
+                    );
+                } else {
+                    let spinLimit = instance.data["spin_limit"] || InstanceController.DefaultSpinLimit;
+                    instanceController = new AutoInstanceController(
+                        instance.name,
+                        turf.multiPolygon(areaArrayEmptyInner).geometry,
+                        AutoInstanceType.Quest,
+                        timeZoneOffset,
+                        ivMinLevel,
+                        ivMaxLevel,
+                        spinLimit
+                    );
+                }                    
                 break;
         }
         // TODO: instanceController.delegate = AssignmentController.instance;
@@ -131,13 +143,16 @@ class InstanceController implements IInstanceController {
     }
     reloadAllInstances() {
         let keys = Object.keys(this.instancesByInstanceName);
-        keys.forEach(function(instance) {
-            this.instancesByInstanceName[instance].reload();
+        keys.forEach(instanceName => {
+            let controller = InstanceController.instance.getInstanceControllerByInstanceName(instanceName);
+            if (controller) {
+                controller.reload();
+            }
             AssignmentController.instance.setup();
         });
     }
     reloadInstance(newInstance: Instance, oldInstanceName: string) {
-        let oldInstance = this.instancesByInstanceName[oldInstanceName];
+        let oldInstance = InstanceController.instance.getInstanceControllerByInstanceName(oldInstanceName);
         if (oldInstance) {
             let keys = Object.keys(this.devicesByDeviceUUID);
             keys.forEach(deviceUUID => {
@@ -147,27 +162,20 @@ class InstanceController implements IInstanceController {
                     this.devicesByDeviceUUID[deviceUUID] = device;
                 }
             });
-            this.instancesByInstanceName[oldInstanceName].stop();
-            this.instancesByInstanceName[oldInstanceName] = null;
+            oldInstance.stop();
+            oldInstance = null;
         }
         this.addInstance(newInstance);
     }
     removeInstance(instance: Instance) {
-        this.instancesByInstanceName[instance.name].stop();
-        this.instancesByInstanceName[instance.name] = null;
-        let keys = Object.keys(this.devicesByDeviceUUID);
-        keys.forEach(deviceUUID => {
-            let device = this.devicesByDeviceUUID[deviceUUID];
-            if (device.instanceName === instance.name) {
-                this.devicesByDeviceUUID[deviceUUID] = null;
-            }
-        });
-        AssignmentController.instance.setup();
-
+        return this.removeInstanceByName(instance.name);
     }
     removeInstanceByName(instanceName: string) {
-        this.instancesByInstanceName[instanceName].stop();
-        this.instancesByInstanceName[instanceName] = null;
+        let controller = InstanceController.instance.getInstanceControllerByInstanceName(instanceName);
+        if (controller) {
+            this.instancesByInstanceName[instanceName].stop();
+            this.instancesByInstanceName[instanceName] = null;
+        }
         let keys = Object.keys(this.devicesByDeviceUUID);
         keys.forEach(deviceUUID => {
             let device = this.devicesByDeviceUUID[deviceUUID];
@@ -176,10 +184,9 @@ class InstanceController implements IInstanceController {
             }
         });
         AssignmentController.instance.setup();
-
     }
     addDevice(device: Device) {
-        if (device.instanceName !== null && this.instancesByInstanceName[device.instanceName] !== null) {
+        if (device.instanceName && this.instancesByInstanceName[device.instanceName]) {
             this.devicesByDeviceUUID[device.uuid] = device;
         }
         AssignmentController.instance.setup();
@@ -207,12 +214,33 @@ class InstanceController implements IInstanceController {
         });
         return deviceUUIDs;
     }
-    getInstanceStatus(instance: Instance, formatted: boolean): string {
-        let instanceProto = this.instancesByInstanceName[instance.name];
-        if (instanceProto instanceof Instance) {
-            return "";// TODO: instanceProto.getStatus(formatted);
+    async getInstanceStatus(instance: Instance, formatted: boolean): Promise<any> {
+        //let instanceProto = this.instancesByInstanceName[instance.name];
+        switch (instance.type) {
+            case InstanceType.AutoQuest:
+                let auto: AutoInstanceController = InstanceController.instance.getInstanceControllerByInstanceName(instance.name);
+                return await auto.getStatus(formatted);
+            case InstanceType.CirclePokemon:
+                let pkmn: CircleInstanceController = InstanceController.instance.getInstanceControllerByInstanceName(instance.name);
+                return pkmn.getStatus(formatted);
+            case InstanceType.CircleRaid:
+                let raid: IVInstanceController = InstanceController.instance.getInstanceControllerByInstanceName(instance.name);
+                return raid.getStatus(formatted);
+            case InstanceType.GatherToken:
+                let token: IVInstanceController = InstanceController.instance.getInstanceControllerByInstanceName(instance.name);
+                return token.getStatus(formatted);
+            case InstanceType.Leveling:
+                let level: CircleInstanceController = InstanceController.instance.getInstanceControllerByInstanceName(instance.name);
+                return level.getStatus(formatted);
+            case InstanceType.PokemonIV:
+                let iv: IVInstanceController = InstanceController.instance.getInstanceControllerByInstanceName(instance.name);
+                return iv.getStatus(formatted);
+            case InstanceType.SmartCircleRaid:
+                let smart: CircleSmartRaidInstanceController = InstanceController.instance.getInstanceControllerByInstanceName(instance.name);
+                return smart.getStatus(formatted);
+            default:
+                return formatted ? "?" : null;
         }
-        return formatted ? "?" : null;
     }
     gotPokemon(pokemon: Pokemon) {
         let keys = Object.keys(this.instancesByInstanceName);
@@ -226,14 +254,14 @@ class InstanceController implements IInstanceController {
     gotIV(pokemon: Pokemon) {
         let keys = Object.keys(this.instancesByInstanceName);
         keys.forEach(instanceName => {
-            let instance = this.instancesByInstanceName[instanceName];
+            let instance = InstanceController.instance.getInstanceControllerByInstanceName(instanceName)
             if (instance instanceof IVInstanceController) {
                 instance.gotIV(pokemon);
             }
         });
     }
     getIVQueue(name: string): Pokemon[] {
-        let instance = this.instancesByInstanceName[name];
+        let instance = InstanceController.instance.getInstanceControllerByInstanceName(name);
         if (instance instanceof IVInstanceController) {
             return instance.getQueue();
         }

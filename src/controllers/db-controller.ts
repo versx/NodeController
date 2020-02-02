@@ -1,4 +1,4 @@
-"use strict"
+"use strict";
 
 import * as os from 'os';
 import * as fs from 'fs';
@@ -7,6 +7,7 @@ import * as uuid from 'uuid';
 import { spawn } from 'child_process';
 
 import { Database } from '../data/mysql';
+import { Localizer } from '../utils/localizer';
 import { snooze, readFile } from '../utils/util';
 import config      = require('../config.json');
 const db           = new Database(config);
@@ -16,7 +17,22 @@ const db           = new Database(config);
  */
 class DbController {
     static instance = new DbController();
-    settings = {};
+    
+    // Default database settings
+    static Title: string = "Nodedradamus";
+    static MaxPokemonId: number = 649;
+    static PokemonTimeUnseen: number = 1200;
+    static PokemonTimeReseen: number = 600;
+    static ExRaidBossId: number = 0;
+    static ExRaidBossForm: number = 0;
+    static LureTime: number = 1800;
+    static HostWhitelist: string[];
+    static HostWhitelistUsesProxy: boolean = false;
+    static LoginSecret: string;
+    static DittoDisguises: number[] = [46, 48, 163, 165, 193, 223, 293, 316, 543];
+    static EnableClearing: boolean = false;
+    static WebhookUrls: string[] = [];
+    static WebhookSendDelay: number = 5.0;
 
     private multiStatement: boolean = false;
     private asRoot: boolean = false;
@@ -39,7 +55,7 @@ class DbController {
             } else {
                 keepChecking = false;
             }
-        };
+        }
         return current;
     }
     async getValueForKey(key: string): Promise<string> {
@@ -100,7 +116,7 @@ class DbController {
                     console.log("[DBController]", message);
                 }
                 count++;
-                snooze(2500);
+                await snooze(2500);
                 continue;
             }
             done = true;
@@ -162,16 +178,64 @@ class DbController {
             .catch(err => {
                 console.error("[DbController] Error retrieving database settings:", err);
             });
-        let settings = {};
         if (results) {
             let keys = Object.keys(results);
             for (let i = 0; i < keys.length; i++) {
                 let row = results[i];
-                settings[row["key"]] = row["value"];
+                let key = row["key"];
+                let value = row["value"];
+                if (key) {
+                    switch (key.toUpperCase()) {
+                        case "TITLE":
+                            DbController.Title = value;
+                            break;
+                        case "POKEMON_TIME_UNSEEN":
+                            DbController.PokemonTimeUnseen = value ? parseInt(value) : 1200;
+                            break;
+                        case "POKEMON_TIME_RESEEN":
+                            DbController.PokemonTimeReseen = value ? parseInt(value) : 600;
+                            break;
+                        case "MAX_POKEMON_ID":
+                            DbController.MaxPokemonId = value ? parseInt(value) : 649;
+                            break;
+                        case "LOCALE":
+                            Localizer.instance.locale = value;
+                            break;
+                        case "EX_RAID_BOSS_ID":
+                            DbController.ExRaidBossId = value ? parseInt(value) : 486;
+                            break;
+                        case "EX_RAID_BOSS_FORM":
+                            DbController.ExRaidBossForm = value ? parseInt(value) : 0;
+                            break;
+                        case "POKESTOP_LURE_TIME":
+                            DbController.LureTime = value ? parseInt(value) : 1800;
+                            break;
+                        case "WEBHOOK_DELAY":
+                            DbController.WebhookSendDelay = parseInt(value || "5.0");
+                            break;
+                        case "WEBHOOK_URLS":
+                            DbController.WebhookUrls = value ? value.split(';') : "";
+                            break;
+                        case "ENABLE_CLEARING":
+                            DbController.EnableClearing = value;
+                            break;
+                        case "DEVICEAPI_HOST_WHITELIST":
+                            DbController.HostWhitelist = value.split(';');
+                            break;
+                        case "DEVICEAPI_HOST_WHITELIST_USES_PROXY":
+                            DbController.HostWhitelistUsesProxy = value !== undefined && value !== null;
+                            break;
+                        case "DEVICEAPI_SECRET":
+                            DbController.LoginSecret = value || "";
+                            break;
+                        case "DITTO_DISGUISES":
+                            DbController.DittoDisguises = value ? value.split(',').map((x: string) => parseInt(x)) : "";
+                            break;
+                    }
+                    console.log(`[DbController] Loaded setting '${key}'=>'${value}'`);
+                }
             }
         }
-        this.settings = settings;
-        console.log("[DbController] Settings:", settings);
     }
     constructor() {
         fs.mkdirSync(this.migrationsRoot, { recursive: true });
@@ -180,13 +244,13 @@ class DbController {
         console.log("[DBController] Initializing database");
         
         let enviroment = process.env;
-        this.database = enviroment["DB_DATABASE"] ?? "rdmdb";
-        this.host = enviroment["DB_HOST"] ?? "127.0.0.1";
-        this.port = parseInt(enviroment["DB_PORT"] ?? "") ?? 3306;
-        this.username = enviroment["DB_USERNAME"] ?? "rdmuser";
-        this.password = enviroment["DB_PASSWORD"];
-        this.rootUsername = enviroment["DB_ROOT_USERNAME"] ?? "root";
-        this.rootPassword = enviroment["DB_ROOT_PASSWORD"];
+        this.database = enviroment["DB_DATABASE"] || config.db.database || "rdmdb";
+        this.host = enviroment["DB_HOST"] || config.db.host || "127.0.0.1";
+        this.port = parseInt(enviroment["DB_PORT"] || "") || config.db.port || 3306;
+        this.username = enviroment["DB_USERNAME"] || config.db.username || "rdmuser";
+        this.password = enviroment["DB_PASSWORD"] || config.db.password;
+        this.rootUsername = enviroment["DB_ROOT_USERNAME"] || config.db.rootUsername || "root";
+        this.rootPassword = enviroment["DB_ROOT_PASSWORD"] || config.db.rootPassword;
     }
     async migrate(fromVersion: number, toVersion: number) {
         let backupFileSchema: fs.WriteStream;
@@ -200,7 +264,8 @@ class DbController {
             backupFileSchema = fs.createWriteStream(backupsDir.path + path.sep + uuidString + ".schema.sql");
             backupFileTrigger = fs.createWriteStream(backupsDir.path + path.sep + uuidString + ".trigger.sql");
             backupFileData = fs.createWriteStream(backupsDir.path + path.sep + uuidString + ".data.sql");
-            if (process.env["NO_BACKUP"] === undefined || process.env["NO_BACKUP"] === null) {
+            let noBackup = process.env["NO_BACKUP"] || config.db.noBackup || false;
+            if (noBackup === undefined || noBackup === null || noBackup === false) {
                 let allTables = {
                     account: true,
                     assignment: true,
@@ -279,11 +344,11 @@ class DbController {
             }
             
             console.log("[DBController] Migrating...");
-
             let migrateSQL: string
             try {
                 let sqlFile = `${this.migrationsRoot}${path.sep}${fromVersion + 1}.sql`;
                 migrateSQL = readFile(sqlFile);
+                migrateSQL.replace('\r', '').replace('\n', '');
             } catch (err) {
                 console.error("[DBController] Migration failed:", err);
                 process.exit(-1);
@@ -294,24 +359,24 @@ class DbController {
                 if (msql !== "") {
                     let results = await db.query(msql)
                     .then(x => x)
-                    .catch(err => {
-                        console.error("[DBController] Migration failed:", err);
-                        if (process.env["NO_BACKUP"] === undefined || process.env["NO_BACKUP"] === null) {
+                    .catch(async err => {
+                        console.error("[DBController] Migration failed:", err, "Executing SQL statement:", msql);
+                        if (noBackup === undefined || noBackup === null || noBackup === false) {
                             for (let i = 0; i < 10; i++) {
-                                console.log(`[DBController] Rolling back migration in ${10 - i} seconds`);
-                                snooze(1000);
+                                console.log(`[DBController] Rolling back migration in ${(10 - i)} seconds`);
+                                await snooze(1000);
                             }
                             console.log("[DBController] Rolling back migration now. Do not kill RDM!");
                             this.rollback(
                                 backupFileSchema.path.toString(), 
                                 backupFileTrigger.path.toString(), 
-                                backupFileData.path.toString());
+                                backupFileData.path.toString()
+                            );
                         }
                         //fatalError(message);
                         return null;
                     });
-                }
-                
+                }                
             })
             
             let updateVersionSQL: string = `
@@ -329,7 +394,7 @@ class DbController {
             this.migrate(fromVersion + 1, toVersion);
         }
     }
-    rollback(backupFileSchema: string, backupFileTrigger: string, backupFileData: string) {
+    async rollback(backupFileSchema: string, backupFileTrigger: string, backupFileData: string) {
         let mysqlCommand: string;
         if (os.type().toLowerCase() === "darwin") {
             mysqlCommand = "/usr/local/opt/mysql@5.7/bin/mysql";
@@ -365,7 +430,7 @@ class DbController {
 
         console.log("[DBController] Database restored successfully!");
         console.log("[DBController] Sleeping for 60s before restarting again. (Save to kill now)");
-        snooze(60 * 1000);
+        await snooze(60 * 1000);
     }
 }
 

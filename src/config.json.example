@@ -14,12 +14,11 @@
         "username": "user",
         "password": "pass123",
         "database": "node",
+        "rootUsername": "root",
+        "rootPassword": "pass123",
         "charset": "utf8mb4",
         "debug": true,
-        "connectionLimit": 1000
-    },
-    "webhook": {
-        "urls": ["http://127.0.0.1:4000"],
-        "delay": 5
+        "connectionLimit": 1000,
+        "noBackup": false
     }
 }
