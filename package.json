@@ -26,6 +26,7 @@
     "@types/request": "^2.48.4",
     "@typescript-eslint/eslint-plugin": "^2.17.0",
     "@typescript-eslint/parser": "^2.17.0",
+    "@types/uuid": "^3.4.7",
     "express": "^4.17.1",
     "fs": "0.0.1-security",
     "google-protobuf": "^3.11.2",

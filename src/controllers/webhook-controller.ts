@@ -1,11 +1,12 @@
 "use strict"
 
+import { DbController } from './db-controller';
 import { Pokestop } from "src/models/pokestop";
 import { Pokemon } from "src/models/pokemon";
 import { Gym } from "src/models/gym";
 import { Weather } from "src/models/weather";
 import request = require('request');
-import config = require("../config.json");
+//import { winston } from '../utils/logger';
 
 const WebhookRelayInterval: number = 1 * 1000;
 
@@ -30,7 +31,17 @@ class WebhookController {
     private weatherEvents: Weather[] = [];
 
     constructor() {
-        this.webhookURLStrings = config.webhook.urls;
+        this.init();
+    }
+    private async init(): Promise<void> {
+        let webhookUrls: string = await DbController.instance.getValueForKey("WEBHOOK_URLS");
+        if (webhookUrls) {
+            this.webhookURLStrings = webhookUrls.split(',');
+        }
+        let webhookDelay: number = parseInt(await DbController.instance.getValueForKey("WEBHOOK_DELAY") || "5.0");
+        if (webhookDelay) {
+            this.webhookSendDelay = webhookDelay * 1000;
+        }
     }
 
     addPokemonEvent(pokemon: Pokemon): void {

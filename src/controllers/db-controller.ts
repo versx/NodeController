@@ -39,7 +39,7 @@ class DbController {
             } else {
                 keepChecking = false;
             }
-        };
+        }
         return current;
     }
     async getValueForKey(key: string): Promise<string> {
@@ -200,7 +200,8 @@ class DbController {
             backupFileSchema = fs.createWriteStream(backupsDir.path + path.sep + uuidString + ".schema.sql");
             backupFileTrigger = fs.createWriteStream(backupsDir.path + path.sep + uuidString + ".trigger.sql");
             backupFileData = fs.createWriteStream(backupsDir.path + path.sep + uuidString + ".data.sql");
-            if (process.env["NO_BACKUP"] === undefined || process.env["NO_BACKUP"] === null) {
+            let noBackup = process.env["NO_BACKUP"] || config.db.noBackup || false;
+            if (noBackup === undefined || noBackup === null || noBackup === false) {
                 let allTables = {
                     account: true,
                     assignment: true,
@@ -295,7 +296,7 @@ class DbController {
                     .then(x => x)
                     .catch(async err => {
                         console.error("[DBController] Migration failed:", err);
-                        if (process.env["NO_BACKUP"] === undefined || process.env["NO_BACKUP"] === null) {
+                        if (noBackup === undefined || noBackup === null || noBackup === false) {
                             for (let i = 0; i < 10; i++) {
                                 console.log(`[DBController] Rolling back migration in ${(10 - i)} seconds`);
                                 await snooze(1000);
