@@ -109,7 +109,7 @@ class WebhookController {
         setInterval(() => this.loopEvents(), WebhookRelayInterval);
     }
     loopEvents(): void {
-        if (this.webhookURLStrings.length > 0) {
+        if (this.webhookURLStrings && this.webhookURLStrings.length > 0) {
             let events: any[] = [];
             if (this.pokemonEvents.length > 0) {
                 let pokemonEvent = this.pokemonEvents.pop()

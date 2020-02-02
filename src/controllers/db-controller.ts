@@ -284,6 +284,7 @@ class DbController {
             try {
                 let sqlFile = `${this.migrationsRoot}${path.sep}${fromVersion + 1}.sql`;
                 migrateSQL = readFile(sqlFile);
+                migrateSQL.replace('\r', '').replace('\n', '');
             } catch (err) {
                 console.error("[DBController] Migration failed:", err);
                 process.exit(-1);
@@ -295,7 +296,7 @@ class DbController {
                     let results = await db.query(msql)
                     .then(x => x)
                     .catch(async err => {
-                        console.error("[DBController] Migration failed:", err);
+                        console.error("[DBController] Migration failed:", err, "Executing SQL statement:", msql);
                         if (noBackup === undefined || noBackup === null || noBackup === false) {
                             for (let i = 0; i < 10; i++) {
                                 console.log(`[DBController] Rolling back migration in ${(10 - i)} seconds`);
