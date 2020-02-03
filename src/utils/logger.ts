@@ -1,30 +1,34 @@
-/*
-import winston = require('winston');
+import * as winston from 'winston';
 
 const level = 'verbose';
 const options: winston.LoggerOptions = {
-    level: 'info',
-    //format: winston.format.json(),
-    defaultMeta: { service: 'controller' },
+    level: level,
+    format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.json(),
+        //winston.format.timestamp(),
+        winston.format.splat(),
+        winston.format.prettyPrint(),
+        winston.format.align(),
+        winston.format.simple()
+    ),
     transports: [
         new winston.transports.Console({
-            level: level,
+            level: 'info',
             debugStdout: true,
-            format: winston.format.combine(
-                winston.format.colorize(),
-                winston.format.simple()
-              )
+            handleExceptions: true
         }),
-        //
-        // - Write all logs with level `error` and below to `error.log`
-        // - Write all logs with level `info` and below to `combined.log`
-        //
-        //new winston.transports.File({ filename: 'error.log', level: 'error' }),
-        //new winston.transports.File({ filename: 'combined.log' })
-    ]
+        new winston.transports.File({
+            filename: 'error.log',
+            level: 'error'
+        }),
+        new winston.transports.File({ 
+            filename: 'combined.log'
+        })
+    ],
 };
-winston.configure(options);
-winston.debug("Logging initialized at " + level + " level...");
+let logger: winston.Logger = winston.createLogger(options);
 
-export { winston };
-*/
+winston.exceptions.handle(new winston.transports.File({ filename: 'exceptions.log' }));
+
+export { logger };
