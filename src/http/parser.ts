@@ -233,7 +233,6 @@ async function _handleRawData(req: Request, res: Response) {
                     let ghir = POGOProtos.Networking.Responses.GetHoloInventoryResponse.decode(base64_decode(data));
                     if (ghir) {
                         if (ghir.success) {
-                            let dict: any = {};
                             //parseInventory(username, ghir);
                             let delta = ghir.inventory_delta;
                             let originalTimestamp = Math.round(delta.original_timestamp_ms / 1000);
@@ -274,7 +273,8 @@ async function _handleRawData(req: Request, res: Response) {
                                                 WebhookHandler.AccountInventory[username] = user;
                                                 break;
                                             case "player_stats":
-                                                let experience = itemData.player_stats.experience.toString();
+                                                let experience = parseInt(itemData.player_stats.experience) || 0;
+                                                WebhookHandler.AccountInventory[username]["experience"] = experience;
                                                 console.log("Player total experience points:", experience);
                                                 break;
                                             case "pokemon_data":
@@ -299,7 +299,6 @@ async function _handleRawData(req: Request, res: Response) {
                                     }
                                 }
                             }
-                            console.log(dict);
                         }
                     } else {
                         console.error("[Raw] Malformed GetHoloInventoryResponse");
@@ -579,7 +578,7 @@ async function _handleRawData(req: Request, res: Response) {
 
     if (data) {
         try {
-            console.debug("[Raw] Sending response to device:", data);
+            //console.debug("[Raw] Sending response to device:", data);
             res.send(data);
         } catch (err) {
             // TODO: ERR_HTTP_HEADERS_SENT: Cannot set headers after they are sent to the client
