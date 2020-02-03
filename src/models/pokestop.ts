@@ -59,7 +59,6 @@ enum ConditionType {
  * Pokestop model class.
  */
 class Pokestop {
-    static Pokestops = {};
     static LureTime = 1800;
 
     id: string;
@@ -262,7 +261,6 @@ class Pokestop {
                 grunt_type: key.grunt_type,
                 sponsor_id: key.sponsor_id
             });
-            Pokestop.Pokestops[pokestop.id] = pokestop;
         })
         return pokestop;
     }
@@ -334,7 +332,6 @@ class Pokestop {
                 sponsor_id: key.sponsor_id
             });
             pokestops.push(pokestop);
-            Pokestop.Pokestops[pokestop.id] = pokestop;
         });
         return pokestops;
     }
@@ -736,7 +733,6 @@ class Pokestop {
                 sponsor_id: key.sponsor_id
             });
             pokestops.push(pokestop);
-            Pokestop.Pokestops[pokestop.id] = pokestop;
         })
         return pokestops;
     }
