@@ -13,8 +13,6 @@ const db           = new Database(config);
  * Gym model class.
  */
 class Gym {
-    static Gyms = {};
-
     id: string;
     lat: number;
     lon: number;
@@ -166,7 +164,6 @@ class Gym {
                 sponsor_id: key.sponsor_id    
             });
             gyms.push(gym);
-            Gym.Gyms[gym.id] = gym;
         });
         return gyms;
     }
@@ -233,7 +230,6 @@ class Gym {
                 total_cp: key.total_cp,
                 sponsor_id: key.sponsor_id    
             });
-            Gym.Gyms[gym.id] = gym;
         });
         return gym;
     }
@@ -312,7 +308,6 @@ class Gym {
                 sponsor_id: key.sponsor_id    
             });
             gyms.push(gym);
-            Gym.Gyms[gym.id] = gym;
         });
         return gyms;
     }
@@ -390,7 +385,6 @@ class Gym {
                 sponsor_id: key.sponsor_id    
             });
             gyms.push(gym);
-            Gym.Gyms[gym.id] = gym;
         });
         return gyms;
     }
@@ -587,7 +581,6 @@ class Gym {
                 sponsor_id: key.sponsor_id    
             });
             gyms.push(gym);
-            Gym.Gyms[gym.id] = gym;
         });
         return gyms;
     }
