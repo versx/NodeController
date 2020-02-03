@@ -107,6 +107,7 @@ enum ItemId {
  * Webhook request handler class.
  */
 class WebhookHandler {
+    static AccountInventory = {};
     /**
      * Initialize new WebhookHandler object.
      */
@@ -210,10 +211,6 @@ async function _handleRawData(req: Request, res: Response) {
             return res.sendStatus(400);
         }
 
-        if (method === 4) {
-            console.log("GetHoloInventory Found!");
-        }
-
         switch (method) {
             case 2: // GetPlayerResponse
                 try {
@@ -236,9 +233,11 @@ async function _handleRawData(req: Request, res: Response) {
                     let ghir = POGOProtos.Networking.Responses.GetHoloInventoryResponse.decode(base64_decode(data));
                     if (ghir) {
                         if (ghir.success) {
+                            let dict: any = {};
+                            //parseInventory(username, ghir);
                             let delta = ghir.inventory_delta;
-                            let originalTimestamp = delta.original_timestamp_ms;
-                            let newTimestamp = delta.new_timestamp_ms;
+                            let originalTimestamp = Math.round(delta.original_timestamp_ms / 1000);
+                            let newTimestamp = Math.round(delta.new_timestamp_ms / 1000);
                             let inventoryItems = delta.inventory_items;
                             if (inventoryItems) {
                                 for (let i = 0; i < inventoryItems.length; i++) {
@@ -252,7 +251,7 @@ async function _handleRawData(req: Request, res: Response) {
                                                 let itemId: ItemId = <ItemId>item.item_id;
                                                 switch (itemId) {
                                                     case ItemId.ITEM_LUCKY_EGG: // Lucky Egg
-                                                    console.log("Inventory egg found:", itemId.toString(), "Count:", item.count);
+                                                        console.log("Inventory egg found:", itemId.toString(), "Count:", item.count);
                                                         break;
                                                     case ItemId.ITEM_TROY_DISK: // Normal Lure
                                                     case ItemId.ITEM_TROY_DISK_GLACIAL: // Glacial Lure
@@ -261,22 +260,46 @@ async function _handleRawData(req: Request, res: Response) {
                                                         console.log("Inventory lure found:", itemId.toString(), "Count:", item.count);
                                                         break;
                                                     default:
-                                                        console.log("Inventory item found:", itemId.toString(), "Count:", item.count);
+                                                        //console.log("Inventory item found:", itemId.toString(), "Count:", item.count);
                                                         break;
                                                 }
+                                                // Update inventory items for account
+                                                let user = WebhookHandler.AccountInventory[username];
+                                                if (user) {
+                                                    user["items"][itemId] = item.count;
+                                                } else {
+                                                    user = { items: { } };
+                                                    user["items"][itemId] = item.count;
+                                                }
+                                                WebhookHandler.AccountInventory[username] = user;
                                                 break;
                                             case "player_stats":
                                                 let experience = itemData.player_stats.experience.toString();
                                                 console.log("Player total experience points:", experience);
                                                 break;
+                                            case "pokemon_data":
+                                            case "pokedex_entry":
+                                            case "player_currency":
+                                            case "player_camera":
+                                            case "inventory_upgrades":
+                                            case "applied_items":
+                                            case "egg_incubators":
+                                            case "candy":
+                                            case "quest":
+                                            case "avatar_item":
+                                            case "raid_tickets":
                                             case "quests":
+                                            case "gift_boxes":
+                                            case "beluga_incense":
+                                            case "limited_purchase_sku_record":
                                             default:
-                                                console.log("Inventory type:", itemData);
+                                                //console.log("Inventory type:", itemData);
                                                 break;
                                         }
                                     }
                                 }
                             }
+                            console.log(dict);
                         }
                     } else {
                         console.error("[Raw] Malformed GetHoloInventoryResponse");
