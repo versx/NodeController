@@ -12,7 +12,8 @@ class Cache implements ICache {
     static instance = new Cache();
 
     async get<T>(id: string, key: string): Promise<T> {
-        return await RedisClient.instance.hget<T>(id, key);
+        let json = String(await RedisClient.instance.hget<T>(id, key));
+        return <T>JSON.parse(json);
     }
     async set(id: string, key: string, data: any): Promise<boolean> {
         let json = JSON.stringify(data, null, 2);

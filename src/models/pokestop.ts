@@ -208,7 +208,7 @@ class Pokestop {
      */
     static async getById(pokestopId: string, withDeleted: boolean = false): Promise<Pokestop> {
         let cachedStop = await Cache.instance.get<Pokestop>(POKESTOP_LIST, pokestopId);
-        if (cachedStop instanceof Pokestop) {
+        if (cachedStop/*instanceof Pokestop*/) {
             console.log("[Pokestop] Returning cached pokestop", cachedStop.id);
             return cachedStop;
         }

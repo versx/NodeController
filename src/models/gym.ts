@@ -172,8 +172,8 @@ class Gym {
      * @param gymId 
      */
     static async getById(gymId: string, withDeleted: boolean = false) {
-        let cachedGym = await Cache.instance.get(GYM_LIST, gymId);
-        if (cachedGym instanceof Gym) {
+        let cachedGym = await Cache.instance.get<Gym>(GYM_LIST, gymId);
+        if (cachedGym/*instanceof Gym*/) {
             console.log("[Gym] Returning cached gym", cachedGym.id);
             return cachedGym;
         }

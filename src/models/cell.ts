@@ -77,8 +77,8 @@ class Cell {
      * @param id 
      */
     static async getById(id: string): Promise<Cell> {
-        let cachedCell = await Cache.instance.get(CELL_LIST, id);
-        if (cachedCell instanceof Cell) {
+        let cachedCell = await Cache.instance.get<Cell>(CELL_LIST, id);
+        if (cachedCell/*instanceof Cell*/) {
             console.log("[Cell] Returning cached cell", cachedCell.id);
             return cachedCell;
         }
