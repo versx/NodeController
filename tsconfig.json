@@ -20,5 +20,5 @@
         "pogo_protos",
         "data"
     ],
-
+    "outputCapture": "std"
 }
