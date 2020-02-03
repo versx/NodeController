@@ -1,9 +1,12 @@
-"use strict"
+"use strict";
 
-import { WebhookHandler } from './parser';
 import { Server } from 'http';
 import * as express from 'express';
 import * as bodyParser from 'body-parser';
+
+import { WebhookHandler } from './parser';
+import { logger } from '../utils/logger';
+
 const app = express();
 const webhook     = new WebhookHandler();
 
@@ -25,10 +28,10 @@ class WebhookListener {
     }
     start() {
         // Start listener
-        this.listener = app.listen(this.port, () => console.log(`[HTTP] Listening on webhook port ${this.port}.`));
+        this.listener = app.listen(this.port, () => logger.info(`[HTTP] Listening on webhook port ${this.port}.`));
     }
     stop() {
-        console.log("[HTTP] Stopping all webhook listeners.")
+        logger.info("[HTTP] Stopping all webhook listeners.")
         // Stop listener
         this.listener.removeAllListeners();
     }

@@ -1,10 +1,11 @@
-"use strict"
+"use strict";
 
 import { Server } from 'http';
 import * as express from 'express';
 import * as bodyParser from 'body-parser';
 
 import { ApiController, Page } from '../controllers/api-controller';
+import { logger } from '../utils/logger';
 
 const app = express();
 const api = new ApiController();
@@ -138,10 +139,10 @@ class ApiListener {
     }
     start() {
         // Start listener
-        this.listener = app.listen(this.port, () => console.log(`[HTTP] Listening on api port ${this.port}.`));
+        this.listener = app.listen(this.port, () => logger.info(`[HTTP] Listening on api port ${this.port}.`));
     }
     stop() {
-        console.log("[HTTP] Stopping all api listeners.")
+        logger.info("[HTTP] Stopping all api listeners.")
         // Stop listener
         this.listener.removeAllListeners();
     }

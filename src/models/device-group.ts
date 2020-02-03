@@ -1,7 +1,8 @@
-"use strict"
+"use strict";
 
 import { Device } from "./device";
 import { Database } from '../data/mysql';
+import { logger } from '../utils/logger';
 
 const config = require('../config.json');
 const db = new Database(config);
@@ -43,7 +44,7 @@ class DeviceGroup {
         let results = await db.query(sql)
             .then(x => x)
             .catch(err => {
-                console.log("[DEVICE-GROUP] Error:", err);
+                logger.error("[DEVICE-GROUP] Error: " + err);
                 return null;
             });
         let deviceGroups: DeviceGroup[] = [];
@@ -75,7 +76,7 @@ class DeviceGroup {
         let result = await db.query(sql, name)
             .then(x => x)
             .catch(err => { 
-                console.log("[DEVICE-GROUP] Failed to get devices with device group name", name, "Error:", err);
+                logger.error("[DEVICE-GROUP] Failed to get devices with device group name " + name + " Error: " + err);
                 return null;
             });
         let devices: Device[] = [];
@@ -108,7 +109,7 @@ class DeviceGroup {
         let result = await db.query(sql, name)
             .then(x => x)
             .catch(err => { 
-                console.log("[DEVICE-GROUP] Failed to get devices with device group name", name, "Error:", err);
+                logger.error("[DEVICE-GROUP] Failed to get devices with device group name " + name + " Error: " + err);
                 return null;
             });
         let deviceGroup: DeviceGroup;
@@ -138,10 +139,10 @@ class DeviceGroup {
         let result = await db.query(sql, name)
             .then(x => x)
             .catch(err => { 
-                console.log("[DEVICE-GROUP] Failed to delete device group with name", name, "Error:", err);
+                logger.error("[DEVICE-GROUP] Failed to delete device group with name " + name + " Error: " + err);
                 return null;
             });
-        console.log("[DEVICE-GROUP] Delete:", result);
+        logger.info("[DEVICE-GROUP] Delete: " + result);
     }
     /**
      * Create device group.
@@ -155,10 +156,10 @@ class DeviceGroup {
         let result = await db.query(sql, args)
             .then(x => x)
             .catch(err => { 
-                console.log("[DEVICE-GROUP] Failed to create device group with name", this.name, "Error:", err);
+                logger.error("[DEVICE-GROUP] Failed to create device group with name " + this.name + " Error: " + err);
                 return null;
             });
-        console.log("[DEVICE-GROUP] Create:", result);
+        logger.info("[DEVICE-GROUP] Create: " + result);
     }
     /**
      * Update device group.
@@ -174,10 +175,10 @@ class DeviceGroup {
         let result = await db.query(sql, args)
             .then(x => x)
             .catch(err => { 
-                console.log("[DEVICE-GROUP] Failed to update device group with name", this.name, "Error:", err);
+                logger.error("[DEVICE-GROUP] Failed to update device group with name " + this.name + " Error: " + err);
                 return null;
             });
-        console.log("[DEVICE-GROUP] Update:", result);
+        logger.info("[DEVICE-GROUP] Update: " + result);
     }
 }
 

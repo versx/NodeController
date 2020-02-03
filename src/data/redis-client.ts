@@ -2,6 +2,7 @@
 
 // Imports
 import * as redis from 'redis';
+import { logger } from '../utils/logger';
 import config = require('../config.json');
 
 class RedisClient {
@@ -16,10 +17,10 @@ class RedisClient {
             password: config.redis.password
         });
         this.client.on('connect', function() {
-            console.log('[REDIS-CLIENT] Redis client connected');
+            logger.info('[Redis] Redis client connected');
         });
         this.client.on('error', function(err: Error) {
-            console.log('[REDIS-CLIENT] Error occurred:', err)
+            logger.error('[Redis] Error occurred: ' + err)
         });
     }
     async hgetall(key: string): Promise<any> {

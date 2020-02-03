@@ -8,6 +8,7 @@ import { spawn } from 'child_process';
 
 import { Database } from '../data/mysql';
 import { Localizer } from '../utils/localizer';
+import { logger } from '../utils/logger';
 import { snooze, readFile } from '../utils/util';
 import config      = require('../config.json');
 const db           = new Database(config);
@@ -68,8 +69,8 @@ class DbController {
         let args = [key];
         let results: any = await db.query(sql, args)
         .then(x => x)
-        .catch(x => {
-            console.error("[DbController] Error: " + x);
+        .catch(err => {
+            logger.error("[DbController] Error: " + err);
             return null;
         });
         if (results) {
@@ -92,11 +93,11 @@ class DbController {
         let args = [key, value];
         let results = await db.query(sql, args)
         .then(x => x)
-        .catch(x => {
-            console.error("[DbController] Error: " + x);
+        .catch(err => {
+            logger.error("[DbController] Error: " + err);
             return null;
         });
-        console.log("[DbController] SetValueForKey:", results);
+        logger.info("[DbController] SetValueForKey: " + results);
     }
     async setup() {
         await this.loadSettings();
@@ -110,10 +111,10 @@ class DbController {
             if (db === undefined || db === null) {
                 let message = `Failed to connect to database (as ${this.rootUsername}) while initializing. Try: ${count}/10`;
                 if (count === 10) {
-                    console.error("[DBController]", message);
+                    logger.error("[DBController] " + message);
                     process.exit(-1);
                 } else {
-                    console.log("[DBController]", message);
+                    logger.error("[DBController] " + message);
                 }
                 count++;
                 await snooze(2500);
@@ -122,7 +123,7 @@ class DbController {
             done = true;
             this.asRoot = false;
             if (db === undefined || db === null) {
-                console.error("[DBController] Failed to connect to database (as ", this.username, ") while initializing.");
+                logger.error("[DBController] Failed to connect to database (as " + this.username + ") while initializing.");
                 process.exit(-1);
             }
             this.asRoot = true
@@ -139,7 +140,7 @@ class DbController {
         await db.query(createMetadataTableSQL)
             .then(x => x)
             .catch(err => {
-                console.error("[DBController] Failed to create metadata table: (", err, ")");
+                logger.error("[DBController] Failed to create metadata table: (" + err + ")");
                 process.exit(-1);
             });
         
@@ -153,7 +154,7 @@ class DbController {
         let results = await db.query(getDBVersionSQL)
             .then(x => x)
             .catch(err => {
-                console.error("[DBController] Failed to get current database version: (", err, ")");
+                logger.error("[DBController] Failed to get current database version: (" + err + ")");
                 process.exit(-1);
             });
         if (results) {
@@ -168,7 +169,7 @@ class DbController {
 
     }
     async loadSettings() {
-        console.log("[DbController] Loading database settings");
+        logger.info("[DbController] Loading database settings");
         let sql = `
         SELECT \`key\`, \`value\`
         FROM metadata
@@ -176,7 +177,7 @@ class DbController {
         let results = await db.query(sql)
             .then(x => x)
             .catch(err => {
-                console.error("[DbController] Error retrieving database settings:", err);
+                logger.error("[DbController] Error retrieving database settings: " + err);
             });
         if (results) {
             let keys = Object.keys(results);
@@ -232,7 +233,7 @@ class DbController {
                             DbController.DittoDisguises = value ? value.split(',').map((x: string) => parseInt(x)) : "";
                             break;
                     }
-                    console.log(`[DbController] Loaded setting '${key}'=>'${value}'`);
+                    logger.info(`[DbController] Loaded setting '${key}'=>'${value}'`);
                 }
             }
         }
@@ -241,7 +242,7 @@ class DbController {
         fs.mkdirSync(this.migrationsRoot, { recursive: true });
         fs.mkdirSync(this.backupsRoot, { recursive: true });
 
-        console.log("[DBController] Initializing database");
+        logger.info("[DBController] Initializing database");
         
         let enviroment = process.env;
         this.database = enviroment["DB_DATABASE"] || config.db.database || "rdmdb";
@@ -257,7 +258,7 @@ class DbController {
         let backupFileTrigger: fs.WriteStream;
         let backupFileData: fs.WriteStream;
         if (fromVersion < toVersion) {
-            console.log("[DBController] Migrating database to version", fromVersion + 1);
+            logger.info("[DBController] Migrating database to version " + (fromVersion + 1));
             
             let uuidString = uuid.v4();
             let backupsDir = fs.opendirSync(this.backupsRoot);
@@ -299,11 +300,10 @@ class DbController {
                 .then(x => x)
                 .catch(err => {
                     let message = `Failed to execute query. (${err})`
-                    console.error("[DBController]", message);
+                    logger.error("[DBController] " + message);
                     process.exit(-1);
                 });
                 let tableKeys = Object.keys(results);
-                console.log("TABLE KEYS:", tableKeys);
                 tableKeys.forEach(key => {
                     let withData = allTables[key];
                     tablesShema += ` ${key}`;
@@ -312,7 +312,7 @@ class DbController {
                     }
                 });
 
-                console.log("[DBController] Creating backup", uuidString);
+                logger.info("[DBController] Creating backup", uuidString);
                 let mysqldumpCommand: string;
                 if (os.type().toLowerCase() === "darwin") {
                     mysqldumpCommand = "/usr/local/opt/mysql@5.7/bin/mysqldump"
@@ -324,33 +324,33 @@ class DbController {
                 let args = ["-c", mysqldumpCommand + ` --set-gtid-purged=OFF --skip-triggers --add-drop-table --skip-routines --no-data ${this.database} ${tablesShema} -h ${this.host} -P ${this.port} -u ${this.rootUsername} -p${this.rootPassword.replace("\"", "\\\"") || ""} > ${backupFileSchema.path}`];
                 let cmd = executeCommand("bash", args);
                 if (cmd) {
-                    console.error("[DBController] Failed to create Command Backup:", cmd);
+                    logger.error("[DBController] Failed to create Command Backup: " + cmd);
                     process.exit(-1);
                 }
                 // Trigger
                 args = ["-c", mysqldumpCommand + ` --set-gtid-purged=OFF --triggers --no-create-info --no-data --skip-routines ${this.database} ${tablesShema}  -h ${this.host} -P ${this.port} -u ${this.rootUsername} -p${this.rootPassword.replace("\"", "\\\"") || ""} > ${backupFileTrigger.path}`];
                 cmd = executeCommand("bash", args);
                 if (cmd) {
-                    console.error("[DBController] Failed to create Command Backup:", cmd);
+                    logger.error("[DBController] Failed to create Command Backup: " + cmd);
                     process.exit(-1);
                 }
                 // Data
                 args = ["-c", mysqldumpCommand + ` --set-gtid-purged=OFF --skip-triggers --skip-routines --no-create-info --skip-routines ${this.database} ${tablesData}  -h ${this.host} -P ${this.port} -u ${this.rootUsername} -p${this.rootPassword.replace("\"", "\\\"") || ""} > ${backupFileData.path}`];
                 cmd = executeCommand("bash", args);
                 if (cmd) {
-                    console.error("[DBController] Failed to create Data Backup: ", cmd);
+                    logger.error("[DBController] Failed to create Data Backup: " + cmd);
                     process.exit(-1);
                 }
             }
             
-            console.log("[DBController] Migrating...");
+            logger.info("[DBController] Migrating...");
             let migrateSQL: string
             try {
                 let sqlFile = `${this.migrationsRoot}${path.sep}${fromVersion + 1}.sql`;
                 migrateSQL = readFile(sqlFile);
                 migrateSQL.replace('\r', '').replace('\n', '');
             } catch (err) {
-                console.error("[DBController] Migration failed:", err);
+                logger.error("[DBController] Migration failed: " + err);
                 process.exit(-1);
             }
             let sqlSplit = migrateSQL.split(';');
@@ -360,13 +360,13 @@ class DbController {
                     let results = await db.query(msql)
                     .then(x => x)
                     .catch(async err => {
-                        console.error("[DBController] Migration failed:", err, "Executing SQL statement:", msql);
+                        logger.error("[DBController] Migration failed: " + err + "\r\nExecuting SQL statement: " + msql);
                         if (noBackup === undefined || noBackup === null || noBackup === false) {
                             for (let i = 0; i < 10; i++) {
-                                console.log(`[DBController] Rolling back migration in ${(10 - i)} seconds`);
+                                logger.warn(`[DBController] Rolling back migration in ${(10 - i)} seconds`);
                                 await snooze(1000);
                             }
-                            console.log("[DBController] Rolling back migration now. Do not kill RDM!");
+                            logger.warn("[DBController] Rolling back migration now. Do not kill RDM!");
                             this.rollback(
                                 backupFileSchema.path.toString(), 
                                 backupFileTrigger.path.toString(), 
@@ -387,10 +387,10 @@ class DbController {
             await db.query(updateVersionSQL)
                 .then(x => x)
                 .catch(err => {
-                    console.error("[DBController] Migration failed:", err);
+                    logger.error("[DBController] Migration failed: " + err);
                     process.exit(-1);
                 });
-            console.log("[DBController] Migration successful");
+            logger.info("[DBController] Migration successful");
             this.migrate(fromVersion + 1, toVersion);
         }
     }
@@ -402,34 +402,34 @@ class DbController {
             mysqlCommand = "/usr/bin/mysql";
         }
 
-        console.log("[DBController] Executing Schema backup...");
+        logger.info("[DBController] Executing Schema backup...");
         let args = ["-c", mysqlCommand + ` ${this.database} -h ${this.host} -P ${this.port} -u ${this.rootUsername} -p${this.rootPassword.replace("\"", "\\\"") || ""} < ${backupFileSchema}`];
         let cmd = executeCommand("bash", args);
         if (cmd) {
-            console.log("[DBController] Executing Schema backup failed:", cmd);
+            logger.info("[DBController] Executing Schema backup failed: " + cmd);
         } else {
-            console.log("[DBController] Executing Schema backup done.");
+            logger.info("[DBController] Executing Schema backup done.");
         }
-        console.log("[DBController] Executing Trigger backup...");
+        logger.info("[DBController] Executing Trigger backup...");
         args = ["-c", mysqlCommand + ` ${this.database} -h ${this.host} -P ${this.port} -u ${this.rootUsername} -p${this.rootPassword.replace("\"", "\\\"") || ""} < ${backupFileTrigger}`];
         cmd = executeCommand("bash", args);
         if (cmd) {
-            console.log("[DBController] Executing Trigger backup failed:", cmd);
+            logger.info("[DBController] Executing Trigger backup failed: " + cmd);
         } else {
-            console.log("[DBController] Executing Trigger backup done.");
+            logger.info("[DBController] Executing Trigger backup done.");
         }
         
-        console.log("[DBController] Executing Data backup...");
+        logger.info("[DBController] Executing Data backup...");
         args = ["-c", mysqlCommand + ` ${this.database} -h ${this.host} -P ${this.port} -u ${this.rootUsername} -p${this.rootPassword.replace("\"", "\\\"") || ""} < ${backupFileData}`];
         cmd = executeCommand("bash", args);
         if (cmd) {
-            console.log("[DBController] Executing Data backup failed:", cmd);
+            logger.info("[DBController] Executing Data backup failed: " + cmd);
         } else {
-            console.log("[DBController] Executing Data backup done.");
+            logger.info("[DBController] Executing Data backup done.");
         }
 
-        console.log("[DBController] Database restored successfully!");
-        console.log("[DBController] Sleeping for 60s before restarting again. (Save to kill now)");
+        logger.info("[DBController] Database restored successfully!");
+        logger.info("[DBController] Sleeping for 60s before restarting again. (Save to kill now)");
         await snooze(60 * 1000);
     }
 }
@@ -442,9 +442,9 @@ function executeCommand(command: string, args?: string[]) {
         result = result.replace('mysql: [Warning] Using a password on the command line interface can be insecure.', '');
         return result;
         //if (result) {
-        //    console.log("[DBController] Executing Data backup failed:", result);
+        //    logger.error("[DBController] Executing Data backup failed:", result);
         //} else {
-        //    console.log("[DBController] Executing Data backup done.");
+        //    logger.info("[DBController] Executing Data backup done.");
         //}
     });
     return null;

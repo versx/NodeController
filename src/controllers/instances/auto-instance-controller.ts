@@ -1,12 +1,14 @@
-"use strict"
+"use strict";
 
-import { Account } from "../../models/account";
-import { Cell } from "../../models/cell";
-import { Pokestop } from "../../models/pokestop";
 import * as turf from '@turf/turf';
-import * as S2 from "nodes2ts";
+import * as S2 from 'nodes2ts';
 import moment = require('moment');
-import { getCurrentTimestamp, snooze } from "../../utils/util";
+
+import { Account } from '../../models/account';
+import { Cell } from '../../models/cell';
+import { Pokestop } from '../../models/pokestop';
+import { logger } from '../../utils/logger';
+import { getCurrentTimestamp, snooze } from '../../utils/util';
 
 const AutoInstanceInterval: number = 2 * 1000;
 
@@ -48,7 +50,7 @@ class AutoInstanceController {
         }
     }
     async bootstrap() {
-        console.info(`[AutoInstanceController] [${this.name}] Checking Bootstrap Status...`);
+        logger.info(`[AutoInstanceController] [${this.name}] Checking Bootstrap Status...`);
         let start = new Date();
         let totalCount = 0;
         let missingCellIds: S2.S2CellId[] = [];
@@ -80,13 +82,13 @@ class AutoInstanceController {
                         }   
                     }
                 } catch (err) {
-                    console.error(`[AutoInstanceController] [${this.name}] Failed to bootstrap instance: ${err}`);
+                    logger.error(`[AutoInstanceController] [${this.name}] Failed to bootstrap instance: ${err}`);
                     // TODO: Fix bootstrap polygon issues.
                 }
             }
         }
 
-        console.log(`[AutoInstanceController] [${this.name}] Bootstrap Status: ${(totalCount - missingCellIds.length)} / ${totalCount} after ${Math.round(getCurrentTimestamp() - (start.getTime() / 1000))}s`)
+        logger.info(`[AutoInstanceController] [${this.name}] Bootstrap Status: ${(totalCount - missingCellIds.length)} / ${totalCount} after ${Math.round(getCurrentTimestamp() - (start.getTime() / 1000))}s`)
         this.bootstrapCellIds = missingCellIds.map(x => x.id.toString());
         this.bootstrapTotalCount = totalCount;
     }
@@ -116,7 +118,7 @@ class AutoInstanceController {
                                 });
                             }
                         } catch (err) {
-                            console.error(`[AutoInstanceController] [${this.name}] Failed to update bootstrap list: ${err}`);
+                            logger.error(`[AutoInstanceController] [${this.name}] Failed to update bootstrap list: ${err}`);
                             // TODO: Fix Polygon issues.
                         }
                     }
@@ -234,14 +236,14 @@ class AutoInstanceController {
                             } else {
                                 // REVIEW: Don't think this is needed anymore
                                 /*
-                                lastLat = Double(try DBController.global.getValueForKey(key: "AIC_\(uuid)_last_lat") ?? "")
-                                lastLon = Double(try DBController.global.getValueForKey(key: "AIC_\(uuid)_last_lon") ?? "")
-                                lastTime = UInt32(try DBController.global.getValueForKey(key: "AIC_\(uuid)_last_time") ?? "")
+                                lastLat = Double(try DBController.global.getValueForKey(key: "AIC_\(uuid)_last_lat") || "")
+                                lastLon = Double(try DBController.global.getValueForKey(key: "AIC_\(uuid)_last_lon") || "")
+                                lastTime = UInt32(try DBController.global.getValueForKey(key: "AIC_\(uuid)_last_time") || "")
                                 */
                             }
                         }
                     } catch (err) {
-                        console.log("[AutoInstanceController] Failed to get account.");
+                        logger.error("[AutoInstanceController] Failed to get account: " + err);
                     }
 
                     if (username && account instanceof Account) {
@@ -359,7 +361,7 @@ class AutoInstanceController {
                             }
                         });
                         if (!(this.todayStops.length > 0)) {
-                            console.log(`[AutoInstanceController] ${this.name} Instance done.`);
+                            logger.info(`[AutoInstanceController] ${this.name} Instance done.`);
                             // TODO: delegate.instanceControllerDone(name);
                         }
                     }
@@ -456,7 +458,7 @@ class AutoInstanceController {
         }
         let date = moment(new Date());
         let formattedHours = date.format('hh:mm:ss');
-        // formatter.timeZone = TimeZone(secondsFromGMT: timezoneOffset) ?? Localizer.global.timeZone;
+        // formatter.timeZone = TimeZone(secondsFromGMT: timezoneOffset) || Localizer.global.timeZone;
         let split = formattedHours.split(":");
         let hour = parseInt(split[0]);
         let minute = parseInt(split[1]);
@@ -467,21 +469,21 @@ class AutoInstanceController {
 
         if (timeLeft > 0) {
             await snooze(timeLeft * 1000);
-            console.log(`[AutoInstanceController] [${this.name}] Clearing Quests in ${timeLeft}s at ${at} (Currently: ${date})`);
+            logger.info(`[AutoInstanceController] [${this.name}] Clearing Quests in ${timeLeft}s at ${at} (Currently: ${date})`);
             
             if (this.shouldExit) {
                 return;
             }
             if (this.allStops.length === 0) {
-                console.log(`[AutoInstanceController] [${this.name}] Tried clearing quests but no stops.`);
+                logger.warn(`[AutoInstanceController] [${this.name}] Tried clearing quests but no stops.`);
                 //continue;
                 return;
             }
 
-            console.log(`[AutoInstanceController] [${this.name}] Getting stop ids.`);
+            logger.debug(`[AutoInstanceController] [${this.name}] Getting stop ids.`);
             let ids = this.allStops.map(stop => stop.id);
             let done = false;
-            console.log(`[AutoInstanceController] [${this.name}] Clearing Quests for ids: ${ids}`);
+            logger.debug(`[AutoInstanceController] [${this.name}] Clearing Quests for ids: ${ids}`);
             while (!done) {
                 try {
                     await Pokestop.clearQuests(ids);
@@ -541,7 +543,7 @@ class AutoInstanceController {
         let delay: number;
         if (distance <= 30.0) {
             delay = 0;
-            console.log(`Distance: ${distance}m < 40.0m Already spun. Go to next stop`)
+            logger.debug(`[AutoInstanceController] Distance: ${distance}m < 40.0m Already spun. Go to next stop`)
         }else if (distance <= 1000.0) {
             delay = (distance / 1000.0) * 60.0;
         } else if (distance <= 2000.0) {
@@ -592,7 +594,7 @@ class AutoInstanceController {
             if (coordinates && coordinates.length == 2) {
                 let point = turf.point([coordinates[0], coordinates[1]]);
                 result.push([point.geometry.coordinates]);
-                console.log(coordinates);
+                logger.debug(coordinates);
             }
             */
         }

@@ -1,6 +1,7 @@
-"use strict"
+"use strict";
 
 import * as mysql from 'mysql';
+import { logger } from '../utils/logger';
 
 class Database {
     private pool: mysql.Pool;
@@ -20,17 +21,17 @@ class Database {
             if (err) {
                 switch (err.code) {
                     case 'PROTOCOL_CONNECTION_LOST':
-                        console.error('[MYSQL] Database connection was closed.');
+                        logger.error('[MYSQL] Database connection was closed.');
                         break;
                     case 'ER_CON_COUNT_ERROR':
-                        console.error('[MYSQL] Database has too many connections.');
+                        logger.error('[MYSQL] Database has too many connections.');
                         break;
                     case 'ECONNREFUSED':
-                        console.error('[MYSQL] Database connection was refused.');
+                        logger.error('[MYSQL] Database connection was refused.');
                         break;
                 }
             } else {
-                console.log('[MYSQL] Connected to MySql host', config.db.host + ':' + config.db.port);
+                logger.info(`[MYSQL] Connected to MySql host ${config.db.host}:${config.db.port}`);
             }
             if (connection) {
                 connection.release();

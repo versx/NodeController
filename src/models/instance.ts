@@ -1,9 +1,8 @@
-"use strict"
+"use strict";
 
 import { Database } from '../data/mysql';
+import { logger } from '../utils/logger';
 import config      = require('../config.json');
-//import { winston } from '../utils/logger';
-import { InstanceController } from '../controllers/instances/instance-controller';
 const db           = new Database(config);
 
 /**
@@ -93,7 +92,7 @@ class Instance implements IInstance {
         let results = await db.query(sql, args)
             .then(x => x)
             .catch(err => {
-                console.error("[INSTANCE] Failed to execute query. (", err, ")");
+                logger.error("[Instance] Failed to execute query. (" + err + ")");
             });
     }
     /**
@@ -116,7 +115,7 @@ class Instance implements IInstance {
         let result = await db.query(sql, instanceName)
             .then(x => x)
             .catch(err => { 
-                console.log("[ACCOUNT] Failed to get Instance with name", instanceName);
+                logger.error("[ACCOUNT] Failed to get Instance with name " + instanceName);
                 return null;
             });
         let instance: Instance;
@@ -142,10 +141,10 @@ class Instance implements IInstance {
         let result = await db.query(sql, instanceName)
             .then(x => x)
             .catch(err => { 
-                console.error("[INSTANCE] Failed to delete instance with name", name);
+                logger.error("[Instance] Failed to delete instance with name " + name);
                 return null;
             });
-        console.debug("[INSTANCE] Delete:", result);
+        logger.info("[Instance] Delete: " + result);
     }
     /**
      * Update instance data.
@@ -162,10 +161,10 @@ class Instance implements IInstance {
         let result = await db.query(sql, args)
             .then(x => x)
             .catch(err => { 
-                console.error("[INSTANCE] Failed to update instance with name", name);
+                logger.error("[Instance] Failed to update instance with name " + name);
                 return null;
             });
-        console.debug("[INSTANCE] Update:", result);
+        logger.info("[Instance] Update: " + result);
     }
     /**
      * Load all instances.
@@ -176,7 +175,7 @@ class Instance implements IInstance {
         /*
         client.get(INSTANCE_LIST, function(err: Error, result) {
             if (err) {
-                console.log("[INSTANCE] load: " + err);
+                logger.error("[Instance] load: " + err);
             }
             if (result) {
                 let data = JSON.parse(result);
@@ -190,7 +189,7 @@ class Instance implements IInstance {
                         instance.data
                     );
                 }
-                console.log("INSTANCE RESULT:", data);
+                logger.info("[Instance] RESULT: " + data);
                 //return data;
             }
         });
@@ -202,7 +201,7 @@ class Instance implements IInstance {
         let results = await db.query(sql)
             .then(x => x)
             .catch(err => {
-                console.error("[INSTANCE] Error:", err);
+                logger.error("[Instance] Error: " + err);
                 return null;
             });
         let instances: Instance[] = [];

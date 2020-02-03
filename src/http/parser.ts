@@ -2,43 +2,22 @@
 
 const POGOProtos = require('../../pogo-protos');
 import * as S2 from 'nodes2ts';
+import { Request, Response } from 'express';
 import { Account } from '../models/account';
 import { Device } from '../models/device';
 import { Pokemon } from '../models/pokemon';
 import { InstanceController } from '../controllers/instances/instance-controller';
 import { getCurrentTimestamp, base64_decode } from '../utils/util';
 import { Digest } from '../data/digest';
-import { Request, Response } from 'express';
-//import { winston } from '../utils/logger';
+import { logger } from '../utils/logger';
 
 // TODO: Process pool for data handlers.
 
 const DefaultTargetMaxDistance: number = 250;
 
-let emptyCells = [];//[UInt64: Int]
+let emptyCells = [];
 let levelCache = {};
 let digest = new Digest();
-
-enum InventoryItemDataType {
-    PokemonData = 1, // 1
-    ItemData, // 2
-    PokedexEntry, // 3
-    PlayerStats, // 4
-    PlayerCurrency, // 5
-    PlayerCamera, // 6
-    InventoryUpgrades, // 7
-    AppliedItems, // 8
-    EggIncubators, // 9
-    Candy, // 10
-    Quest, // 11
-    AvatarItem, // 12
-    RaidTickets, // 13
-    Quests, // 14
-    GiftBoxes, // 15
-    BelugaIncenseBox, // 16
-    VsSeekerUpgrades, // 17
-    LimitedPurchaseSkuRecord, // 19
-}
 
 enum ItemId {
 	ITEM_UNKNOWN = 0,
@@ -139,7 +118,7 @@ class WebhookHandler {
 async function _handleRawData(req: Request, res: Response) {
     let jsonOpt = req.body;
     if (jsonOpt === undefined || jsonOpt === null) {
-        console.error("[Raw] Bad data");
+        logger.error("[Raw] Bad data");
         return res.sendStatus(400);
     }
     if (jsonOpt['payload']) {
@@ -162,7 +141,7 @@ async function _handleRawData(req: Request, res: Response) {
     }
     let contents: any = json["contents"] || json["protos"] || json["gmo"];
     if (contents === undefined || contents === null) {
-        console.error("[Raw] Invalid GMO");
+        logger.error("[Raw] Invalid GMO");
         return res.sendStatus(400);
     }
     let uuid: string = json["uuid"];
@@ -172,7 +151,7 @@ async function _handleRawData(req: Request, res: Response) {
         try {
             await Device.setLastLocation(uuid, latTarget, lonTarget);
         } catch (err) {
-            console.error(err);
+            logger.error(err);
         }
     }
 
@@ -207,7 +186,7 @@ async function _handleRawData(req: Request, res: Response) {
             isMadData = true;
             username = "PogoDroid";
         } else {
-            console.log("[Raw] Unhandled proto:", rawData);
+            logger.error("[Raw] Unhandled proto:", rawData);
             return res.sendStatus(400);
         }
 
@@ -219,13 +198,13 @@ async function _handleRawData(req: Request, res: Response) {
                         // TODO: Parse GetPlayerResponse
                         if (gpr.success) {
                             let data = gpr.player_data;
-                            console.log("[Raw] GetPlayerData:", data);
+                            logger.debug("[Raw] GetPlayerData:", data);
                         }
                     } else {
-                        console.error("[Raw] Malformed GetPlayerResponse");
+                        logger.error("[Raw] Malformed GetPlayerResponse");
                     }
                 } catch (err) {
-                    console.error("[Raw] Unable to decode GetPlayerResponse");
+                    logger.error("[Raw] Unable to decode GetPlayerResponse");
                 }
                 break;
             case 4: // GetHoloInventoryResponse
@@ -250,16 +229,16 @@ async function _handleRawData(req: Request, res: Response) {
                                                 let itemId: ItemId = <ItemId>item.item_id;
                                                 switch (itemId) {
                                                     case ItemId.ITEM_LUCKY_EGG: // Lucky Egg
-                                                        console.log(`${username} lucky egg ${itemId.toString()} -> ${item.count}`);
+                                                        logger.debug(`${username} lucky egg ${itemId.toString()} -> ${item.count}`);
                                                         break;
                                                     case ItemId.ITEM_TROY_DISK: // Normal Lure
                                                     case ItemId.ITEM_TROY_DISK_GLACIAL: // Glacial Lure
                                                     case ItemId.ITEM_TROY_DISK_MOSSY: // Mossy Lure
                                                     case ItemId.ITEM_TROY_DISK_MAGNETIC: // Magnetic Lure
-                                                        console.log(`${username} lure module ${itemId.toString()} -> ${item.count}`);
+                                                        logger.debug(`${username} lure module ${itemId.toString()} -> ${item.count}`);
                                                         break;
                                                     default:
-                                                        //console.log("Inventory item found:", itemId.toString(), "Count:", item.count);
+                                                        //logger.debug("Inventory item found: " + itemId.toString() + " Count: " + item.count);
                                                         break;
                                                 }
                                                 // Update inventory items for account
@@ -292,7 +271,7 @@ async function _handleRawData(req: Request, res: Response) {
                                             case "beluga_incense":
                                             case "limited_purchase_sku_record":
                                             default:
-                                                //console.log("Inventory type:", itemData);
+                                                //logger.debug("Inventory type: " + itemData);
                                                 break;
                                         }
                                     }
@@ -300,10 +279,10 @@ async function _handleRawData(req: Request, res: Response) {
                             }
                         }
                     } else {
-                        console.error("[Raw] Malformed GetHoloInventoryResponse");
+                        logger.error("[Raw] Malformed GetHoloInventoryResponse");
                     }
                 } catch (err) {
-                    console.error("[Raw] Unable to decode GetHoloInventoryResponse");
+                    logger.error("[Raw] Unable to decode GetHoloInventoryResponse");
                 }
                 break;
             case 101: // FortSearchResponse
@@ -315,10 +294,10 @@ async function _handleRawData(req: Request, res: Response) {
                             quests.push(quest);
                         }
                     } else {
-                        console.error("[Raw] Malformed FortSearchResponse");
+                        logger.error("[Raw] Malformed FortSearchResponse");
                     }
                 } catch (err) {
-                    console.error("[Raw] Unable to decode FortSearchResponse");
+                    logger.error("[Raw] Unable to decode FortSearchResponse");
                 }
                 break;
             case 102: // EncounterResponse
@@ -328,10 +307,10 @@ async function _handleRawData(req: Request, res: Response) {
                         if (er) {
                             encounters.push(er);
                         } else {
-                            console.error("[Raw] Malformed EncounterResponse");
+                            logger.error("[Raw] Malformed EncounterResponse");
                         }
                     } catch (err) {
-                        console.error("[Raw] Unable to decode EncounterResponse");
+                        logger.error("[Raw] Unable to decode EncounterResponse");
                     }
                 }
                 break;
@@ -341,10 +320,10 @@ async function _handleRawData(req: Request, res: Response) {
                     if (fdr) {
                         fortDetails.push(fdr);
                     } else {
-                        console.error("[Raw] Malformed FortDetailsResponse");
+                        logger.error("[Raw] Malformed FortDetailsResponse");
                     }
                 } catch (err) {
-                    console.error("[Raw] Unable to decode FortDetailsResponse");
+                    logger.error("[Raw] Unable to decode FortDetailsResponse");
                 }
                 break;
             case 156: // GymGetInfoResponse
@@ -353,10 +332,10 @@ async function _handleRawData(req: Request, res: Response) {
                     if (ggi) {
                         gymInfos.push(ggi);
                     } else {
-                        console.error("[Raw] Malformed GymGetInfoResponse");
+                        logger.error("[Raw] Malformed GymGetInfoResponse");
                     }
                 } catch (err) {
-                    console.error("[Raw] Unable to decode GymGetInfoResponse");
+                    logger.error("[Raw] Unable to decode GymGetInfoResponse");
                 }
                 break;
             case 106: // GetMapObjectsResponse
@@ -368,7 +347,7 @@ async function _handleRawData(req: Request, res: Response) {
 
                         let mapCellsNew = gmo.map_cells;
                         if (mapCellsNew.length === 0) {
-                            console.debug("[Raw] Map cells is empty");
+                            logger.debug("[Raw] Map cells is empty");
                             return res.sendStatus(400);
                         }
                         mapCellsNew.forEach((mapCell: any) => {
@@ -415,25 +394,25 @@ async function _handleRawData(req: Request, res: Response) {
                                     emptyCells[cell] = count + 1;
                                 }
                                 if (count === 3) {
-                                    console.debug("[Raw] Cell", cell, "was empty 3 times in a row. Assuming empty.");
+                                    logger.debug("[Raw] Cell" + cell + "was empty 3 times in a row. Assuming empty.");
                                     cells.push(cell);
                                 }
                             });
                             
-                            console.debug("[Raw] GMO is empty.");
+                            logger.debug("[Raw] GMO is empty.");
                         } else {
                             cells.forEach(cell => emptyCells[cell] = 0);
                             isEmptyGMO = false;
                         }
                     } else {
-                        console.error("[Raw] Malformed GetMapObjectsResponse");
+                        logger.error("[Raw] Malformed GetMapObjectsResponse");
                     }
                 } catch (err) {
-                    console.error("[Raw] Unable to decode GetMapObjectsResponse");
+                    logger.error("[Raw] Unable to decode GetMapObjectsResponse");
                 }
                 break;
             default:
-                console.log("[Raw] Invalid method provided:", method);
+                logger.error("[Raw] Invalid method provided:" + method);
                 return;
         }
     });
@@ -577,11 +556,11 @@ async function _handleRawData(req: Request, res: Response) {
 
     if (data) {
         try {
-            //console.debug("[Raw] Sending response to device:", data);
+            //logger.debug("[Raw] Sending response to device:", data);
             res.send(data);
         } catch (err) {
             // TODO: ERR_HTTP_HEADERS_SENT: Cannot set headers after they are sent to the client
-            console.log("[Raw] Failed to reply to device:", err);
+            logger.error("[Raw] Failed to reply to device:", err);
         }
     }
 
@@ -606,7 +585,7 @@ async function _handleControllerData(req: Request, res: Response) {
     let typeO = jsonO["type"];
     let uuidO = jsonO["uuid"];
     if (typeO === undefined || uuidO === undefined) {
-        console.error("[Controller] Failed to parse controller data");
+        logger.error("[Controller] Failed to parse controller data");
         return res.sendStatus(400);
     }
     let type: string = typeO;
@@ -633,7 +612,7 @@ async function _handleControllerData(req: Request, res: Response) {
             }
             if (device instanceof Device) {
                 // Device is already registered
-                console.debug("[Controller] Device registered");
+                logger.debug("[Controller] Device registered");
                 res.send({
                     data: {
                         assigned: device.instanceName !== undefined && device.instanceName !== null && device.instanceName !== "",
@@ -642,7 +621,7 @@ async function _handleControllerData(req: Request, res: Response) {
                 });
             } else {
                 // Register new device
-                console.debug("[Controller] Registering device");
+                logger.debug("[Controller] Registering device");
                 let newDevice = new Device(uuid, null, null, 0, null, 0, 0.0, 0.0, null);
                 await newDevice.create();
                 res.send({ 
@@ -677,7 +656,7 @@ async function _handleControllerData(req: Request, res: Response) {
                     res.sendStatus(404);
                 }
             } else {
-                console.info("[Controller] Device", uuid, "not assigned to an instance!");
+                logger.info("[Controller] Device", uuid, "not assigned to an instance!");
                 res.sendStatus(404);
             }
             break;
@@ -693,16 +672,16 @@ async function _handleControllerData(req: Request, res: Response) {
                     res.sendStatus(404);
                 }
             } else {
-                console.info("[Controller] Device", uuid, " failed to get startup location!");
+                logger.info("[Controller] Device", uuid, " failed to get startup location!");
                 res.sendStatus(404);
             }
             break;
         case "get_account":
             let account = await Account.getNewAccount(minLevel, maxLevel);
-            console.debug("[Controller] GetAccount: " + account);
+            logger.debug("[Controller] GetAccount: " + account);
             if (device === undefined || device === null || 
                 account === undefined || account === null) {
-                console.error("[Controller] Failed to get account, device or account is null.");
+                logger.error("[Controller] Failed to get account, device or account is null.");
                 return res.sendStatus(400);
             }
             if (device.accountUsername) {
@@ -765,7 +744,7 @@ async function _handleControllerData(req: Request, res: Response) {
             } else {
                 if (device === undefined || device === null || 
                     tutAccount === undefined || tutAccount === null) {
-                    console.error("[Controller] Failed to get account, device or account is null.");
+                    logger.error("[Controller] Failed to get account, device or account is null.");
                     return res.sendStatus(400);
                 }
             }
@@ -783,7 +762,7 @@ async function _handleControllerData(req: Request, res: Response) {
             } else {
                 if (device === undefined || device === null ||
                     banAccount === undefined || banAccount === null) {
-                    console.error("[Controller] Failed to get account, device or account is null.");
+                    logger.error("[Controller] Failed to get account, device or account is null.");
                     return res.sendStatus(400);
                 }
             }
@@ -799,7 +778,7 @@ async function _handleControllerData(req: Request, res: Response) {
             } else {
                 if (device === undefined || device === null ||
                     warnAccount === undefined || warnAccount === null) {
-                    console.error("[Controller] Failed to get account, device or account is null.");
+                    logger.error("[Controller] Failed to get account, device or account is null.");
                     return res.sendStatus(400);
                 }
             }
@@ -817,7 +796,7 @@ async function _handleControllerData(req: Request, res: Response) {
             } else {
                 if (device === undefined || device === null ||
                     invalidAccount === undefined || invalidAccount === null) {
-                    console.error("[Controller] Failed to get account, device or account is null.");
+                    logger.error("[Controller] Failed to get account, device or account is null.");
                     return res.sendStatus(400);
                 }
             }
@@ -835,7 +814,7 @@ async function _handleControllerData(req: Request, res: Response) {
             } else {
                 if (device === undefined || device === null ||
                     errAccount === undefined || errAccount === null) {
-                    console.error("[Controller] Failed to get account, device or account is null.");
+                    logger.error("[Controller] Failed to get account, device or account is null.");
                     return res.sendStatus(400);
                 }
             }
@@ -890,11 +869,12 @@ async function _handleControllerData(req: Request, res: Response) {
             }
             break;
         case "job_failed":
-            console.log("[Controller] JOB FAILED:", jsonO);
+            logger.error("[Controller] JOB FAILED:", jsonO);
             res.send('OK');
             break;
         default:
-            console.error("[Controller] Unhandled Request:", type);
+            logger.error("[Controller] Unhandled Request:", type);
+            res.sendStatus(404);
             break;
     }
 }

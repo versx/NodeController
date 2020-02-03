@@ -1,16 +1,31 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import * as winston from 'winston';
 
+const logDir = 'log';
+if (!fs.existsSync(logDir)) {
+    fs.mkdirSync(logDir);
+}
 const level = 'verbose';
 const options: winston.LoggerOptions = {
     level: level,
     format: winston.format.combine(
         winston.format.colorize(),
         winston.format.json(),
-        //winston.format.timestamp(),
+        /*
+        winston.format.timestamp({
+            format: 'YYYY-MM-DD HH:mm:ss'
+        }),
+        */
         winston.format.splat(),
         winston.format.prettyPrint(),
         winston.format.align(),
-        winston.format.simple()
+        winston.format.simple(),
+        /*
+        winston.format.printf(
+            info => `${info.timestamp} [${info.level.toUpperCase()}]: ${info.message}`
+        )
+        */
     ),
     transports: [
         new winston.transports.Console({
@@ -19,11 +34,11 @@ const options: winston.LoggerOptions = {
             handleExceptions: true
         }),
         new winston.transports.File({
-            filename: 'error.log',
+            filename: path.join(logDir, 'error.log'),
             level: 'error'
         }),
-        new winston.transports.File({ 
-            filename: 'combined.log'
+        new winston.transports.File({
+            filename: path.join(logDir, 'combined.log')
         })
     ],
 };

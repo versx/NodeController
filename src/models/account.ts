@@ -2,7 +2,7 @@
 
 import config      = require('../config.json');
 import { Database } from '../data/mysql';
-//import { winston } from '../utils/logger';
+import { logger } from '../utils/logger';
 const db           = new Database(config);
 
 /**
@@ -82,7 +82,7 @@ class Account {
         let result = await db.query(sql, [minLevel, maxLevel])
             .then(x => x)
             .catch(err => { 
-                console.log("[Account] Failed to get new Account", err);
+                logger.error("[Account] Failed to get new Account " + err);
                 return null;
             });
         let account: Account;
@@ -109,10 +109,6 @@ class Account {
     }
     /*
     getNewAccount(mysql: MySQL?=nil, uuid: String, area: String, minLevel: Int, maxLevel: Int) throws -> Account? {
-        guard let mysql = mysql ?? DBController.global.mysql else {
-            Log.error(message: "[ACCOUNT] Failed to connect to database.")
-            throw DBController.DBError()
-        }
         var newLat: Double = 0
         var newLon: Double = 0
         var spinLimit: Int = 0
@@ -272,10 +268,10 @@ class Account {
         let result = await db.query(sql, username)
             .then(x => x)
             .catch(err => {
-                console.log("[Account] Failed to increment spin count for account with username", username, "Error:", err);
+                logger.error("[Account] Failed to increment spin count for account with username " + username + " Error: " + err);
                 return null;
             });
-        console.log("[Account] Spin:", result);
+        logger.info("[Account] Spin: " + result);
     }
     /**
      * Get account with username.
@@ -292,7 +288,7 @@ class Account {
         let result = await db.query(sql, args)
             .then(x => x)
             .catch(err => { 
-                console.log("[Account] Failed to get Account with username", username, "Error:", err);
+                logger.error("[Account] Failed to get Account with username " + username + " Error: " + err);
                 return null;
             });
         let account: Account;
@@ -328,7 +324,7 @@ class Account {
         let result = await db.query(sql, args)
             .then(x => x)
             .catch(err => { 
-                console.log("[Account] Failed to get Account between level ", minLevel, "-", maxLevel, "Error:", err);
+                logger.error("[Account] Failed to get Account between level " + minLevel + "-" + maxLevel + " Error: " + err);
                 return null;
             });
         let account: Account;
@@ -368,10 +364,10 @@ class Account {
         let result = await db.query(sql, args)
             .then(x => x)
             .catch(err => {
-                console.log("[Account] Failed to set encounter info for account with username", username, "Error:", err);
+                logger.error("[Account] Failed to set encounter info for account with username " + username + " Error: " + err);
                 return null;
             });
-        console.log("[Account] DidEncounter:", result);
+        logger.info("[Account] DidEncounter: " + result);
     }
     /**
      * Clear spins for account.
@@ -384,10 +380,10 @@ class Account {
         let result = await db.query(sql)
             .then(x => x)
             .catch(err => {
-                console.log("[Account] Failed to set clear spins for accounts:", err);
+                logger.error("[Account] Failed to set clear spins for accounts: " + err);
                 return null;
             });
-        console.log("[Account] ClearSpins:", result);
+        logger.info("[Account] ClearSpins: " + result);
     }
     /**
      * Set account level.
@@ -404,10 +400,10 @@ class Account {
         let result = await db.query(sql, args)
             .then(x => x)
             .catch(err => { 
-                console.log("[Account] Failed to set Account level for username", username, "Error:", err);
+                logger.error("[Account] Failed to set Account level for username " + username + " Error: " + err);
                 return null;
             });
-        console.log("[Account] Results:", result);
+        logger.info("[Account] SetLevel: " + result);
     }
     static async setCooldown(username: string, lastLat: number, lastLon: number): Promise<void> {
         let sql = `
@@ -419,10 +415,10 @@ class Account {
         let result = await db.query(sql, args)
             .then(x => x)
             .catch(err => { 
-                console.log("[Account] Failed to set cooldown on Account with username", username, "Error:", err);
+                logger.error("[Account] Failed to set cooldown on Account with username " + username + " Error: " + err);
                 return null;
             });
-        console.log("[Account] Results:", result);
+        logger.info("[Account] SetCooldown: " + result);
     }
     static async setTutorial(username: string, tutorial: number): Promise<void> {
         let sql = `
@@ -434,10 +430,10 @@ class Account {
         let result = await db.query(sql, args)
             .then(x => x)
             .catch(err => { 
-                console.log("[Account] Failed to set tutorial for Account with username", username, "Error:", err);
+                logger.error("[Account] Failed to set tutorial for Account with username " + username + " Error: " + err);
                 return null;
             });
-        console.log("[Account] Results:", result);
+        logger.info("[Account] SetTutorial: " + result);
     }
     static async setInstanceUuid(uuid: string, area: string, username: string): Promise<void> {
         let sql = `
@@ -450,10 +446,10 @@ class Account {
         let result = await db.query(sql, args)
             .then(x => x)
             .catch(err => { 
-                console.log("[Account] Failed to set Account intance for username", username, "and device", uuid, "Error:", err);
+                logger.error("[Account] Failed to set Account intance for username " + username + " and device " + uuid + " Error: " + err);
                 return null;
             });
-        console.log("[Account] Results:", result);
+        logger.info("[Account] SetInstanceUuid: " + result);
     }
     static async convertAccountLock(): Promise<number> {
         let sql = `
@@ -464,10 +460,10 @@ class Account {
         let result = await db.query(sql)
             .then(x => x)
             .catch(err => { 
-                console.log("[Account] Failed to convert account lock count.\r\nError:", err);
+                logger.error("[Account] Failed to convert account lock count.\r\nError:" + err);
                 return null;
             });
-        console.log("[Account] Results:", result);
+        logger.info("[Account] clearAccountLock: " + result);
         return Object.keys(result).length; // Return affected_rows instead.
     }
     static async convertAccountLockCount(): Promise<number> {
@@ -479,10 +475,10 @@ class Account {
         let result = await db.query(sql)
             .then(x => x)
             .catch(err => { 
-                console.log("[Account] Failed to convert account lock count.\r\nError:", err);
+                logger.error("[Account] Failed to convert account lock count.\r\nError:" + err);
                 return null;
             });
-        console.log("[Account] Results:", result);
+        logger.info("[Account] convertAccountLockCount: " + result);
         return Object.keys(result).length; // Return num_rows instead.
     }
     static async checkFail(username: string): Promise<boolean> {
@@ -495,7 +491,7 @@ class Account {
         let result = db.query(sql, args)
             .then(x => x)
             .catch(err => {
-                console.error(`[ACCOUNT] Failed to execute query. (${err})`);
+                logger.error(`[ACCOUNT] Failed to execute query. (${err})`);
                 return;
             });
         /*
@@ -538,10 +534,10 @@ class Account {
         let result = await db.query(sql, args)
             .then(x => x)
             .catch(err => {
-                console.log("[Account] Error:", err);
+                logger.error("[Account] Error: " + err);
                 return null;
             });
-        console.log("[Account] Save:", result)
+        logger.info("[Account] Save: " + result)
     }
     /**
      * Load all accounts.
@@ -554,7 +550,7 @@ class Account {
         let results: any = await db.query(sql)
             .then(x => x)
             .catch(err => {
-                console.log("[Account] Error:", err);
+                logger.error("[Account] Error: " + err);
                 return null;
             });
         let accounts: Account[] = [];
@@ -600,7 +596,7 @@ class Account {
         let results: any = await db.query(sql)
             .then(x => x)
             .catch(err => {
-                console.error(`[Account] Failed to execute query. (${err})`);
+                logger.error(`[Account] Failed to execute query. (${err})`);
             });
         let stats = [];
         if (results && results.length > 0) {

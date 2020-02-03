@@ -11,7 +11,7 @@ import { CircleSmartRaidInstanceController } from './smart-circle-controller';
 import { IVInstanceController } from './iv-controller';
 import { AutoInstanceController, AutoInstanceType } from './auto-instance-controller';
 import { AssignmentController } from '../assignment-controller';
-//import { winston } from '../../utils/logger';
+import { logger } from '../../utils/logger';
 
 class InstanceController implements IInstanceController {
     static instance = new InstanceController();
@@ -25,7 +25,7 @@ class InstanceController implements IInstanceController {
 
     constructor() { }
     async setup() {
-        console.info("[InstanceController] Starting up...");
+        logger.info("[InstanceController] Starting up...");
         
         let instances = await Instance.load();
         if (instances) {

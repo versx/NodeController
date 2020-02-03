@@ -1,7 +1,7 @@
 "use strict"
 
 import { Database } from '../data/mysql';
-//import { winston } from '../utils/logger';
+import { logger } from '../utils/logger';
 import config      = require('../config.json');
 const db           = new Database(config);
 
@@ -76,7 +76,7 @@ class Device {
         let result = await db.query(sql, args)
             .then(x => x)
             .catch(err => { 
-                console.error("[Device] Failed to get Device with uuid", uuid, "Error:", err);
+                logger.error("[Device] Failed to get Device with uuid " + uuid + " Error: " + err);
             });
         let device: Device;
         if (result) {
@@ -113,9 +113,9 @@ class Device {
         let results = await db.query(sql, args)
             .then(x => x)
             .catch(err => {
-                console.error("[Device] Error:", err);
+                logger.error("[Device] Error: " + err);
             });
-        console.debug("[Device] SetLastLocation:", results);
+        logger.info("[Device] SetLastLocation: " + results);
     }
     /**
      * Update host information for device.
@@ -141,10 +141,9 @@ class Device {
         let results = await db.query(sql, args)
             .then(x => x)
             .catch(err => {
-                console.error("[Device] Error:", err);
+                logger.error("[Device] Error: " + err);
             });
-        console.debug("[Device] Touch:", results);
-        //redisClient.addDevice(this);
+        logger.info("[Device] Touch: " + results);
     }
     /**
      * Create device.
@@ -158,10 +157,9 @@ class Device {
         let results = await db.query(sql, args)
             .then(x => x)
             .catch(err => {
-                console.error("[Device] Error:", err);
+                logger.error("[Device] Error: " + err);
             });
-        console.debug("[Device] Insert:", results);
-        //redisClient.addDevice(this);
+        logger.info("[Device] Insert: " + results);
     }
     /**
      * Clear device group field.
@@ -176,11 +174,10 @@ class Device {
         let results = await db.query(sql, args)
             .then(x => x)
             .catch(err => {
-                console.error("[Device] Error:", err);
+                logger.error("[Device] Error: " + err);
                 return null;
             });
-        console.debug("[Device] ClearGroup:", results);
-        //redisClient.addDevice(this);
+        logger.info("[Device] ClearGroup: " + results);
     }
     /**
      * Save device.
@@ -196,10 +193,9 @@ class Device {
        let results = await db.query(sql, args)
            .then(x => x)
            .catch(err => {
-               console.error("[Device] Error:", err);
+               logger.error("[Device] Error: " + err);
            });
-        console.debug("[Device] Save:", results);
-       //redisClient.addDevice(this);
+        logger.info("[Device] Save: " + results);
     }
     /**
      * Load all devices.
@@ -210,7 +206,7 @@ class Device {
         /*
         client.get(DEVICE_LIST, function(err: Error, result) {
             if (err) {
-                console.error("[Device] load: " + err);
+                logger.error("[Device] load: " + err);
             }
             if (result) {
                 let data = JSON.parse(result);
@@ -228,7 +224,7 @@ class Device {
                         device.lastLon
                     );
                 }
-                console.log("[Device] RESULT:", data);
+                logger.info("[Device] RESULT: " + data);
             }
         });
         */
@@ -239,7 +235,7 @@ class Device {
         let results = await db.query(sql)
             .then(x => x)
             .catch(err => {
-                console.error("[Device] Error:", err);
+                logger.error("[Device] Error: " + err);
                 return null;
             });
         let devices: Device[] = [];

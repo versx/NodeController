@@ -1,6 +1,7 @@
-"use strict"
+"use strict";
 
 import { Database } from '../data/mysql';
+import { logger } from '../utils/logger';
 import config      = require('../config.json');
 const db           = new Database(config);
 
@@ -37,7 +38,7 @@ class Assignment {
         let results = await db.query(sql)
             .then(x => x)
             .catch(err => {
-                console.log("[ASSIGNMENT] Error:", err);
+                logger.error("[Assignment] Error: " + err);
                 return null;
             });
         let assignments: Assignment[] = [];
@@ -72,7 +73,7 @@ class Assignment {
         let result = await db.query(sql, args)
             .then(x => x)
             .catch(err => {
-                console.log("[ASSIGNMENT] Error:", err);
+                logger.error("[Assignment] Error: " + err);
                 return null;
             });
         let assignment: Assignment;
@@ -95,10 +96,10 @@ class Assignment {
         let result = await db.query(sql)
             .then(x => x)
             .catch(err => {
-                console.log("[ASSIGNMENT] Error:", err);
+                logger.error("[Assignment] Error: " + err);
                 return null;
             });
-        console.log("[ASSIGNMENT] DeleteAll:", result);
+        logger.info("[Assignment] DeleteAll: " + result);
     }
     /**
      * Save assignment data.
@@ -117,10 +118,10 @@ class Assignment {
         let result = await db.query(sql, args)
             .then(x => x)
             .catch(err => {
-                console.log("[ASSIGNMENT] Error:", err);
+                logger.error("[Assignment] Error: " + err);
                 return null;
             });
-        console.log("[ASSIGNMENT] Save:", result);
+        logger.info("[Assignment] Save: " + result);
     }
     /**
      * Create new assignment object.
@@ -134,10 +135,10 @@ class Assignment {
         let result = await db.query(sql, args)
             .then(x => x)
             .catch(err => {
-                console.log("[ASSIGNMENT] Error:", err);
+                logger.error("[Assignment] Error: " + err);
                 return null;
             });
-        console.log("[ASSIGNMENT] Create:", result);
+        logger.info("[Assignment] Create: " + result);
     }
     /**
      * Delete assignment.
@@ -151,10 +152,10 @@ class Assignment {
         let result = await db.query(sql, args)
             .then(x => x)
             .catch(err => {
-                console.log("[ASSIGNMENT] Error:", err);
+                logger.error("[Assignment] Error: " + err);
                 return null;
             });
-        console.log("[ASSIGNMENT] Delete:", result);
+        logger.info("[Assignment] Delete: " + result);
     }
 }
 

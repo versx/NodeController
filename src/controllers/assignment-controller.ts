@@ -1,8 +1,9 @@
-"use strict"
+"use strict";
 
 import { Assignment } from '../models/assignment';
 import { Device } from '../models/device';
 import { InstanceController } from './instances/instance-controller';
+import { logger } from '../utils/logger';
 import { snooze, todaySeconds } from '../utils/util';
 
 class AssignmentController /*InstanceControllerDelegate?*/ {
@@ -16,7 +17,7 @@ class AssignmentController /*InstanceControllerDelegate?*/ {
     constructor() {
     }
     async setup() {
-        console.info("[AssignmentController] Starting up...");
+        logger.info("[AssignmentController] Starting up...");
         this.assignments = await Assignment.getAll();
         //this.timeZone = Localizer.global.timeZone;
         if (!this.isSetup) {
@@ -76,7 +77,7 @@ class AssignmentController /*InstanceControllerDelegate?*/ {
             }
         }
         if (device instanceof Device && device.instanceName !== assignment.instanceName) {
-            console.log("[AssignmentController] Assigning", assignment.deviceUUID, "to", assignment.instanceName);
+            logger.info("[AssignmentController] Assigning " + assignment.deviceUUID + " to " + assignment.instanceName);
             InstanceController.instance.removeDevice(device);
             device.instanceName = assignment.instanceName;
             done = false;
@@ -96,7 +97,7 @@ class AssignmentController /*InstanceControllerDelegate?*/ {
             let deviceUUIDs = InstanceController.instance.getDeviceUUIDsInInstance(name)
             if (assignment.enabled && assignment.time === 0 && deviceUUIDs.includes(assignment.deviceUUID)) {
                 this.triggerAssignment(assignment).then(x => {
-                    console.log("[AssignmentController] Triggered assignment", x);
+                    logger.info("[AssignmentController] Triggered assignment " + x);
                 });
                 return;
             }

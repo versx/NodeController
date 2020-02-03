@@ -1,11 +1,11 @@
-"use strict"
+"use strict";
 
 import { Cache, GYM_LIST } from '../data/cache';
 import { DbController } from '../controllers/db-controller';
 import { WebhookController } from '../controllers/webhook-controller';
 import { Database } from '../data/mysql';
 import { getCurrentTimestamp } from '../utils/util';
-//import { winston } from '../utils/logger';
+import { logger } from '../utils/logger';
 import config      = require('../config.json');
 const db           = new Database(config);
 
@@ -126,8 +126,8 @@ class Gym {
         let args = [minLat, maxLat, minLon, maxLon, updated];
         let result = await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.error("[Gym] Error: " + x);
+            .catch(err => {
+                logger.error("[Gym] Error: " + err);
                 return null;
             });
 
@@ -174,7 +174,7 @@ class Gym {
     static async getById(gymId: string, withDeleted: boolean = false) {
         let cachedGym = await Cache.instance.get<Gym>(GYM_LIST, gymId);
         if (cachedGym/*instanceof Gym*/) {
-            console.log("[Gym] Returning cached gym", cachedGym.id);
+            //logger.info("[Gym] Returning cached gym " + cachedGym.id);
             return cachedGym;
         }
 
@@ -193,8 +193,8 @@ class Gym {
         let args = gymId;
         let result = await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.error("[Pokestop] Error: " + x);
+            .catch(err => {
+                logger.error("[Pokestop] Error: " + err);
                 return null;
             });
        
@@ -270,8 +270,8 @@ class Gym {
         let args = cellIds;
         let result = await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.error("[Pokestop] Error: " + x);
+            .catch(err => {
+                logger.error("[Pokestop] Error: " + err);
                 return null;
             });
        
@@ -347,8 +347,8 @@ class Gym {
         let args = ids;
         let result = await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.error("[Gym] Error: " + x);
+            .catch(err => {
+                logger.error("[Gym] Error: " + err);
                 return null;
             });
        
@@ -524,13 +524,13 @@ class Gym {
 
         await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.error("[Gym] Error: " + x);
+            .catch(err => {
+                logger.error("[Gym] Error: " + err);
                 return null;
             });
         // Cache with redis
         if (!await Cache.instance.set(GYM_LIST, this.id, this)) {
-            console.error("[Gym] Failed to cache gym with redis", this.id);
+            logger.error("[Gym] Failed to cache gym with redis " + this.id);
         }
     }
     /**
@@ -543,8 +543,8 @@ class Gym {
         `;
         let result = await db.query(sql)
             .then(x => x)
-            .catch(x => {
-                console.error("[Gym] Error: " + x);
+            .catch(err => {
+                logger.error("[Gym] Error: " + err);
                 return null;
             });
 
@@ -627,24 +627,24 @@ class Gym {
                     type: "raid",
                     message: {
                         gym_id: this.id,
-                        gym_name: this.name ?? "Unknown",
-                        gym_url: this.url ?? "",
+                        gym_name: this.name || "Unknown",
+                        gym_url: this.url || "",
                         latitude: this.lat,
                         longitude: this.lon,
-                        team_id: this.teamId ?? 0,
-                        spawn: this.raidSpawnTimestamp ?? 0,
-                        start: this.raidBattleTimestamp ?? 0,
-                        end: this.raidEndTimestamp ?? 0,
-                        level: this.raidLevel ?? 0,
-                        pokemon_id: this.raidPokemonId ?? 0,
-                        cp: this.raidPokemonCp ?? 0,
-                        gender: this.raidPokemonGender ?? 0,
-                        form: this.raidPokemonForm ?? 0,
-                        move_1: this.raidPokemonMove1 ?? 0,
-                        move_2: this.raidPokemonMove2 ?? 0,
-                        ex_raid_eligible: this.exRaidEligible ?? 0,
-                        is_exclusive: this.raidIsExclusive ?? false,
-                        sponsor_id: this.sponsorId ?? 0,
+                        team_id: this.teamId || 0,
+                        spawn: this.raidSpawnTimestamp || 0,
+                        start: this.raidBattleTimestamp || 0,
+                        end: this.raidEndTimestamp || 0,
+                        level: this.raidLevel || 0,
+                        pokemon_id: this.raidPokemonId || 0,
+                        cp: this.raidPokemonCp || 0,
+                        gender: this.raidPokemonGender || 0,
+                        form: this.raidPokemonForm || 0,
+                        move_1: this.raidPokemonMove1 || 0,
+                        move_2: this.raidPokemonMove2 || 0,
+                        ex_raid_eligible: this.exRaidEligible || 0,
+                        is_exclusive: this.raidIsExclusive || false,
+                        sponsor_id: this.sponsorId || 0,
                     }
                 };
         }

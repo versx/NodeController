@@ -1,4 +1,4 @@
-"use strict"
+"use strict";
 
 import * as path from 'path';
 import * as mustache from 'mustache';
@@ -16,6 +16,7 @@ import { DeviceGroup } from '../models/device-group';
 import { Instance, InstanceType, IInstanceData } from '../models/instance';
 import { Pokestop } from '../models/pokestop';
 import { Localizer } from '../utils/localizer';
+import { logger } from '../utils/logger';
 import { readFile, getCurrentTimestamp, toThreeDigits } from '../utils/util';
 
 enum Page {
@@ -504,7 +505,7 @@ class ApiController {
                         res.redirect('/');
                         return
                     } catch (err) {
-                        console.error(err);
+                        logger.error(err);
                         data["show_error"] = true;
                         data["error"] = "Failed to clear Quests. Please try again later.";
                     }
@@ -560,7 +561,7 @@ class ApiController {
             });
             return output;
         } catch (err) {
-            console.error("[ApiController] Failed to get page:", err);
+            logger.error("[ApiController] Failed to get page: " + err);
         }
     }
     checkHost(req: express.Request, res: express.Response): boolean {
@@ -857,7 +858,7 @@ class ApiController {
                 try {
                     await oldInstance.update(instanceName);
                 } catch (err) {
-                    console.error(err);
+                    logger.error(err);
                     data["show_error"] = true;
                     data["error"] = "Failed to update instance. Is the name unique?";
                     return data;

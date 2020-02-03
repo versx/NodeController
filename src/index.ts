@@ -14,7 +14,10 @@ import { WebhookController } from './controllers/webhook-controller';
 import { ApiListener } from './http/api';
 import { WebhookListener } from './http/listener';
 import { Localizer } from './utils/localizer';
+import { logger } from './utils/logger';
 import config     = require('./config.json');
+
+logger.info('Starting up...');
 
 // Setup controllers
 DbController.instance.setup();
@@ -31,3 +34,5 @@ webhook.start();
 // Start API listener
 let api = new ApiListener(config.ports.api);
 api.start();
+
+logger.info('Initialized.');

@@ -1,12 +1,13 @@
 "use strict";
 
 import * as S2 from 'nodes2ts';
-import { Cell } from "../models/cell";
-import { Gym } from "../models/gym";
-import { Pokestop } from "../models/pokestop";
-import { Pokemon } from "../models/pokemon";
-import { Weather } from "../models/weather";
-import { getCurrentTimestamp } from "../utils/util";
+import { Cell } from '../models/cell';
+import { Gym } from '../models/gym';
+import { Pokestop } from '../models/pokestop';
+import { Pokemon } from '../models/pokemon';
+import { Weather } from '../models/weather';
+import { logger } from '../utils/logger';
+import { getCurrentTimestamp } from '../utils/util';
 
 class Digest {
     gymIdsPerCell: Map<number, string[]>;
@@ -36,7 +37,7 @@ class Digest {
                     );
                     await cell.save(true);
                 } catch (err) {
-                    console.error(err);
+                    logger.error(err);
                 }
                 //client.addCell(cell);
                 
@@ -54,7 +55,7 @@ class Digest {
             let startClientWeathers = process.hrtime();
             clientWeathers.forEach(async conditions => {
                 try {
-                    //console.log("Parsed weather", conditions);
+                    //logger.info("Parsed weather: " + conditions);
                     let ws2cell = new S2.S2Cell(new S2.S2CellId(conditions.cell.toString()));
                     let wlat = ws2cell.getCapBound().getRectBound().getCenter().latDegrees;
                     let wlon = ws2cell.getCapBound().getRectBound().getCenter().lngDegrees;
@@ -68,13 +69,12 @@ class Digest {
                         updated: null
                     });
                     await weather.save(true);
-                    //client.addWeather(weather);
                 } catch (err) {
-                    console.error(err);
+                    logger.error(err);
                 }
             });
             let endClientWeathers = process.hrtime(startClientWeathers);
-            console.info("[] Weather Detail Count: " + clientWeathers.length + " parsed in " + endClientWeathers + "s");
+            logger.info("[Digest] Weather Detail Count: " + clientWeathers.length + " parsed in " + endClientWeathers + "s");
         }
     }
     consumeWildPokemon(wildPokemons: any[], username: string) {
@@ -89,13 +89,12 @@ class Digest {
                         wild: wildPokemon.data
                     });
                     await pokemon.save();
-                    //client.addPokemon(pokemon);
                 } catch (err) {
-                    console.error(err);
+                    logger.error(err);
                 }
             });
             let endWildPokemon = process.hrtime(startWildPokemon);
-            console.info("[] Pokemon Count: " + wildPokemons.length + " parsed in " + endWildPokemon + "s");
+            logger.info("[Digest] Pokemon Count: " + wildPokemons.length + " parsed in " + endWildPokemon + "s");
         }
     }
     consumeNearbyPokemon(nearbyPokemons: any[], username: string) {
@@ -110,13 +109,12 @@ class Digest {
                         nearby: nearbyPokemon.data
                     });
                     await pokemon.save();
-                    //client.addPokemon(pokemon);
                 } catch (err) {
-                    console.error(err);
+                    logger.error(err);
                 }
             });
             let endNearbyPokemon = process.hrtime(startNearbyPokemon);
-            console.info("[] NearbyPokemon Count: " + nearbyPokemons.length + " parsed in " + endNearbyPokemon + "s");
+            logger.info("[Digest] NearbyPokemon Count: " + nearbyPokemons.length + " parsed in " + endNearbyPokemon + "s");
         }
     }
     consumeForts(forts: any[]) {
@@ -149,11 +147,11 @@ class Digest {
                             break;
                     }
                 } catch (err) {
-                    console.error(err);
+                    logger.error(err);
                 }
             });
             let endForts = process.hrtime(startForts);
-            console.info("[] Forts Count: " + forts.length + " parsed in " + endForts + "s");
+            logger.info("[Digest] Forts Count: " + forts.length + " parsed in " + endForts + "s");
         }
     }
     consumeFortDetails(fortDetails: any[]) {
@@ -188,7 +186,7 @@ class Digest {
                 }
             });
             let endFortDetails = process.hrtime(startFortDetails);
-            console.info("[] Forts Detail Count: " + fortDetails.length + " parsed in " + endFortDetails + "s");
+            logger.info("[Digest] Forts Detail Count: " + fortDetails.length + " parsed in " + endFortDetails + "s");
         }
     }
     consumeGymInfos(gymInfos: any[]) {
@@ -207,7 +205,7 @@ class Digest {
                 }
             });
             let endGymInfos = process.hrtime(startGymInfos);
-            console.info("[] Forts Detail Count: " + gymInfos.length + " parsed in " + endGymInfos + "s");
+            logger.info("[Digest] Forts Detail Count: " + gymInfos.length + " parsed in " + endGymInfos + "s");
         }
     }
     consumeQuests(quests: any[]) {
@@ -216,7 +214,7 @@ class Digest {
             quests.forEach(async quest => {
                 let pokestop: Pokestop;
                 try {
-                    pokestop = await Pokestop.getById(quest.fort_id);
+                    pokestop = await Pokestop.getById(quest.fort_id, false, true);
                 } catch (err) {
                     pokestop = null;
                 }
@@ -226,7 +224,7 @@ class Digest {
                 }
             });
             let endQuests = process.hrtime(startQuests);
-            console.info("[] Quest Count: " + quests.length + " parsed in " + endQuests + "s");
+            logger.info("[Digest] Quest Count: " + quests.length + " parsed in " + endQuests + "s");
         }
     }
     consumeEncounters(encounters: any[], username: string) {
@@ -268,7 +266,7 @@ class Digest {
                 }
             });
             let endEncounters = process.hrtime(startEncounters);
-            console.info("[] Encounter Count: " + encounters.length + " parsed in " + endEncounters + "s");
+            logger.info("[Digest] Encounter Count: " + encounters.length + " parsed in " + endEncounters + "s");
         }
     }
 }

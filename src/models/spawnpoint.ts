@@ -1,6 +1,7 @@
-"use strict"
+"use strict";
 
 import { Database } from '../data/mysql';
+import { logger } from '../utils/logger';
 import { getCurrentTimestamp } from '../utils/util';
 import config = require('../config.json');
 const db = new Database(config);
@@ -45,10 +46,9 @@ class Spawnpoint {
         let args = [minLat, maxLat, minLon, maxLon, updated];
         let result = await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.error("[Spawnpoint] Error:", x);
+            .catch(err => {
+                logger.error("[Spawnpoint] Error: " + err);
             });
-        console.log("[Spawnpoint] Load:", result)
         let spawnpoints: Spawnpoint[] = [];
         if (result) {
             let keys = Object.values(result);
@@ -78,8 +78,8 @@ class Spawnpoint {
         `;
         let result = await db.query(sql, [spawnpointId])
             .then(x => x)
-            .catch(x => {
-                console.error("[Spawnpoint] Error:", x);
+            .catch(err => {
+                logger.error("[Spawnpoint] Error: " + err);
             });
         let spawnpoint: Spawnpoint;
         if (result) {
@@ -139,11 +139,11 @@ class Spawnpoint {
             despawn_sec=VALUES(despawn_sec)
             `;
         }
-        let args = [this.id, this.lat, this.lon, this.despawnSecond];
+        let args = [this.id, this.lat, this.lon, this.despawnSecond || null];
         await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.error("[Spawnpoint] Error:", x);
+            .catch(err => {
+                logger.error("[Spawnpoint] Error:" + err);
             });
         Spawnpoint.Spawnpoints[this.id] = this;        
     }
@@ -157,10 +157,9 @@ class Spawnpoint {
         `;
         let result = await db.query(sql)
             .then(x => x)
-            .catch(x => {
-                console.error("[Spawnpoint] Error:", x);
+            .catch(err => {
+                logger.error("[Spawnpoint] Error: " + err);
             });
-        console.log("[Spawnpoint] Load:", result)
         let spawnpoints: Spawnpoint[] = [];
         if (result) {
             let keys = Object.values(result);

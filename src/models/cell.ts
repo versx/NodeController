@@ -4,6 +4,7 @@ import * as S2 from 'nodes2ts';
 import { Coord } from '../coord';
 import { Cache, CELL_LIST } from '../data/cache';
 import { Database } from '../data/mysql';
+import { logger } from '../utils/logger';
 import config = require('../config.json');
 const db = new Database(config);
 
@@ -53,8 +54,8 @@ class Cell {
         let args = [minLatReal, maxLatReal, minLonReal, maxLonReal];
         let results = await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.error("[Cell] Error:", x);
+            .catch(err => {
+                logger.error("[Cell] Error: " + err);
             });
         let cells: Cell[] = [];
         if (results) {
@@ -79,7 +80,7 @@ class Cell {
     static async getById(id: string): Promise<Cell> {
         let cachedCell = await Cache.instance.get<Cell>(CELL_LIST, id);
         if (cachedCell/*instanceof Cell*/) {
-            console.log("[Cell] Returning cached cell", cachedCell.id);
+            logger.info("[Cell] Returning cached cell " + cachedCell.id);
             return cachedCell;
         }
 
@@ -92,8 +93,8 @@ class Cell {
         let args = [id];
         let result = await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.error("[Cell] Error:", x);
+            .catch(err => {
+                logger.error("[Cell] Error: ", err);
             });
         let cell: Cell;
         if (result) {
@@ -146,11 +147,10 @@ class Cell {
         let args = ids;
         let result = await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.error("[Cell] Error: " + x);
+            .catch(err => {
+                logger.error("[Cell] Error: " + err);
                 return null;
             });
-        console.log("[Cell] GetInIds:", result);
         let cells: Cell[] = [];
         let keys = Object.values(result);
         keys.forEach(key => {
@@ -186,13 +186,13 @@ class Cell {
         let args = [this.id, this.level, this.centerLat, this.centerLon];
         await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.error("[Cell] Error: " + x);
+            .catch(err => {
+                logger.error("[Cell] Error: " + err);
                 return null;
             });
         // Cache with redis
         if (!await Cache.instance.set(CELL_LIST, this.id, this)) {
-            console.error("[Cell] Failed to cache cell with redis", this.id);
+            logger.error("[Cell] Failed to cache cell with redis " + this.id);
         }
     }
     /**
@@ -205,8 +205,8 @@ class Cell {
         `;
         let results = await db.query(sql)
             .then(x => x)
-            .catch(x => {
-                console.error("[Cell] Error: " + x);
+            .catch(err => {
+                logger.error("[Cell] Error: " + err);
                 return null;
             });
         let cells: Cell[] = [];
@@ -251,7 +251,7 @@ class Cell {
             message: {
                 id: this.id,
                 level: this.level,
-                updated: this.updated ?? 1,
+                updated: this.updated || 1,
                 polygon: polygon
             }
         };

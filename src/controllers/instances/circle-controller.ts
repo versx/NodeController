@@ -1,8 +1,9 @@
-"use strict"
+"use strict";
 
-import { InstanceType } from "./instance-controller"
-import { Coord } from "../../coord";
-import { getCurrentTimestamp } from "../../utils/util";
+import { InstanceType } from './instance-controller';
+import { Coord } from '../../coord';
+import { logger } from '../../utils/logger';
+import { getCurrentTimestamp } from '../../utils/util';
 
 class CircleInstanceController {
     lastUuidIndex = {};
@@ -153,8 +154,8 @@ class CircleInstanceController {
         let distanceToNext = this.coords.length;
         let keys = Object.keys(this.lastUuidIndex);
         keys.forEach((uuid, oindex) => {
-            console.log(uuid);
-            console.log(oindex);
+            logger.debug("Device Name: " + uuid);
+            logger.debug("Device Route Index: " + oindex);
             let ouuid: string = keys[oindex];
             let index: number = this.lastUuidIndex[uuid];
             // Skip the querying device

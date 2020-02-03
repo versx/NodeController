@@ -1,4 +1,4 @@
-"use strict"
+"use strict";
 
 import * as S2 from 'nodes2ts';
 import { Gym } from '../../models/gym';

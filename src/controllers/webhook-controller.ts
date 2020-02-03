@@ -1,12 +1,12 @@
 "use strict";
 
+import request = require('request');
 import { DbController } from './db-controller';
 import { Pokestop } from '../models/pokestop';
 import { Pokemon } from '../models/pokemon';
 import { Gym } from '../models/gym';
 import { Weather } from '../models/weather';
-import request = require('request');
-//import { winston } from '../utils/logger';
+import { logger } from '../utils/logger';
 
 const WebhookRelayInterval: number = 1 * 1000;
 
@@ -103,7 +103,7 @@ class WebhookController {
         }
     }
     setup(): void {
-        console.info("[WebhookController] Starting up...");
+        logger.info("[WebhookController] Starting up...");
         setInterval(() => this.loopEvents(), WebhookRelayInterval);
     }
     loopEvents(): void {
@@ -174,10 +174,10 @@ class WebhookController {
         };
         request(options, (err, res, body) => {
             if (err) { //throw err;
-                console.error(err);
+                logger.error(err);
                 return;
             }
-            console.log("[WEBHOOK] Response:", body);
+            logger.debug("[WEBHOOK] Response: " + body);
         });
     }
 }

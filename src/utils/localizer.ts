@@ -1,6 +1,7 @@
 "use strict";
 
 import * as path from 'path';
+import { logger } from '../utils/logger';
 import { readFile } from '../utils/util';
 
 class Localizer {
@@ -23,11 +24,11 @@ class Localizer {
             if (jsonObj) {
                 this.cachedData = jsonObj.values;
             } else {
-                console.error("[Localizer] Failed to read file for locale:", Localizer.instance.locale);
+                logger.error("[Localizer] Failed to read file for locale: " + Localizer.instance.locale);
                 return;
             }
         } catch (err) {
-            console.error("[Localizer] Failed to read file for locale:", Localizer.instance.locale);
+            logger.error("[Localizer] Failed to read file for locale: " + Localizer.instance.locale);
         }
         if (Localizer.instance.locale !== "en") {
             try {
@@ -38,17 +39,17 @@ class Localizer {
                     this.cachedDataEn = jsonObjEn.values;
                 }
             } catch (err) {
-                console.error("[Localizer] Failed to read file for locale:", Localizer.instance.locale);
+                logger.error("[Localizer] Failed to read file for locale: " + Localizer.instance.locale);
             }
         }
     }
 
     get(value: string): string {
-        return this.cachedData[value] ?? this.cachedDataEn[value] ?? value
+        return this.cachedData[value] || this.cachedDataEn[value] || value
     }
     /*
     get(value: string, replace: any): string {
-        var value = this.cachedData[value] ?? this.cachedDataEn[value] ?? value;
+        var value = this.cachedData[value] || this.cachedDataEn[value] || value;
         for repl in replace {
             value = value.replacingOccurrences(of: "%{\(repl.key)}", with: repl.value)
         }

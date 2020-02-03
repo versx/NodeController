@@ -1,7 +1,8 @@
-"use strict"
+"use strict";
 
 import * as turf from '@turf/turf';
 import { Pokemon } from '../../models/pokemon';
+import { logger } from '../../utils/logger';
 import { getCurrentTimestamp, snooze } from '../../utils/util';
 
 class IVInstanceController {
@@ -64,9 +65,9 @@ class IVInstanceController {
                 }
                 if (pokemonReal instanceof Pokemon) {
                     if (pokemonReal.atkIv === undefined) {
-                        console.log("[IVInstanceController] Checked Pokemon doesn't have IV.");
+                        logger.warn("[IVInstanceController] Checked Pokemon doesn't have IV.");
                     } else {
-                        console.log("[IVInstanceController] Checked Pokemon has IV.");
+                        logger.info("[IVInstanceController] Checked Pokemon has IV.");
                     }
                 }
             }
@@ -120,7 +121,7 @@ class IVInstanceController {
             }
             let index = this.lastIndexOf(pokemon.pokemonId);
             if (this.pokemonQueue.length >= this.ivQueueLimit && index === null) {
-                console.log("[IVInstanceController] Queue is full!");
+                logger.warn("[IVInstanceController] Queue is full!");
             } else if (this.pokemonQueue.length >= this.ivQueueLimit) {
                 // Insert pokemon at top of queue.
                 this.pokemonQueue.unshift(pokemon);

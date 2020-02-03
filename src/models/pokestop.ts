@@ -6,7 +6,7 @@ import { WebhookController } from '../controllers/webhook-controller';
 import { Database } from '../data/mysql';
 import { Instance } from './instance';
 import { getCurrentTimestamp, flattenCoords } from '../utils/util';
-//import { winston } from '../utils/logger';
+import { logger } from '../utils/logger';
 import config      = require('../config.json');
 const db           = new Database(config);
 
@@ -167,10 +167,9 @@ class Pokestop {
         let args = [minLat, maxLat, minLon, maxLon, updated];
         let result = await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.error("[Pokestop] Error:", x);
+            .catch(err => {
+                logger.error("[Pokestop] Error:" + err);
             });
-        console.log("[Pokestop] GetAll:", result)
         let pokestops: Pokestop[] = [];
         let keys = Object.values(result);
         keys.forEach(key => {
@@ -206,11 +205,13 @@ class Pokestop {
      * @param pokestopId 
      * @param withDeleted 
      */
-    static async getById(pokestopId: string, withDeleted: boolean = false): Promise<Pokestop> {
-        let cachedStop = await Cache.instance.get<Pokestop>(POKESTOP_LIST, pokestopId);
-        if (cachedStop/*instanceof Pokestop*/) {
-            console.log("[Pokestop] Returning cached pokestop", cachedStop.id);
-            return cachedStop;
+    static async getById(pokestopId: string, withDeleted: boolean = false, skipCache = false): Promise<Pokestop> {
+        if (!skipCache) {
+            let cachedStop = await Cache.instance.get<Pokestop>(POKESTOP_LIST, pokestopId);
+            if (cachedStop/*instanceof Pokestop*/) {
+                //logger.info("[Pokestop] Returning cached pokestop " + cachedStop.id);
+                return cachedStop;
+            }
         }
 
         let withDeletedSQL: string;
@@ -228,8 +229,8 @@ class Pokestop {
         
         let results = await db.query(sql, pokestopId)
             .then(x => x)
-            .catch(x => {
-                console.error("[Pokestop] Error: " + x);
+            .catch(err => {
+                logger.error("[Pokestop] Error: " + err);
                 return null;
             });
         let keys = Object.values(results);
@@ -300,8 +301,8 @@ class Pokestop {
         let args = ids;
         let result = await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.error("[Pokestop] Error: " + x);
+            .catch(err => {
+                logger.error("[Pokestop] Error: " + err);
                 return null;
             });
        
@@ -359,11 +360,11 @@ class Pokestop {
         `;
         let result = await db.query(sql, ids)
             .then(x => x)
-            .catch(x => {
-                console.error("[Pokestop] Error: " + x);
+            .catch(err => {
+                logger.error("[Pokestop] Error: " + err);
                 return null;
             });
-        console.log("[Pokestop] ClearQuests:", result);
+        logger.info("[Pokestop] ClearQuests: " + result);
     }
     /**
      * Clear quests for pokestops by instance.
@@ -401,11 +402,11 @@ class Pokestop {
         `;
         let result = await db.query(sql)
             .then(x => x)
-            .catch(x => {
-                console.error("[Pokestop] Error: " + x);
+            .catch(err => {
+                logger.error("[Pokestop] Error: " + err);
                 return null;
             });
-        console.log("[Pokestop] ClearQuests:", result);
+        logger.info("[Pokestop] ClearQuests: " + result);
     }
     /**
      * Add pokestops details.
@@ -594,7 +595,7 @@ class Pokestop {
         try {
             oldPokestop = await Pokestop.getById(this.id, true);
         } catch (err) {
-            console.error("Failed to get old Pokestop with id", this.id);
+            logger.error("Failed to get old Pokestop with id " + this.id);
             oldPokestop = null;
         }
         
@@ -689,13 +690,13 @@ class Pokestop {
 
         await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.error("[Pokestop] Error: " + x);
+            .catch(err => {
+                logger.error("[Pokestop] Error: " + err);
                 return null;
             });
         // Cache with redis
         if (!await Cache.instance.set(POKESTOP_LIST, this.id, this)) {
-            console.error("[Pokestop] Failed to cache pokestop with redis", this.id);
+            logger.error("[Pokestop] Failed to cache pokestop with redis " + this.id);
         }
     }
     /**
@@ -709,8 +710,8 @@ class Pokestop {
         `;
         let results = await db.query(sql)
             .then(x => x)
-            .catch(x => {
-                console.error("[Pokestop] Error: " + x);
+            .catch(err => {
+                logger.error("[Pokestop] Error: " + err);
                 return null;
             });
         let pokestops: Pokestop[] = [];

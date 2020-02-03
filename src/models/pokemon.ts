@@ -8,7 +8,7 @@ import { Database } from '../data/mysql';
 import { Pokestop } from './pokestop';
 import { Spawnpoint } from "./spawnpoint";
 import { getCurrentTimestamp } from '../utils/util';
-//import { winston } from '../utils/logger';
+import { logger } from '../utils/logger';
 import config = require('../config.json');
 const db = new Database(config);
 
@@ -90,11 +90,11 @@ class Pokemon /*extends Consumable*/ {
             this.displayPokemonId = data.display_pokemon_id;
         }
     }
-    private initWild(data: any) {
+    private async initWild(data: any) {
         this.id = data.wild.encounter_id.toString();
         this.pokemonId = data.wild.pokemon_data.pokemon_id;
         if (data.wild.latitude === undefined || data.wild.latitude === null) {
-            console.log("Wild Pokemon null lat/lon!");
+            logger.debug("[Pokemon] Wild Pokemon null lat/lon!");
         }
         this.lat = data.wild.latitude;
         this.lon = data.wild.longitude;
@@ -112,11 +112,11 @@ class Pokemon /*extends Consumable*/ {
         } else {
             this.expireTimestampVerified = false;
         }
-        if (this.expireTimestampVerified === false && spawnId) {
+        if (!this.expireTimestampVerified && spawnId) {
             // Spawnpoint not verified, check if we have the tth.
             let spawnpoint = {};
             try {
-                spawnpoint = Spawnpoint.getById(spawnId);
+                spawnpoint = await Spawnpoint.getById(spawnId);
             } catch (err) {
                 spawnpoint = null;
             }
@@ -167,7 +167,7 @@ class Pokemon /*extends Consumable*/ {
         } catch (err) {
             pokestop = null;
             // TODO: Fix error
-            console.error(err);
+            logger.error(err);
         }
         if (pokestop !== null) {
             this.pokestopId = pokestop.id;
@@ -195,8 +195,8 @@ class Pokemon /*extends Consumable*/ {
         let args = [minLat, maxLat, minLon, maxLon, updated];
         let results = await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.error("[Pokemon] Error: " + x);
+            .catch(err => {
+                logger.error("[Pokemon] Error: " + err);
                 return null;
             });
         let keys = Object.values(results);
@@ -253,8 +253,8 @@ class Pokemon /*extends Consumable*/ {
         let args = [encounterId.toString()];
         let results = await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.error("[Pokemon] Error: " + x);
+            .catch(err => {
+                logger.error("[Pokemon] Error: " + err);
                 return null;
             });
         let keys = Object.values(results);
@@ -333,7 +333,7 @@ class Pokemon /*extends Consumable*/ {
                                                 this.staIv || 0
         );
         if (this.isDitto) {
-            console.log("[POKEMON] Pokemon", this.id, " Ditto found, disguised as ", this.pokemonId);
+            logger.info("[POKEMON] Pokemon " + this.id + " Ditto found, disguised as " + this.pokemonId);
             this.setDittoAttributes(this.pokemonId);
         }
 
@@ -349,7 +349,7 @@ class Pokemon /*extends Consumable*/ {
                 } catch (err) {
                     spawnpoint = null;
                 }
-                if (spawnpoint instanceof Spawnpoint && spawnpoint !== null) {
+                if (spawnpoint instanceof Spawnpoint) {
                     let expireTimestamp = this.getDespawnTimer(spawnpoint, getCurrentTimestamp() * 1000);
                     if (expireTimestamp > 0) {
                         this.expireTimestamp = expireTimestamp;
@@ -493,9 +493,9 @@ class Pokemon /*extends Consumable*/ {
             }
             if (oldPokemon.pokemonId !== this.pokemonId) {
                 if (oldPokemon.pokemonId !== Pokemon.DittoPokemonId) {
-                    console.log("[POKEMON] Pokemon", this.id, "changed from", oldPokemon.pokemonId, "to", this.pokemonId);
+                    logger.info("[POKEMON] Pokemon " + this.id + " changed from " + oldPokemon.pokemonId + " to " + this.pokemonId);
                 } else if (oldPokemon.displayPokemonId || 0 !== this.pokemonId) {
-                    console.log("[POKEMON] Pokemon", this.id, "Ditto diguised as", oldPokemon.displayPokemonId || 0, "now seen as", this.pokemonId);
+                    logger.info("[POKEMON] Pokemon " + this.id + " Ditto diguised as " + (oldPokemon.displayPokemonId || 0) + " now seen as " + this.pokemonId);
                 }
             }
             if (oldPokemon.cellId && (this.cellId === undefined || this.cellId === null)) {
@@ -539,7 +539,7 @@ class Pokemon /*extends Consumable*/ {
                     this.shiny = oldPokemon.shiny;
                     this.isDitto = Pokemon.isDittoDisguisedFromPokemon(oldPokemon);
                     if (this.isDitto) {
-                        console.log("[POKEMON] oldPokemon", this.id, "Ditto found, disguised as", this.pokemonId);
+                        logger.info("[POKEMON] oldPokemon " + this.id + " Ditto found, disguised as " + this.pokemonId);
                         this.setDittoAttributes(this.pokemonId);
                     }
                 }
@@ -558,7 +558,7 @@ class Pokemon /*extends Consumable*/ {
             }
 
             if (oldPokemon.pokemonId === Pokemon.DittoPokemonId && this.pokemonId !== Pokemon.DittoPokemonId) {
-                console.log("[POKEMON] Pokemon", this.id, "Ditto changed from", oldPokemon.pokemonId, "to", this.pokemonId);
+                logger.info("[POKEMON] Pokemon " + this.id + " Ditto changed from " + oldPokemon.pokemonId + " to " + this.pokemonId);
             }
             sql = `
                 UPDATE pokemon
@@ -572,7 +572,7 @@ class Pokemon /*extends Consumable*/ {
         args.push(this.lon);
         args.push(this.spawnId || null);
         if (Number.isNaN(this.expireTimestamp)) {
-            console.log("[Pokemon] expireTimestamp is NaN!");
+            logger.debug("[Pokemon] expireTimestamp is NaN!");
         }
         args.push(this.expireTimestamp);
         if (updateIV || (oldPokemon === undefined || oldPokemon === null)) {
@@ -608,7 +608,7 @@ class Pokemon /*extends Consumable*/ {
         if (this.spawnId) {
             let spawnpoint: Spawnpoint;
             if (this.expireTimestampVerified && this.expireTimestamp) {
-                let date = moment(this.expireTimestamp * 1000).format('mm:ss');
+                let date = moment(this.expireTimestamp).format('mm:ss');
                 let split = date.toString().split(':');
                 let minute = parseInt(split[0]);
                 let second = parseInt(split[1]);
@@ -630,9 +630,9 @@ class Pokemon /*extends Consumable*/ {
                 });
             }
             try {
-                spawnpoint.save(true);
+                await spawnpoint.save(true);
             } catch (err) {
-                console.error(err);
+                logger.error(err);
             }
         }
 
@@ -664,10 +664,10 @@ class Pokemon /*extends Consumable*/ {
         // TODO: Error: ER_NO_REFERENCED_ROW_2: Cannot add or update a child row: a foreign key constraint fails (`rdmdb`.`pokemon`, CONSTRAINT `fk_pokemon_cell_id` FOREIGN KEY (`cell_id`) REFERENCES `s2cell` (`id`) ON DELETE CASCADE ON UPDATE CASCADE)
         await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.log("[Pokemon] SQL:", sql);
-                console.log("[Pokemon] Arguments:", args);
-                console.error("[Pokemon] Error:", x.message);
+            .catch(err => {
+                logger.debug("[Pokemon] SQL: " + sql);
+                logger.debug("[Pokemon] Arguments: " + args);
+                logger.error("[Pokemon] Error: " + err);
                 return null;
             });
 
@@ -691,8 +691,8 @@ class Pokemon /*extends Consumable*/ {
         `;
         let results = await db.query(sql)
             .then(x => x)
-            .catch(x => {
-                console.error("[Pokemon] Error: " + x);
+            .catch(err => {
+                logger.error("[Pokemon] Error: " + err);
                 return null;
             });
         let keys = Object.values(results);
@@ -701,7 +701,6 @@ class Pokemon /*extends Consumable*/ {
         }
         let pokemons: Pokemon[] = [];
         keys.forEach(key => {
-            console.log("Pokemon:", key);
             let pokemon = new Pokemon({
                 id: key.id,
                 lat: key.lat,
@@ -786,7 +785,7 @@ class Pokemon /*extends Consumable*/ {
             let second = parseInt(split[1]);
             let secondOfHour = second + minute * 60;
 
-            let despawnOffset;
+            let despawnOffset: number;
             if (despawnSecond < secondOfHour) {
                 despawnOffset = 3600 + despawnSecond - secondOfHour;
             } else {

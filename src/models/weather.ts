@@ -1,8 +1,9 @@
-"use strict"
+"use strict";
 
 import * as S2 from 'nodes2ts';
 import { Coord } from '../coord';
 import { Database } from '../data/mysql';
+import { logger } from '../utils/logger';
 import config = require('../config.json');
 const db = new Database(config);
 
@@ -90,10 +91,9 @@ class Weather {
         let args = [minLatReal, maxLatReal, minLonReal, maxLonReal, updated];
         let result = await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.error("[Weather] Error:", x);
+            .catch(err => {
+                logger.error("[Weather] Error: " + err);
             });
-        console.log("[Weather] GetAll:", result)
         let weather: Weather[] = [];
         let keys = Object.values(result);
         keys.forEach(key => {
@@ -154,11 +154,11 @@ class Weather {
         let args = ids;
         let result = await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.error("[Weather] Error: " + x);
+            .catch(err => {
+                logger.error("[Weather] Error: " + err);
                 return null;
             });
-        console.log("[Weather] GetInIds:", result);
+        logger.info("[Weather] GetInIds: " + result);
         let weather: Weather[] = [];
         let keys = Object.values(result);
         keys.forEach(key => {
@@ -215,8 +215,8 @@ class Weather {
             this.windLevel, this.snowLevel, this.fogLevel, this.seLevel, this.severity, this.warnWeather];
         await db.query(sql, args)
             .then(x => x)
-            .catch(x => {
-                console.error("[Weather] Error: " + x);
+            .catch(err => {
+                logger.error("[Weather] Error: " + err);
             });
         Weather.Weather[this.id.toString()] = this;
     }
@@ -230,10 +230,10 @@ class Weather {
         `;
         let result = await db.query(sql)
             .then(x => x)
-            .catch(x => {
-                console.error("[Weather] Error:", x);
+            .catch(err => {
+                logger.error("[Weather] Error: " + err);
             });
-        console.log("[Weather] Load:", result)
+        logger.info("[Weather] Load: " + result)
         let weather: Weather[] = [];
         let keys = Object.values(result);
         keys.forEach(key => {
