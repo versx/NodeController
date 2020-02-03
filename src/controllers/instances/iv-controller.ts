@@ -31,7 +31,9 @@ class IVInstanceController {
         this.init();
     }
     async init() {
-        // while (!shouldExit) {
+        if (this.shouldExit) {
+            return;
+        }
         if (this.scannedPokemon.length > 0) {
             await snooze(5000);
             if (this.shouldExit) {

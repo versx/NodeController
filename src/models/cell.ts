@@ -2,6 +2,7 @@
 
 import * as S2 from 'nodes2ts';
 import { Coord } from '../coord';
+import { Cache, CELL_LIST } from '../data/cache';
 import { Database } from '../data/mysql';
 import config = require('../config.json');
 const db = new Database(config);
@@ -10,8 +11,6 @@ const db = new Database(config);
  * S2Cell model class.
  */
 class Cell {
-    static Cells = {};
-
     id: string;
     level: number;
     centerLat: number;
@@ -78,6 +77,12 @@ class Cell {
      * @param id 
      */
     static async getById(id: string): Promise<Cell> {
+        let cachedCell = await Cache.instance.get<Cell>(CELL_LIST, id);
+        if (cachedCell/*instanceof Cell*/) {
+            console.log("[Cell] Returning cached cell", cachedCell.id);
+            return cachedCell;
+        }
+
         let sql = `
         SELECT id, level, center_lat, center_lon, updated
         FROM s2cell
@@ -185,7 +190,10 @@ class Cell {
                 console.error("[Cell] Error: " + x);
                 return null;
             });
-        Cell.Cells[this.id] = this;
+        // Cache with redis
+        if (!await Cache.instance.set(CELL_LIST, this.id, this)) {
+            console.error("[Cell] Failed to cache cell with redis", this.id);
+        }
     }
     /**
      * Load all S2Cells.
@@ -212,7 +220,6 @@ class Cell {
                 key.updated
             );
             cells.push(cell);
-            Cell.Cells[cell.id] = cell;
         });
         return cells;
     }

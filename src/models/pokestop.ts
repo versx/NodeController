@@ -1,5 +1,6 @@
 "use strict"
 
+import { Cache, POKESTOP_LIST } from '../data/cache';
 import { DbController } from '../controllers/db-controller';
 import { WebhookController } from '../controllers/webhook-controller';
 import { Database } from '../data/mysql';
@@ -58,7 +59,6 @@ enum ConditionType {
  * Pokestop model class.
  */
 class Pokestop {
-    static Pokestops = {};
     static LureTime = 1800;
 
     id: string;
@@ -207,6 +207,12 @@ class Pokestop {
      * @param withDeleted 
      */
     static async getById(pokestopId: string, withDeleted: boolean = false): Promise<Pokestop> {
+        let cachedStop = await Cache.instance.get<Pokestop>(POKESTOP_LIST, pokestopId);
+        if (cachedStop/*instanceof Pokestop*/) {
+            console.log("[Pokestop] Returning cached pokestop", cachedStop.id);
+            return cachedStop;
+        }
+
         let withDeletedSQL: string;
         if (withDeleted) {
             withDeletedSQL = "";
@@ -255,7 +261,6 @@ class Pokestop {
                 grunt_type: key.grunt_type,
                 sponsor_id: key.sponsor_id
             });
-            Pokestop.Pokestops[pokestop.id] = pokestop;
         })
         return pokestop;
     }
@@ -327,7 +332,6 @@ class Pokestop {
                 sponsor_id: key.sponsor_id
             });
             pokestops.push(pokestop);
-            Pokestop.Pokestops[pokestop.id] = pokestop;
         });
         return pokestops;
     }
@@ -576,6 +580,9 @@ class Pokestop {
      * @param updateQuest 
      */
     async save(updateQuest: boolean = false): Promise<void> {
+        /* TODO: Check if in redis, if so check if properties are the same. If 
+           properties are the same in cache then we don't need to save to mysql.
+        */
         let oldPokestop: Pokestop;
         try {
             oldPokestop = await Pokestop.getById(this.id, true);
@@ -679,7 +686,10 @@ class Pokestop {
                 console.error("[Pokestop] Error: " + x);
                 return null;
             });
-        Pokestop.Pokestops[this.id] = this;
+        // Cache with redis
+        if (!await Cache.instance.set(POKESTOP_LIST, this.id, this)) {
+            console.error("[Pokestop] Failed to cache pokestop with redis", this.id);
+        }
     }
     /**
      * Load all Pokestops.
@@ -723,7 +733,6 @@ class Pokestop {
                 sponsor_id: key.sponsor_id
             });
             pokestops.push(pokestop);
-            Pokestop.Pokestops[pokestop.id] = pokestop;
         })
         return pokestops;
     }
