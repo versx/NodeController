@@ -1,16 +1,22 @@
-"use strict"
+"use strict";
 
-// TODO: All consumable objects should inherit the Consumable class.
-class Consumable {
+/**
+ * IConsumable interface.
+ */
+interface IConsumable {
+    /**
+     * Unique identifier.
+     */
     id: string;
+    /**
+     * Geocoordinate latitude.
+     */
     lat: number;
+    /**
+     * Geocoordinate longitude.
+     */
     lon: number;
-    constructor(id: string, lat: number, lon: number) {
-        this.id = id;
-        this.lat = lat;
-        this.lon = lon;
-    }
-    save() {
-        
-    }
 }
+
+// Export interface.
+export { IConsumable };

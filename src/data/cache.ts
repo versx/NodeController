@@ -6,6 +6,7 @@ import { RedisClient } from './redis-client';
 const ACCOUNT_LIST = 'ACCOUNT_LIST';
 const POKESTOP_LIST = 'POKESTOP_LIST';
 const GYM_LIST = 'GYM_LIST';
+const CELL_LIST = 'CELL_LIST';
 
 class Cache implements ICache {
     static instance = new Cache();
@@ -24,4 +25,4 @@ class Cache implements ICache {
     }
 }
 
-export { Cache, ACCOUNT_LIST, POKESTOP_LIST, GYM_LIST };
+export { Cache, ACCOUNT_LIST, POKESTOP_LIST, GYM_LIST, CELL_LIST };
