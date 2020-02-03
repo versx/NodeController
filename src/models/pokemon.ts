@@ -166,6 +166,7 @@ class Pokemon /*extends Consumable*/ {
             pokestop = await Pokestop.getById(data.nearby.fort_id);
         } catch (err) {
             pokestop = null;
+            // TODO: Fix error
             console.error(err);
         }
         if (pokestop !== null) {

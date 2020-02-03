@@ -14,7 +14,7 @@ message CompleteVsSeekerAndRestartChargingResponse {
 	int32 previous_rank = 5;
 	float previous_rating = 6;
 	.POGOProtos.Data.Combat.CombatBaseStats stats_at_rank_start = 7;
-	string avatar_template_id_awarded = 8;
+	repeated string avatar_template_id_awarded = 8;
 
 	enum Result {
 		UNSET = 0;

@@ -6,6 +6,7 @@ message SponsoredDetails {
 	repeated string promo_description = 2;
 	string call_to_action_link = 3;
 	PromoButtonMessageType promo_button_message_type = 4;
+	string campaign_id = 5;
 
 	enum PromoButtonMessageType {
 		UNSET = 0;

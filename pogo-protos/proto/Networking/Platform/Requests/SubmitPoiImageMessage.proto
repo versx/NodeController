@@ -3,4 +3,5 @@ package POGOProtos.Networking.Platform.Requests;
 
 message SubmitPoiImageMessage {
 	string poi_id = 1;
+	bool async_file_upload = 2;
 }

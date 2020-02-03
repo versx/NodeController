@@ -10,4 +10,5 @@ message LeavePointOfInterestTelemetry {
 	int64 client_timestamp = 4;
 	string partner_id = 5;
 	int64 time_spent = 6;
+	string campaign_id = 7;
 }

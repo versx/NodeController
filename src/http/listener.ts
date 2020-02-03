@@ -16,7 +16,7 @@ class WebhookListener {
 
         // Middleware
         //app.use(bodyParser.raw({ type: 'application/x-www-form-urlencoded' }));
-        app.use(bodyParser.json()); // for parsing application/x-www-form-urlencoded
+        app.use(bodyParser.json({ limit: '50mb' })); // for parsing application/x-www-form-urlencoded
 
         // Routes
         app.post('/raw', (req, res) => webhook.handleRawData(req, res));

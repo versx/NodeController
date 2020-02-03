@@ -450,33 +450,36 @@ class Pokestop {
                     break;
                 case ConditionType.RaidLevel:
                     let raidLevelById: number[] = [];
-                    info.raid_level.forEach(raidLevel => {
+                    info.with_raid_level.raid_level.forEach(raidLevel => {
                         raidLevelById.push(raidLevel);
                     });
                     infoData["raid_levels"] = raidLevelById;
                     break;
                 case ConditionType.PokemonType:
                     let pokemonTypesById: number[] = [];
-                    info.pokemon_type.forEach(type => {
+                    info.with_pokemon_type.pokemon_type.forEach(type => {
                         pokemonTypesById.push(type);
                     });
                     infoData["pokemon_type_ids"] = pokemonTypesById;
                     break;
                 case ConditionType.PokemonCategory:
-                    if (info.pokemon_category.category_name) {
-                        infoData["category_name"] = info.pokemon_category.category_name;
+                    if (info.with_pokemon_category.category_name) {
+                        infoData["category_name"] = info.with_pokemon_category.category_name;
+                    }
+                    if (info.with_pokemon_category.pokemon_ids) {
+                        infoData["pokemon_ids"] = info.with_pokemon_category.pokemon_ids;
                     }
                     break;
                 case ConditionType.WinRaidStatus:
                     break;
                 case ConditionType.ThrowType:
-                    if (info.throw_type !== 0) {
-                        infoData["throw_type_id"] = info.throw_type;
+                    if (info.with_throw_type.throw_type !== 0) {
+                        infoData["throw_type_id"] = info.with_throw_type.throw_type;
                     }
                     break;
                 case ConditionType.ThrowTypeInARow:
-                    if (info.throw_type !== 0) {
-                        infoData["throw_type_id"] = info.throw_type;
+                    if (info.with_throw_type.throw_type !== 0) {
+                        infoData["throw_type_id"] = info.with_throw_type.throw_type;
                     }
                     break;
                 case ConditionType.Location:
@@ -489,19 +492,21 @@ class Pokestop {
                     infoData["alignment_ids"] = info.pokemon_alignment.alignment.map(x => parseInt(x));
                     break;
                 case ConditionType.InvasionCharacter:
-                    infoData["character_category_ids"] = info.invasion_character.category.map(x => parseInt(x));
+                    infoData["character_category_ids"] = info.with_invasion_character.category.map(x => parseInt(x));
                     break;
                 case ConditionType.NpcCombat:
-                    infoData["win"] = info.npc_combat.requires_win;
-                    infoData["trainer_ids"] = info.npc_combat.combat_npc_trainer_id;
+                    infoData["win"] = info.with_npc_combat.requires_win || false;
+                    infoData["trainer_ids"] = info.with_npc_combat.combat_npc_trainer_id;
                     break;
                 case ConditionType.PvpCombat:
-                    infoData["win"] = info.npc_combat.requires_win;
-                    infoData["trainer_ids"] = info.pvp_combat.combat_league_template_id;
+                    infoData["win"] = info.with_pvp_combat.requires_win || false;
+                    infoData["trainer_ids"] = info.with_pvp_combat.combat_league_template_id;
                     break;
                 case ConditionType.Buddy:
-                    infoData["min_buddy_level"] = info.buddy.min_buddy_level;
-                    infoData["must_be_on_map"] = info.buddy.must_be_on_map;
+                    if (info.with_buddy) {
+                        infoData["min_buddy_level"] = info.with_buddy.min_buddy_level; // TODO: with_buddy? is Condition
+                        infoData["must_be_on_map"] = info.with_buddy.must_be_on_map;
+                    }
                     break;
                 case ConditionType.DailyBuddyAffection:
                     infoData["min_buddy_affection_earned_today"] = info.daily_buddy_affection.min_buddy_affection_earned_today;
@@ -526,7 +531,7 @@ class Pokestop {
             }
             conditions.push(conditionData);
         });
-        quest.questRewards.forEach(reward => {
+        quest.quest_rewards.forEach(reward => {
             let rewardData = {};
             let infoData = {};
             rewardData["type"] = reward.type;
@@ -541,8 +546,8 @@ class Pokestop {
                     infoData["amount"] = reward.exp;
                     break;
                 case QuestReward.Item:
-                    infoData["amount"] = reward.amount;
-                    infoData["item_id"] = reward.item; //item_id?
+                    infoData["amount"] = reward.item.amount;
+                    infoData["item_id"] = reward.item.item;
                     break;
                 case QuestReward.PokemonEncounter:
                     if (reward.pokemon_encounter.is_hidden_ditto) {
@@ -551,10 +556,12 @@ class Pokestop {
                     } else {
                         infoData["pokemon_id"] = reward.pokemon_encounter.pokemon_id;
                     }
-                    infoData["costume_id"] = reward.pokemon_encounter.pokemon_display.costume;
-                    infoData["form_id"] = reward.pokemon_encounter.pokemon_display.form;
-                    infoData["gender_id"] = reward.pokemon_encounter.pokemon_display.gender;
-                    infoData["shiny"] = reward.pokemon_encounter.pokemon_display.shiny;
+                    if (reward.pokemon_encounter.pokemon_display) {
+                        infoData["costume_id"] = reward.pokemon_encounter.pokemon_display.costume || 0;
+                        infoData["form_id"] = reward.pokemon_encounter.pokemon_display.form || 0;
+                        infoData["gender_id"] = reward.pokemon_encounter.pokemon_display.gender || 0;
+                        infoData["shiny"] = reward.pokemon_encounter.pokemon_display.shiny || false;
+                    }
                     break;
                 case QuestReward.Quest:
                     break;

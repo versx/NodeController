@@ -40,6 +40,69 @@ enum InventoryItemDataType {
     LimitedPurchaseSkuRecord, // 19
 }
 
+enum ItemId {
+	ITEM_UNKNOWN = 0,
+	ITEM_POKE_BALL = 1,
+	ITEM_GREAT_BALL = 2,
+	ITEM_ULTRA_BALL = 3,
+	ITEM_MASTER_BALL = 4,
+	ITEM_PREMIER_BALL = 5,
+	ITEM_POTION = 101,
+	ITEM_SUPER_POTION = 102,
+	ITEM_HYPER_POTION = 103,
+	ITEM_MAX_POTION = 104,
+	ITEM_REVIVE = 201,
+	ITEM_MAX_REVIVE = 202,
+	ITEM_LUCKY_EGG = 301,
+	ITEM_INCENSE_ORDINARY = 401,
+	ITEM_INCENSE_SPICY = 402,
+	ITEM_INCENSE_COOL = 403,
+	ITEM_INCENSE_FLORAL = 404,
+	ITEM_INCENSE_BELUGA_BOX = 405,
+	ITEM_TROY_DISK = 501,
+	ITEM_TROY_DISK_GLACIAL = 502,
+	ITEM_TROY_DISK_MOSSY = 503,
+	ITEM_TROY_DISK_MAGNETIC = 504,
+	ITEM_X_ATTACK = 602,
+	ITEM_X_DEFENSE = 603,
+	ITEM_X_MIRACLE = 604,
+	ITEM_RAZZ_BERRY = 701,
+	ITEM_BLUK_BERRY = 702,
+	ITEM_NANAB_BERRY = 703,
+	ITEM_WEPAR_BERRY = 704,
+	ITEM_PINAP_BERRY = 705,
+	ITEM_GOLDEN_RAZZ_BERRY = 706,
+	ITEM_GOLDEN_NANAB_BERRY = 707,
+	ITEM_GOLDEN_PINAP_BERRY = 708,
+	ITEM_POFFIN = 709,
+	ITEM_SPECIAL_CAMERA = 801,
+	ITEM_INCUBATOR_BASIC_UNLIMITED = 901,
+	ITEM_INCUBATOR_BASIC = 902,
+	ITEM_INCUBATOR_SUPER = 903,
+	ITEM_POKEMON_STORAGE_UPGRADE = 1001,
+	ITEM_ITEM_STORAGE_UPGRADE = 1002,
+	ITEM_SUN_STONE = 1101,
+	ITEM_KINGS_ROCK = 1102,
+	ITEM_METAL_COAT = 1103,
+	ITEM_DRAGON_SCALE = 1104,
+	ITEM_UP_GRADE = 1105,
+	ITEM_GEN4_EVOLUTION_STONE = 1106,
+	ITEM_GEN5_EVOLUTION_STONE = 1107,
+	ITEM_MOVE_REROLL_FAST_ATTACK = 1201,
+	ITEM_MOVE_REROLL_SPECIAL_ATTACK = 1202,
+	ITEM_RARE_CANDY = 1301,
+	ITEM_FREE_RAID_TICKET = 1401,
+	ITEM_PAID_RAID_TICKET = 1402,
+	ITEM_LEGENDARY_RAID_TICKET = 1403,
+	ITEM_STAR_PIECE = 1404,
+	ITEM_FRIEND_GIFT_BOX = 1405,
+	ITEM_TEAM_CHANGE = 1406,
+	ITEM_LEADER_MAP_FRAGMENT = 1501,
+	ITEM_LEADER_MAP = 1502,
+	ITEM_GIOVANNI_MAP = 1503,
+	ITEM_GLOBAL_EVENT_TICKET = 1600
+}
+
 /**
  * Webhook request handler class.
  */
@@ -73,19 +136,12 @@ class WebhookHandler {
  * @param {*} res 
  */
 async function _handleRawData(req: Request, res: Response) {
-    let jsonOpt: any = {};
-    try {
-        jsonOpt = req.body;//JSON.parse(req.body);
-        //console.log("[Raw] HandleRawData Parsed:", jsonOpt);
-    } catch (e) {
-        console.error(e);
-        return res.sendStatus(400);
-    }
+    let jsonOpt = req.body;
     if (jsonOpt === undefined || jsonOpt === null) {
         console.error("[Raw] Bad data");
         return res.sendStatus(400);
     }
-    if (jsonOpt['payload'] !== undefined) {
+    if (jsonOpt['payload']) {
         jsonOpt['contents'] = [jsonOpt];
     }
 
@@ -113,7 +169,7 @@ async function _handleRawData(req: Request, res: Response) {
     let lonTarget: number = json["lon_target"];
     if (uuid && latTarget && lonTarget) {
         try {
-            Device.setLastLocation(uuid, latTarget, lonTarget);
+            await Device.setLastLocation(uuid, latTarget, lonTarget);
         } catch (err) {
             console.error(err);
         }
@@ -123,15 +179,15 @@ async function _handleRawData(req: Request, res: Response) {
     let pokemonEncounterIdForEncounter: string = json["pokemon_encounter_id_for_encounter"];
     let targetMaxDistance = json["target_max_distance"] || json["target_max_distnace"] || DefaultTargetMaxDistance;
 
-    let wildPokemons = []; //[{cell: UInt64, data: POGOProtos_Map_Pokemon_WildPokemon, timestampMs: UInt64}]
-    let nearbyPokemons = []; //[{cell: UInt64, data: POGOProtos_Map_Pokemon_NearbyPokemon}]
-    let clientWeathers = []; //[{cell: Int64, data: POGOProtos_Map_Weather_ClientWeather}]
-    let forts = []; //[{cell: UInt64, data: POGOProtos_Map_Fort_FortData}]
-    let fortDetails = []; //[POGOProtos_Networking_Responses_FortDetailsResponse]
-    let gymInfos = []; //[POGOProtos_Networking_Responses_GymGetInfoResponse]
-    let quests = []; //[POGOProtos_Data_Quests_Quest]
-    let encounters = []; //[POGOProtos_Networking_Responses_EncounterResponse]
-    let cells = []; //[UInt64]
+    let wildPokemons = [];
+    let nearbyPokemons = [];
+    let clientWeathers = [];
+    let forts = [];
+    let fortDetails = [];
+    let gymInfos = [];
+    let quests = [];
+    let encounters = [];
+    let cells = [];
 
     let isEmptyGMO: boolean = true;
     let isInvalidGMO: boolean = true;
@@ -141,44 +197,40 @@ async function _handleRawData(req: Request, res: Response) {
     contents.forEach((rawData: any) => {
         let data: any;
         let method: number;
-        let invalid: boolean = false;
-        if (rawData["GetMapObjects"] !== undefined) {
-            data = rawData["GetMapObjects"];
-            method = 106;
-        } else if (rawData["GetHoloInventoryResponse"] !== undefined) {
-            data = rawData["GetHoloInventoryResponse"];
-            method = 4;
-        } else if (rawData["EncounterResponse"] !== undefined) {
-            data = rawData["EncounterResponse"];
-            method = 102;
-        } else if (rawData["FortDetailsResponse"] !== undefined) {
-            data = rawData["FortDetailsResponse"];
-            method = 104;
-        } else if (rawData["FortSearchResponse"] !== undefined) {
-            data = rawData["FortSearchResponse"];
-            method = 101;
-        } else if (rawData["GymGetInfoResponse"] !== undefined) {
-            data = rawData["GymGetInfoResponse"];
-            method = 156;
-        } else if (rawData["data"] !== undefined) {
+        if (rawData["data"]) {
             data = rawData["data"];
             method = parseInt(rawData["method"]) || 106;
-        } else if (rawData["payload"] !== undefined) {
+        } else if (rawData["payload"]) {
             data = rawData["payload"];
             method = parseInt(rawData["type"]) || 106;
             isMadData = true;
             username = "PogoDroid";
         } else {
             console.log("[Raw] Unhandled proto:", rawData);
-            invalid = true;
-        }
-
-        if (invalid !== false) {
-            console.error("[Raw] Invalid data");
             return res.sendStatus(400);
         }
 
+        if (method === 4) {
+            console.log("GetHoloInventory Found!");
+        }
+
         switch (method) {
+            case 2: // GetPlayerResponse
+                try {
+                    let gpr = POGOProtos.Networking.Responses.GetPlayerResponse.decode(base64_decode(data));
+                    if (gpr) {
+                        // TODO: Parse GetPlayerResponse
+                        if (gpr.success) {
+                            let data = gpr.player_data;
+                            console.log("[Raw] GetPlayerData:", data);
+                        }
+                    } else {
+                        console.error("[Raw] Malformed GetPlayerResponse");
+                    }
+                } catch (err) {
+                    console.error("[Raw] Unable to decode GetPlayerResponse");
+                }
+                break;
             case 4: // GetHoloInventoryResponse
                 try {
                     let ghir = POGOProtos.Networking.Responses.GetHoloInventoryResponse.decode(base64_decode(data));
@@ -187,8 +239,44 @@ async function _handleRawData(req: Request, res: Response) {
                             let delta = ghir.inventory_delta;
                             let originalTimestamp = delta.original_timestamp_ms;
                             let newTimestamp = delta.new_timestamp_ms;
-                            let items = delta.inventory_items;
-                            console.log("[Raw] GetHoloInventoryResponse:", items);
+                            let inventoryItems = delta.inventory_items;
+                            if (inventoryItems) {
+                                for (let i = 0; i < inventoryItems.length; i++) {
+                                    let inventoryItem = inventoryItems[i];
+                                    let itemData = inventoryItem.inventory_item_data;
+                                    if (itemData) {
+                                        let type = itemData["Type"];
+                                        switch (type) {
+                                            case "item":
+                                                let item = itemData["item"];
+                                                let itemId: ItemId = <ItemId>item.item_id;
+                                                switch (itemId) {
+                                                    case ItemId.ITEM_LUCKY_EGG: // Lucky Egg
+                                                    console.log("Inventory egg found:", itemId.toString(), "Count:", item.count);
+                                                        break;
+                                                    case ItemId.ITEM_TROY_DISK: // Normal Lure
+                                                    case ItemId.ITEM_TROY_DISK_GLACIAL: // Glacial Lure
+                                                    case ItemId.ITEM_TROY_DISK_MOSSY: // Mossy Lure
+                                                    case ItemId.ITEM_TROY_DISK_MAGNETIC: // Magnetic Lure
+                                                        console.log("Inventory lure found:", itemId.toString(), "Count:", item.count);
+                                                        break;
+                                                    default:
+                                                        console.log("Inventory item found:", itemId.toString(), "Count:", item.count);
+                                                        break;
+                                                }
+                                                break;
+                                            case "player_stats":
+                                                let experience = itemData.player_stats.experience.toString();
+                                                console.log("Player total experience points:", experience);
+                                                break;
+                                            case "quests":
+                                            default:
+                                                console.log("Inventory type:", itemData);
+                                                break;
+                                        }
+                                    }
+                                }
+                            }
                         }
                     } else {
                         console.error("[Raw] Malformed GetHoloInventoryResponse");
@@ -201,8 +289,8 @@ async function _handleRawData(req: Request, res: Response) {
                 try {
                     let fsr = POGOProtos.Networking.Responses.FortSearchResponse.decode(base64_decode(data));
                     if (fsr) {
-                        if (fsr.hasChallengeQuest && fsr.challengeQuest.hasQuest) {
-                            let quest = fsr.challengeQuest.quest;
+                        if (fsr.challenge_quest && fsr.challenge_quest.quest) {
+                            let quest = fsr.challenge_quest.quest;
                             quests.push(quest);
                         }
                     } else {
@@ -323,12 +411,15 @@ async function _handleRawData(req: Request, res: Response) {
                     console.error("[Raw] Unable to decode GetMapObjectsResponse");
                 }
                 break;
+            default:
+                console.log("[Raw] Invalid method provided:", method);
+                return;
         }
     });
 
     let targetCoord: S2.S2LatLng;
     let inArea = false
-    if (latTarget !== undefined && lonTarget !== undefined) {
+    if (latTarget && lonTarget) {
         targetCoord = new S2.S2LatLng(latTarget, lonTarget);
     } else {
         targetCoord = null;
@@ -336,7 +427,7 @@ async function _handleRawData(req: Request, res: Response) {
     
     let pokemonCoords: S2.S2LatLng;
     if (targetCoord !== null) {
-        if (forts !== undefined) {
+        if (forts) {
             forts.forEach(fort => {
                 if (inArea === false) {
                     let coord = new S2.S2LatLng(fort.data.latitude, fort.data.longitude);
@@ -347,7 +438,7 @@ async function _handleRawData(req: Request, res: Response) {
             });
         }
     }
-    if (targetCoord !== undefined || pokemonEncounterId !== undefined) {
+    if (targetCoord || pokemonEncounterId) {
         wildPokemons.forEach(pokemon => {
             if (targetCoord) {
                 if (inArea === false) {
@@ -370,7 +461,7 @@ async function _handleRawData(req: Request, res: Response) {
             }
         });
     }
-    if (targetCoord !== undefined && inArea === false) {
+    if (targetCoord && inArea === false) {
         cells.forEach(cell => {
             if (inArea === false) {
                 let s2cellId = new S2.S2CellId(cell.toString());
@@ -397,7 +488,7 @@ async function _handleRawData(req: Request, res: Response) {
         "contains_gmos": containsGMO
     };
 
-    if (pokemonEncounterIdForEncounter !== undefined) {
+    if (pokemonEncounterIdForEncounter) {
         //If the UIC sets pokemon_encounter_id_for_encounter,
         //only return encounters != 0 if we actually encounter that target.
         //"Guaranteed scan"
@@ -408,8 +499,7 @@ async function _handleRawData(req: Request, res: Response) {
                 data["encounters"] = 1;
             }
         });
-    }
-    
+    }    
     if (latTarget && lonTarget) {
         data["in_area"] = inArea;
         data["lat_target"] = latTarget;
@@ -433,8 +523,7 @@ async function _handleRawData(req: Request, res: Response) {
             //Don't return the main query in the scattershot list
             if (pokemon.data.encounter_id === pokemonEncounterId) {
                 return;
-            }
-            
+            }            
             try {
                 let oldPokemon = await Pokemon.getById(pokemon.data.encounter_id);
                 if (oldPokemon && oldPokemon.atkIv) {
@@ -462,7 +551,6 @@ async function _handleRawData(req: Request, res: Response) {
                 */
             }
         });
-
         data["scatter_pokemon"] = scatterPokemon;
     }
 
@@ -493,14 +581,7 @@ async function _handleRawData(req: Request, res: Response) {
  * @param {*} res 
  */
 async function _handleControllerData(req: Request, res: Response) {
-    let jsonO = {};
-    try {
-        jsonO = req.body;//JSON.parse(req.body);
-        //console.log("HandleControllerData Parsed:", jsonO);
-    } catch (e) {
-        console.error(e);
-        return res.sendStatus(400);
-    }
+    let jsonO = req.body;
     let typeO = jsonO["type"];
     let uuidO = jsonO["uuid"];
     if (typeO === undefined || uuidO === undefined) {
