@@ -239,6 +239,7 @@ class ApiController {
             locale: Localizer.instance.locale,
             page: "Dashboard"
         };
+        data["locale"] = Localizer.instance.locale;
         data["show_dashboard"] = true;
         data["is_logged_in"] = true;
         let navLoc = ["nav_dashboard", "nav_areas", "nav_stats", "nav_logout", "nav_register", "nav_login"]

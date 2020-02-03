@@ -9,17 +9,36 @@ import { InstanceController } from '../controllers/instances/instance-controller
 import { getCurrentTimestamp, base64_decode } from '../utils/util';
 import { Digest } from '../data/digest';
 import { Request, Response } from 'express';
-//import { RedisClient } from '../redis-client';
 //import { winston } from '../utils/logger';
 
 // TODO: Process pool for data handlers.
 
-//:haunter:
-//const client = new RedisClient();
+const DefaultTargetMaxDistance: number = 250;
 
 let emptyCells = [];//[UInt64: Int]
 let levelCache = {};
 let digest = new Digest();
+
+enum InventoryItemDataType {
+    PokemonData = 1, // 1
+    ItemData, // 2
+    PokedexEntry, // 3
+    PlayerStats, // 4
+    PlayerCurrency, // 5
+    PlayerCamera, // 6
+    InventoryUpgrades, // 7
+    AppliedItems, // 8
+    EggIncubators, // 9
+    Candy, // 10
+    Quest, // 11
+    AvatarItem, // 12
+    RaidTickets, // 13
+    Quests, // 14
+    GiftBoxes, // 15
+    BelugaIncenseBox, // 16
+    VsSeekerUpgrades, // 17
+    LimitedPurchaseSkuRecord, // 19
+}
 
 /**
  * Webhook request handler class.
@@ -56,15 +75,15 @@ class WebhookHandler {
 async function _handleRawData(req: Request, res: Response) {
     let jsonOpt: any = {};
     try {
-        jsonOpt = JSON.parse(req.body);
+        jsonOpt = req.body;//JSON.parse(req.body);
         //console.log("[Raw] HandleRawData Parsed:", jsonOpt);
     } catch (e) {
         console.error(e);
-        return res.status(400).end();
+        return res.sendStatus(400);
     }
-    if (jsonOpt === undefined) {
+    if (jsonOpt === undefined || jsonOpt === null) {
         console.error("[Raw] Bad data");
-        return res.status(400).end();
+        return res.sendStatus(400);
     }
     if (jsonOpt['payload'] !== undefined) {
         jsonOpt['contents'] = [jsonOpt];
@@ -73,6 +92,10 @@ async function _handleRawData(req: Request, res: Response) {
     let json = jsonOpt;
     let trainerLevel = parseInt(json["trainerlvl"] || json["trainerLevel"]) || 0;
     let username: string = json["username"];
+    if (username && username.includes("Optional(")) {
+        username = username.replace("Optional(\"", "");
+        username = username.replace("\")", "");
+    }
     if (username && trainerLevel > 0) {
         let oldLevel = levelCache[username];
         if (oldLevel !== trainerLevel) {
@@ -81,9 +104,9 @@ async function _handleRawData(req: Request, res: Response) {
         }
     }
     let contents: any = json["contents"] || json["protos"] || json["gmo"];
-    if (contents === undefined) {
+    if (contents === undefined || contents === null) {
         console.error("[Raw] Invalid GMO");
-        return res.status(400).end();
+        return res.sendStatus(400);
     }
     let uuid: string = json["uuid"];
     let latTarget: number = json["lat_target"];
@@ -98,7 +121,7 @@ async function _handleRawData(req: Request, res: Response) {
 
     let pokemonEncounterId: string = json["pokemon_encounter_id"];
     let pokemonEncounterIdForEncounter: string = json["pokemon_encounter_id_for_encounter"];
-    let targetMaxDistance = json["target_max_distnace"] || 250;
+    let targetMaxDistance = json["target_max_distance"] || json["target_max_distnace"] || DefaultTargetMaxDistance;
 
     let wildPokemons = []; //[{cell: UInt64, data: POGOProtos_Map_Pokemon_WildPokemon, timestampMs: UInt64}]
     let nearbyPokemons = []; //[{cell: UInt64, data: POGOProtos_Map_Pokemon_NearbyPokemon}]
@@ -115,12 +138,6 @@ async function _handleRawData(req: Request, res: Response) {
     let containsGMO: boolean = false;
     let isMadData: boolean = false;
 
-    if (contents === undefined) {
-        console.error("[Raw] Contents is empty");
-        res.send("Contents is empty");
-        return res.status(400).end();
-    }
-
     contents.forEach((rawData: any) => {
         let data: any;
         let method: number;
@@ -128,6 +145,9 @@ async function _handleRawData(req: Request, res: Response) {
         if (rawData["GetMapObjects"] !== undefined) {
             data = rawData["GetMapObjects"];
             method = 106;
+        } else if (rawData["GetHoloInventoryResponse"] !== undefined) {
+            data = rawData["GetHoloInventoryResponse"];
+            method = 4;
         } else if (rawData["EncounterResponse"] !== undefined) {
             data = rawData["EncounterResponse"];
             method = 102;
@@ -149,15 +169,34 @@ async function _handleRawData(req: Request, res: Response) {
             isMadData = true;
             username = "PogoDroid";
         } else {
+            console.log("[Raw] Unhandled proto:", rawData);
             invalid = true;
         }
 
         if (invalid !== false) {
             console.error("[Raw] Invalid data");
-            return res.status(400).end();
+            return res.sendStatus(400);
         }
 
         switch (method) {
+            case 4: // GetHoloInventoryResponse
+                try {
+                    let ghir = POGOProtos.Networking.Responses.GetHoloInventoryResponse.decode(base64_decode(data));
+                    if (ghir) {
+                        if (ghir.success) {
+                            let delta = ghir.inventory_delta;
+                            let originalTimestamp = delta.original_timestamp_ms;
+                            let newTimestamp = delta.new_timestamp_ms;
+                            let items = delta.inventory_items;
+                            console.log("[Raw] GetHoloInventoryResponse:", items);
+                        }
+                    } else {
+                        console.error("[Raw] Malformed GetHoloInventoryResponse");
+                    }
+                } catch (err) {
+                    console.error("[Raw] Unable to decode GetHoloInventoryResponse");
+                }
+                break;
             case 101: // FortSearchResponse
                 try {
                     let fsr = POGOProtos.Networking.Responses.FortSearchResponse.decode(base64_decode(data));
@@ -221,7 +260,7 @@ async function _handleRawData(req: Request, res: Response) {
                         let mapCellsNew = gmo.map_cells;
                         if (mapCellsNew.length === 0) {
                             console.debug("[Raw] Map cells is empty");
-                            return res.status(400).end();
+                            return res.sendStatus(400);
                         }
                         mapCellsNew.forEach((mapCell: any) => {
                             let timestampMs = mapCell.current_timestamp_ms;
@@ -456,7 +495,7 @@ async function _handleRawData(req: Request, res: Response) {
 async function _handleControllerData(req: Request, res: Response) {
     let jsonO = {};
     try {
-        jsonO = JSON.parse(req.body);
+        jsonO = req.body;//JSON.parse(req.body);
         //console.log("HandleControllerData Parsed:", jsonO);
     } catch (e) {
         console.error(e);
@@ -574,8 +613,8 @@ async function _handleControllerData(req: Request, res: Response) {
                     oldAccount.failedTimestamp       === undefined) {
                     res.send({
                         data: {
-                            username: oldAccount.username,
-                            password: oldAccount.password,
+                            username: oldAccount.username.trim(),
+                            password: oldAccount.password.trim(),
                             first_warning_timestamp: oldAccount.firstWarningTimestamp,
                             level: oldAccount.level,
                             tutorial: account.tutorial,
@@ -591,8 +630,8 @@ async function _handleControllerData(req: Request, res: Response) {
             await device.save(device.uuid);
             res.send({
                 data: {
-                    username: account.username,
-                    password: account.password,
+                    username: account.username.trim(),
+                    password: account.password.trim(),
                     first_warning_timestamp: account.firstWarningTimestamp,
                     level: account.level,
                     tutorial: account.tutorial,
@@ -677,7 +716,7 @@ async function _handleControllerData(req: Request, res: Response) {
                 if (device === undefined || device === null ||
                     invalidAccount === undefined || invalidAccount === null) {
                     console.error("[Controller] Failed to get account, device or account is null.");
-                    return res.status(400).end();
+                    return res.sendStatus(400);
                 }
             }
             break;
@@ -695,7 +734,7 @@ async function _handleControllerData(req: Request, res: Response) {
                 if (device === undefined || device === null ||
                     errAccount === undefined || errAccount === null) {
                     console.error("[Controller] Failed to get account, device or account is null.");
-                    return res.status(400).end();
+                    return res.sendStatus(400);
                 }
             }
             break;

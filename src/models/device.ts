@@ -192,7 +192,7 @@ class Device {
        SET uuid = ?, instance_name = ?, account_username = ?, device_level = ?, last_host = ?, last_seen = ?, last_lat = ?, last_lon = ?, device_group = ?
        WHERE uuid = ?
        `;
-       let args = [this.uuid, this.instanceName, this.accountUsername, this.deviceLevel, this.lastHost, this.lastSeen, this.lastLat, this.lastLon, this.deviceGroup, oldUUID];
+       let args = [this.uuid, this.instanceName, this.accountUsername, this.deviceLevel, this.lastHost, this.lastSeen || 0, this.lastLat || 0, this.lastLon || 0, this.deviceGroup, oldUUID];
        let results = await db.query(sql, args)
            .then(x => x)
            .catch(err => {

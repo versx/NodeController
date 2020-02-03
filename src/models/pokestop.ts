@@ -214,13 +214,13 @@ class Pokestop {
             withDeletedSQL = "AND deleted = false";
         }
         let sql = `
-            SELECT id, lat, lon, name, url, enabled, lure_expire_timestamp, last_modified_timestamp, updated, quest_type, quest_timestamp, quest_target, CAST(quest_conditions AS CHAR), CAST(quest_rewards AS CHAR), quest_template, cell_id, lure_id, pokestop_display, incident_expire_timestamp, grunt_type, sponsor_id
-            FROM pokestop
-            WHERE id = ? ${withDeletedSQL}
-            LIMIT 1
+        SELECT id, lat, lon, name, url, enabled, lure_expire_timestamp, last_modified_timestamp, updated, quest_type, quest_timestamp, quest_target, CAST(quest_conditions AS CHAR), CAST(quest_rewards AS CHAR), quest_template, cell_id, lure_id, pokestop_display, incident_expire_timestamp, grunt_type, sponsor_id
+        FROM pokestop
+        WHERE id = ? ${withDeletedSQL}
+        LIMIT 1
         `;
         
-        let results = await db.query(sql, [pokestopId])
+        let results = await db.query(sql, pokestopId)
             .then(x => x)
             .catch(x => {
                 console.error("[Pokestop] Error: " + x);
