@@ -155,8 +155,8 @@ class ApiController {
                         if (assignment.time === 0) {
                             formattedTime = "On Complete";
                         } else {
-                            let times = moment(assignment.time * 1000).format('hh:mm:ss');//.secondsToHoursMinutesSeconds();
-                            formattedTime = times;//`${times.hours}:${times.minutes}:${times.seconds}`;
+                            let times = moment(assignment.time * 1000).format('hh:mm:ss');
+                            formattedTime = times;
                         }
                         assignmentData["time"] = { "timestamp": assignment.time, "formatted": formattedTime };
                         let instanceUUID = `${escape(assignment.instanceName)}-${escape(assignment.deviceUUID)}-${assignment.time}`;

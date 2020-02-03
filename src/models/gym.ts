@@ -1,5 +1,6 @@
 "use strict"
 
+import { Cache, GYM_LIST } from '../data/cache';
 import { DbController } from '../controllers/db-controller';
 import { WebhookController } from '../controllers/webhook-controller';
 import { Database } from '../data/mysql';
@@ -174,6 +175,12 @@ class Gym {
      * @param gymId 
      */
     static async getById(gymId: string, withDeleted: boolean = false) {
+        let cachedGym = await Cache.instance.get(GYM_LIST, gymId);
+        if (cachedGym instanceof Gym) {
+            console.log("[Gym] Returning cached gym", cachedGym.id);
+            return cachedGym;
+        }
+
         let withDeletedSQL: string;
         if (withDeleted) {
             withDeletedSQL = "";
@@ -413,6 +420,9 @@ class Gym {
      * Save gym.
      */
     async save() {
+        /* TODO: Check if in redis, if so check if properties are the same. If 
+           properties are the same in cache then we don't need to save to mysql.
+        */
         let oldGym: Gym;
         try {
             oldGym = await Gym.getById(this.id, true);
@@ -524,7 +534,10 @@ class Gym {
                 console.error("[Gym] Error: " + x);
                 return null;
             });
-        Gym.Gyms[this.id] = this;
+        // Cache with redis
+        if (!await Cache.instance.set(GYM_LIST, this.id, this)) {
+            console.error("[Gym] Failed to cache gym with redis", this.id);
+        }
     }
     /**
      * Load all gyms.
