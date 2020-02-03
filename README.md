@@ -33,13 +33,12 @@ cp config.json.example config.json
         "username": "user", // Database username
         "password": "pass123", // Database password
         "database": "node", // Database name
+        "rootUsername": "root", // Root username
+        "rootPassword": "pass123", // Root user password
         "charset": "utf8mb4", // Database character set
         "debug": true, // Show database debug logs
-        "connectionLimit": 1000 // Database connection pool limit
-    },
-    "webhook": {
-        "urls": ["http://127.0.0.1:4000"], // Webhook urls
-        "delay": 5 // Webhook sending delay
+        "connectionLimit": 1000, // Database connection pool limit
+        "noBackup": false // Do not make backups
     }
 }
 ```
