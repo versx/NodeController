@@ -1,8 +1,7 @@
 syntax = "proto3";
-package POGOProtos.Networking.Titan;
+package POGOProtos.Networking.Game.GamePoi.Responses;
 
-//TODO ??? need observation
-message PlayerSubmissionResponse {
+message SubmitPoiLocationUpdateResponse {
 	Status status = 1;
 
 	enum Status {
@@ -13,6 +12,5 @@ message PlayerSubmissionResponse {
 		MINOR = 4;
 		NOT_AVAILABLE = 5;
 		INVALID_INPUT = 6;
-		MISSING_IMAGE = 7;
 	}
 }

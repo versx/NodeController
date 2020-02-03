@@ -1,3 +1,5 @@
+"use strict";
+
 import * as S2 from 'nodes2ts';
 import { Cell } from "../models/cell";
 import { Gym } from "../models/gym";
@@ -16,7 +18,7 @@ class Digest {
     }
     consumeCells(cells: any[]) {
         if (cells.length > 0) {
-            cells.forEach(cellId => {
+            cells.forEach(async cellId => {
                 try {
                     let s2cell = new S2.S2Cell(new S2.S2CellId(cellId.toString()));
                     //s2cell.capBound.rectBound.center.lat.degrees
@@ -32,7 +34,7 @@ class Digest {
                         lon,
                         getCurrentTimestamp()
                     );
-                    cell.save(true);
+                    await cell.save(true);
                 } catch (err) {
                     console.error(err);
                 }
@@ -50,7 +52,7 @@ class Digest {
     consumeClientWeather(clientWeathers: any[]) {
         if (clientWeathers.length > 0) {
             let startClientWeathers = process.hrtime();
-            clientWeathers.forEach(conditions => {
+            clientWeathers.forEach(async conditions => {
                 try {
                     //console.log("Parsed weather", conditions);
                     let ws2cell = new S2.S2Cell(new S2.S2CellId(conditions.cell.toString()));
@@ -65,7 +67,7 @@ class Digest {
                         conditions: conditions.data,
                         updated: null
                     });
-                    weather.save(true);
+                    await weather.save(true);
                     //client.addWeather(weather);
                 } catch (err) {
                     console.error(err);
@@ -78,7 +80,7 @@ class Digest {
     consumeWildPokemon(wildPokemons: any[], username: string) {
         if (wildPokemons.length > 0) {
             let startWildPokemon = process.hrtime();
-            wildPokemons.forEach(wildPokemon => {
+            wildPokemons.forEach(async wildPokemon => {
                 try {
                     let pokemon = new Pokemon({
                         username: username,
@@ -86,7 +88,7 @@ class Digest {
                         timestampMs: wildPokemon.timestampMs,
                         wild: wildPokemon.data
                     });
-                    pokemon.save();
+                    await pokemon.save();
                     //client.addPokemon(pokemon);
                 } catch (err) {
                     console.error(err);
@@ -99,7 +101,7 @@ class Digest {
     consumeNearbyPokemon(nearbyPokemons: any[], username: string) {
         if (nearbyPokemons.length > 0) {
             let startNearbyPokemon = process.hrtime();
-            nearbyPokemons.forEach(nearbyPokemon => {
+            nearbyPokemons.forEach(async nearbyPokemon => {
                 try {
                     let pokemon = new Pokemon({
                         username: username,
@@ -107,7 +109,7 @@ class Digest {
                         //timestampMs: nearbyPokemon.timestamp_ms,
                         nearby: nearbyPokemon.data
                     });
-                    pokemon.save();
+                    await pokemon.save();
                     //client.addPokemon(pokemon);
                 } catch (err) {
                     console.error(err);
@@ -120,7 +122,7 @@ class Digest {
     consumeForts(forts: any[]) {
         if (forts.length > 0) {
             let startForts = process.hrtime();
-            forts.forEach(fort => {
+            forts.forEach(async fort => {
                 try {
                     switch (fort.data.type) {
                         case 0: // gym
@@ -128,8 +130,7 @@ class Digest {
                                 cellId: fort.cell,
                                 fort: fort.data
                             });
-                            gym.save();
-                            //client.addGym(gym);
+                            await gym.save();
                             if (this.gymIdsPerCell[fort.cell] === undefined) {
                                 this.gymIdsPerCell[fort.cell] = [];
                             }
@@ -140,8 +141,7 @@ class Digest {
                                 cellId: fort.cell,
                                 fort: fort.data
                             });
-                            pokestop.save();
-                            //client.addPokestop(pokestop);
+                            await pokestop.save();
                             if (this.stopsIdsPerCell[fort.cell] === undefined) {
                                 this.stopsIdsPerCell[fort.cell] = [];
                             }
@@ -170,8 +170,7 @@ class Digest {
                         }
                         if (gym) {
                             gym.addDetails(fort);
-                            gym.save();
-                            //client.addGym(gym);
+                            await gym.save();
                         }
                         break;
                     case 1: // checkpoint
@@ -183,8 +182,7 @@ class Digest {
                         }
                         if (pokestop) {
                             pokestop.addDetails(fort);
-                            pokestop.save();
-                            //client.addPokestop(pokestop);
+                            await pokestop.save();
                         }
                         break;
                 }
@@ -205,8 +203,7 @@ class Digest {
                 }
                 if (gym) {
                     gym.addGymInfo(gymInfo);
-                    gym.save();
-                    //client.addGym(gym);
+                    await gym.save();
                 }
             });
             let endGymInfos = process.hrtime(startGymInfos);
@@ -225,8 +222,7 @@ class Digest {
                 }
                 if (pokestop) {
                     pokestop.addQuest(quest);
-                    pokestop.save();
-                    //client.addQuest(quest);
+                    await pokestop.save();
                 }
             });
             let endQuests = process.hrtime(startQuests);
@@ -244,8 +240,8 @@ class Digest {
                     pokemon = null;
                 }
                 if (pokemon) {
-                    pokemon.addEncounter(encounter, username);
-                    pokemon.save(true);
+                    await pokemon.addEncounter(encounter, username);
+                    await pokemon.save(true);
                     //client.addPokemon(pokemon);
                 } else {
                     let centerCoord = new S2.S2Point(encounter.wild_pokemon.latitude, encounter.wild_pokemon.longitude, 0);
@@ -266,8 +262,8 @@ class Digest {
                             cellId: cellId,
                             timestampMs: encounter.wild_pokemon.timestamp_ms
                         });
-                        newPokemon.addEncounter(encounter, username);
-                        newPokemon.save(true);
+                        await newPokemon.addEncounter(encounter, username);
+                        await newPokemon.save(true);
                     }
                 }
             });

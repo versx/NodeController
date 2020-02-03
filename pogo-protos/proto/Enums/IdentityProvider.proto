@@ -13,4 +13,6 @@ enum IdentityProvider {
 	DEVELOPER = 8;
 	SHARED_SECRET = 9;
 	POSEIDON = 10;
+	NINTENDO = 11;
+	APPLE = 12;
 }

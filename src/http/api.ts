@@ -138,10 +138,10 @@ class ApiListener {
     }
     start() {
         // Start listener
-        this.listener = app.listen(this.port, () => console.log(`[HTTP] Listening on port ${this.port}.`));
+        this.listener = app.listen(this.port, () => console.log(`[HTTP] Listening on api port ${this.port}.`));
     }
     stop() {
-        console.log("[HTTP] Stopping all listeners.")
+        console.log("[HTTP] Stopping all api listeners.")
         // Stop listener
         this.listener.removeAllListeners();
     }

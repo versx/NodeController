@@ -16,7 +16,7 @@ enum PlatformRequestType {
 	LIST_LOGIN_ACTION = 5010;                    // Implemented
 	ADD_NEW_POI = 5011;                          // Implemented
 	PROXY_SOCIAL_ACTION = 5012;                  // Implemented
-	CLIENT_TELEMETRY = 5013;                     // ???
+	DEPRECATED_CLIENT_TELEMETRY = 5013;          // ???
 	GET_AVAILABLE_SUBMISSIONS = 5014;            // Implemented
 	GET_SIGNED_URL_FOR_PHOTO_UPLOAD = 5015;      // ???
 	REPLACE_LOGIN_ACTION = 5016;                 // Implemented
@@ -41,11 +41,13 @@ enum PlatformRequestType {
 	GET_GMAP_SETTINGS = 5036;                    // Implemented
 	REDEEM_SAMSUNG_RECEIPT = 5037;               // ???
 	ADD_NEW_ROUTE = 5038;                        // ??? maybe same POGOProtos.Networking.Titan.Messages.SubmitNewRouteMessage
-	GET_OUTSTANDING_WARNINGS = 5039;             // ???
-	ACKNOWLEDGE_WARNINGS = 5040;                 // ???
+	GET_OUTSTANDING_WARNINGS = 5039;             // Implemented
+	ACKNOWLEDGE_WARNINGS = 5040;                 // Implemented
 	SUBMIT_POI_IMAGE = 5041;                     // Implemented
 	SUBMIT_POI_TEXT_METADATA_UPDATE = 5042;      // Implemented
 	SUBMIT_POI_LOCATION_UPDATE = 5043;           // Implemented
 	SUBMIT_POI_TAKEDOWN_REQUEST = 5044;          // Implemented
 	GET_WEB_TOKEN_ACTION = 5045;                 // Implemented
+	GET_ADVENTURE_SYNC_SETTINGS = 5046;          // Implemented
+	UPDATE_ADVENTURE_SYNC_SETTINGS = 5047;       // Implemented
 }

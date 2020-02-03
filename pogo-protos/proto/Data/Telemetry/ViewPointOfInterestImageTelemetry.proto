@@ -10,4 +10,5 @@ message ViewPointOfInterestImageTelemetry {
 	bool in_range = 4;
 	bool was_gym_interior = 5;
 	string partner_id = 6;
+	string campaign_id = 7;
 }

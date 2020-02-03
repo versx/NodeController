@@ -9,4 +9,5 @@ message CombatSeasonResult {
 	float rating = 5;
 	int32 longest_win_streak = 6;
 	int32 current_streak = 7;
+	int64 stardust_earned = 8;
 }

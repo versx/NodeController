@@ -8,4 +8,5 @@ message ReadPointOfInterestDescriptionTelemetry {
 	string fort_id = 2;
 	.POGOProtos.Map.Fort.FortType fort_type = 3;
 	string partner_id = 4;
+	string campaign_id = 5;
 }

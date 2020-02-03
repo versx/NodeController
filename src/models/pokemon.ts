@@ -166,6 +166,7 @@ class Pokemon /*extends Consumable*/ {
             pokestop = await Pokestop.getById(data.nearby.fort_id);
         } catch (err) {
             pokestop = null;
+            // TODO: Fix error
             console.error(err);
         }
         if (pokestop !== null) {
@@ -575,23 +576,23 @@ class Pokemon /*extends Consumable*/ {
         }
         args.push(this.expireTimestamp);
         if (updateIV || (oldPokemon === undefined || oldPokemon === null)) {
-            args.push(this.atkIv);
-            args.push(this.defIv);
-            args.push(this.staIv);
-            args.push(this.move1);
-            args.push(this.move2);
-            args.push(this.cp);
-            args.push(this.level);
-            args.push(this.weight);
-            args.push(this.size);
-            args.push(this.shiny);
-            args.push(this.displayPokemonId);
+            args.push(this.atkIv || null);
+            args.push(this.defIv || null);
+            args.push(this.staIv || null);
+            args.push(this.move1 || null);
+            args.push(this.move2 || null);
+            args.push(this.cp || null);
+            args.push(this.level || null);
+            args.push(this.weight || null);
+            args.push(this.size || null);
+            args.push(this.shiny || null);
+            args.push(this.displayPokemonId || null);
         }
-        args.push(this.username);
-        args.push(this.gender);
-        args.push(this.form);
-        args.push(this.weather);
-        args.push(this.costume);
+        args.push(this.username || null);
+        args.push(this.gender || 0);
+        args.push(this.form || 0);
+        args.push(this.weather || 0);
+        args.push(this.costume || 0);
         args.push(this.pokestopId || null);
         if (bindFirstSeen) {
             args.push(this.firstSeenTimestamp);

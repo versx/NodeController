@@ -26,14 +26,14 @@ class InstanceController implements IInstanceController {
     constructor() { }
     async setup() {
         console.info("[InstanceController] Starting up...");
-        let devices = await Device.load();
+        
         let instances = await Instance.load();
-
-        if (devices) {
-            devices.forEach(device => this.addDevice(device));
-        }
         if (instances) {
             instances.forEach(instance => this.addInstance(instance));
+        }
+        let devices = await Device.load();
+        if (devices) {
+            devices.forEach(device => this.addDevice(device));
         }
     }
     getInstanceControllerByInstanceName(instanceName: string) {
