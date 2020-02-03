@@ -39,7 +39,6 @@ class Digest {
                 } catch (err) {
                     logger.error(err);
                 }
-                //client.addCell(cell);
                 
                 if (this.gymIdsPerCell[cellId] === undefined) {
                     this.gymIdsPerCell[cellId] = [];
@@ -240,7 +239,6 @@ class Digest {
                 if (pokemon) {
                     await pokemon.addEncounter(encounter, username);
                     await pokemon.save(true);
-                    //client.addPokemon(pokemon);
                 } else {
                     let centerCoord = new S2.S2Point(encounter.wild_pokemon.latitude, encounter.wild_pokemon.longitude, 0);
                     let center = S2.S2LatLng.fromPoint(centerCoord);

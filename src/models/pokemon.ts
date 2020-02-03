@@ -16,7 +16,6 @@ const db = new Database(config);
  * Pokemon model class.
  */
 class Pokemon /*extends Consumable*/ {
-    static Pokemon = {};
     static DittoPokemonId: number = 132;
     static WeatherBoostMinLevel: number = 6;
     static WeatherBoostMinIvStat: number = 4;
@@ -107,7 +106,7 @@ class Pokemon /*extends Consumable*/ {
         }
         this.username = data.username;
         if (data.wild.time_till_hidden_ms > 0 && data.wild.time_till_hidden_ms <= 90000) {
-            this.expireTimestamp = (data.timestampMs + data.wild.time_till_hidden_ms) / 1000;
+            this.expireTimestamp = Math.round((data.timestampMs + data.wild.time_till_hidden_ms) / 1000);
             this.expireTimestampVerified = true;
         } else {
             this.expireTimestampVerified = false;
@@ -250,7 +249,7 @@ class Pokemon /*extends Consumable*/ {
             WHERE id = ?
             LIMIT 1
         `;
-        let args = [encounterId.toString()];
+        let args = [encounterId];
         let results = await db.query(sql, args)
             .then(x => x)
             .catch(err => {
@@ -293,7 +292,6 @@ class Pokemon /*extends Consumable*/ {
                 display_pokemon_id: key.display_pokemon_id,
                 cell_id: key.cell_id
             });
-            Pokemon.Pokemon[pokemon.id] = pokemon;
         })
         return pokemon;
     }
@@ -609,7 +607,7 @@ class Pokemon /*extends Consumable*/ {
             let spawnpoint: Spawnpoint;
             if (this.expireTimestampVerified && this.expireTimestamp) {
                 let date = moment(this.expireTimestamp).format('mm:ss');
-                let split = date.toString().split(':');
+                let split = date.split(':');
                 let minute = parseInt(split[0]);
                 let second = parseInt(split[1]);
                 let secondOfHour = second + minute * 60;
@@ -678,7 +676,6 @@ class Pokemon /*extends Consumable*/ {
                 InstanceController.instance.gotIV(this);
             }
         }
-        Pokemon.Pokemon[this.id] = this;
     }
     /**
      * Load all Pokemon.
@@ -779,7 +776,7 @@ class Pokemon /*extends Consumable*/ {
     private getDespawnTimer(spawnpoint: Spawnpoint, timestampMs: number): number {
         let despawnSecond = spawnpoint.despawnSecond;
         if (despawnSecond) {
-            let date = moment(timestampMs).format('mm:ss');
+            let date = moment(timestampMs.toString()).format('mm:ss');
             let split = date.split(':');
             let minute = parseInt(split[0]);
             let second = parseInt(split[1]);
