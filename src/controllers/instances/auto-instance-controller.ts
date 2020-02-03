@@ -457,7 +457,7 @@ class AutoInstanceController {
             return;
         }
         let date = moment(new Date());
-        let formattedHours = date.format('hh:mm:ss');
+        let formattedHours = date.format('HH:mm:ss');
         // formatter.timeZone = TimeZone(secondsFromGMT: timezoneOffset) || Localizer.global.timeZone;
         let split = formattedHours.split(":");
         let hour = parseInt(split[0]);

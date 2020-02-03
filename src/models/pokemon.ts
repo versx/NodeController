@@ -665,8 +665,8 @@ class Pokemon /*extends Consumable*/ {
         await db.query(sql, args)
             .then(x => x)
             .catch(err => {
-                logger.debug("[Pokemon] SQL: " + sql);
-                logger.debug("[Pokemon] Arguments: " + args);
+                logger.info("[Pokemon] SQL: " + sql);
+                logger.info("[Pokemon] Arguments: " + args);
                 logger.error("[Pokemon] Error: " + err);
                 return null;
             });

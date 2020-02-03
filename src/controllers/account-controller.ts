@@ -21,7 +21,7 @@ class AccountController {
     }
     async loopClearSpins() {
         let date = moment().format("HH:mm:ss"); // REVIEW: Should be lower hh?
-        let split = date.toString().split(":");
+        let split = date.split(":");
         let hour = parseInt(split[0]);
         let minute = parseInt(split[1]);
         let second = parseInt(split[2]);

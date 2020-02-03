@@ -156,7 +156,7 @@ class ApiController {
                         if (assignment.time === 0) {
                             formattedTime = "On Complete";
                         } else {
-                            let times = moment(assignment.time * 1000).format('hh:mm:ss');
+                            let times = moment(assignment.time * 1000).format('HH:mm:ss');
                             formattedTime = times;
                         }
                         assignmentData["time"] = { "timestamp": assignment.time, "formatted": formattedTime };
@@ -1140,7 +1140,7 @@ class ApiController {
             if (time === 0) {
                 formattedTime = "";
             } else {
-                let times = moment(time).format('hh:mm:ss');//time.secondsToHoursMinutesSeconds()
+                let times = moment(time).format('HH:mm:ss');//time.secondsToHoursMinutesSeconds()
                 formattedTime = times;//"\(String(format: "%02d", times.hours)):\(String(format: "%02d", times.minutes)):\(String(format: "%02d", times.seconds))"
             }
             data["time"] = formattedTime;
