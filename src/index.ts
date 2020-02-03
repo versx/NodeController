@@ -32,5 +32,3 @@ webhook.start();
 // Start API listener
 let api = new ApiListener(config.ports.api);
 api.start();
-
-logger.debug('Test debug message');

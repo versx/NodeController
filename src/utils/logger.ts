@@ -31,13 +31,4 @@ let logger: winston.Logger = winston.createLogger(options);
 
 winston.exceptions.handle(new winston.transports.File({ filename: 'exceptions.log' }));
 
-winston.debug("Logging initialized at " + level + " level...");
-
-/*
-logger.log('info', 'hey dude', { foo: 'bar' });
-logger.info('test test test');
-logger.warn('Test warning messsage');
-logger.error('test error');
-*/
-
 export { logger };
