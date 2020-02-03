@@ -250,13 +250,13 @@ async function _handleRawData(req: Request, res: Response) {
                                                 let itemId: ItemId = <ItemId>item.item_id;
                                                 switch (itemId) {
                                                     case ItemId.ITEM_LUCKY_EGG: // Lucky Egg
-                                                        console.log("Inventory egg found:", itemId.toString(), "Count:", item.count);
+                                                        console.log(`${username} lucky egg ${itemId.toString()} -> ${item.count}`);
                                                         break;
                                                     case ItemId.ITEM_TROY_DISK: // Normal Lure
                                                     case ItemId.ITEM_TROY_DISK_GLACIAL: // Glacial Lure
                                                     case ItemId.ITEM_TROY_DISK_MOSSY: // Mossy Lure
                                                     case ItemId.ITEM_TROY_DISK_MAGNETIC: // Magnetic Lure
-                                                        console.log("Inventory lure found:", itemId.toString(), "Count:", item.count);
+                                                        console.log(`${username} lure module ${itemId.toString()} -> ${item.count}`);
                                                         break;
                                                     default:
                                                         //console.log("Inventory item found:", itemId.toString(), "Count:", item.count);
@@ -275,7 +275,6 @@ async function _handleRawData(req: Request, res: Response) {
                                             case "player_stats":
                                                 let experience = parseInt(itemData.player_stats.experience) || 0;
                                                 WebhookHandler.AccountInventory[username]["experience"] = experience;
-                                                console.log("Player total experience points:", experience);
                                                 break;
                                             case "pokemon_data":
                                             case "pokedex_entry":
