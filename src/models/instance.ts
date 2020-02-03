@@ -81,8 +81,8 @@ class Instance implements IInstance {
     }
     async create() {
         let sql = `
-            INSERT INTO instance (name, type, data)
-            VALUES (?, ?, ?)
+        INSERT INTO instance (name, type, data)
+        VALUES (?, ?, ?)
         `;
         let args = [
             this.name,

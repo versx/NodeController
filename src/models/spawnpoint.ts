@@ -10,8 +10,6 @@ const db = new Database(config);
  * Spawnpoint model class.
  */
 class Spawnpoint {
-    static Spawnpoints = {};
-
     id: string;
     lat: number;
     lon: number;
@@ -144,8 +142,7 @@ class Spawnpoint {
             .then(x => x)
             .catch(err => {
                 logger.error("[Spawnpoint] Error:" + err);
-            });
-        Spawnpoint.Spawnpoints[this.id] = this;        
+            });     
     }
     /**
      * Load all Spawnpoints.

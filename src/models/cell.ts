@@ -1,4 +1,4 @@
-"use strict"
+"use strict";
 
 import * as S2 from 'nodes2ts';
 import { Coord } from '../coord';

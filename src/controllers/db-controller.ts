@@ -10,8 +10,8 @@ import { Database } from '../data/mysql';
 import { Localizer } from '../utils/localizer';
 import { logger } from '../utils/logger';
 import { snooze, readFile } from '../utils/util';
-import config      = require('../config.json');
-const db           = new Database(config);
+import config = require('../config.json');
+const db      = new Database(config);
 
 /**
  * Database controller class.

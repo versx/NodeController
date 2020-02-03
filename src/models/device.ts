@@ -1,4 +1,4 @@
-"use strict"
+"use strict";
 
 import { Database } from '../data/mysql';
 import { logger } from '../utils/logger';

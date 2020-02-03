@@ -11,8 +11,6 @@ const db = new Database(config);
  * Weather model class.
  */
 class Weather {
-    static Weather = {};
-
     id: string;
     level: number;
     latitude: number;
@@ -218,7 +216,6 @@ class Weather {
             .catch(err => {
                 logger.error("[Weather] Error: " + err);
             });
-        Weather.Weather[this.id.toString()] = this;
     }
     /**
      * Load all Weather Cells.

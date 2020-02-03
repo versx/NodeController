@@ -1,4 +1,4 @@
-"use strict"
+"use strict";
 
 import { Cache, POKESTOP_LIST } from '../data/cache';
 import { DbController } from '../controllers/db-controller';

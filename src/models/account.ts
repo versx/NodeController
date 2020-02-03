@@ -1,4 +1,4 @@
-"use strict"
+"use strict";
 
 import config      = require('../config.json');
 import { Database } from '../data/mysql';
