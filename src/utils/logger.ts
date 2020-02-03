@@ -44,6 +44,6 @@ const options: winston.LoggerOptions = {
 };
 let logger: winston.Logger = winston.createLogger(options);
 
-winston.exceptions.handle(new winston.transports.File({ filename: 'exceptions.log' }));
+winston.exceptions.handle(new winston.transports.File({ filename: path.join(logDir, 'exceptions.log') }));
 
 export { logger };
