@@ -249,7 +249,7 @@ class Pokemon /*extends Consumable*/ {
             WHERE id = ?
             LIMIT 1
         `;
-        let args = [encounterId];
+        let args = [encounterId.toString()];
         let results = await db.query(sql, args)
             .then(x => x)
             .catch(err => {
@@ -472,7 +472,7 @@ class Pokemon /*extends Consumable*/ {
                 INSERT INTO pokemon (id, pokemon_id, lat, lon, spawn_id, expire_timestamp, atk_iv, def_iv, sta_iv, move_1, move_2, cp, level, weight, size, display_pokemon_id, shiny, username, gender, form, weather, costume, pokestop_id, updated, first_seen_timestamp, changed, cell_id, expire_timestamp_verified)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), ?, ?)
             `;
-            args.push(this.id);
+            args.push(this.id.toString());
         } else {
             bindFirstSeen = true;
             this.firstSeenTimestamp = oldPokemon.firstSeenTimestamp;
@@ -776,7 +776,9 @@ class Pokemon /*extends Consumable*/ {
     private getDespawnTimer(spawnpoint: Spawnpoint, timestampMs: number): number {
         let despawnSecond = spawnpoint.despawnSecond;
         if (despawnSecond) {
-            let date = moment(timestampMs.toString()).format('mm:ss');
+            let ts = timestampMs.toString();
+            let date = moment((parseInt(ts) * 1000).toString()).format('mm:ss');
+            //TODO: Fix invalid date
             let split = date.split(':');
             let minute = parseInt(split[0]);
             let second = parseInt(split[1]);

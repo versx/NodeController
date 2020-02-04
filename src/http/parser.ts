@@ -564,15 +564,34 @@ async function _handleRawData(req: Request, res: Response) {
         }
     }
 
-    digest.consumeCells(cells);
-    digest.consumeClientWeather(clientWeathers);
-    digest.consumeForts(forts);
-    digest.consumeFortDetails(fortDetails);
-    digest.consumeGymInfos(gymInfos);
-    digest.consumeWildPokemon(wildPokemons, username);
-    digest.consumeNearbyPokemon(nearbyPokemons, username);
-    digest.consumeQuests(quests);
-    digest.consumeEncounters(encounters, username);
+    await digest.consumeCells(cells).then(async () => {
+        await digest.consumeClientWeather(clientWeathers).then(async () => {
+            await digest.consumeForts(forts).then(async () => {
+                await digest.consumeFortDetails(fortDetails).then(async () => {
+                    await digest.consumeGymInfos(gymInfos).then(async () => {
+                        await digest.consumeQuests(quests).then(async () => {
+                            await digest.consumeWildPokemon(wildPokemons, username).then(async () => {
+                                await digest.consumeNearbyPokemon(nearbyPokemons, username).then(async () => {
+                                    await digest.consumeEncounters(encounters, username);
+                                });
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    })
+    /*
+    await digest.consumeCells(cells)
+    await digest.consumeClientWeather(clientWeathers);
+    await digest.consumeForts(forts);
+    await digest.consumeFortDetails(fortDetails);
+    await digest.consumeGymInfos(gymInfos);
+    await digest.consumeWildPokemon(wildPokemons, username);
+    await digest.consumeNearbyPokemon(nearbyPokemons, username);
+    await digest.consumeQuests(quests);
+    await digest.consumeEncounters(encounters, username);
+    */
 }
 
 /**

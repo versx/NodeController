@@ -96,7 +96,7 @@ class Pokestop {
                 this.sponsorId = data.fort.sponsor;
             }
             this.enabled = data.fort.enabled;
-            var lastModifiedTimestamp = data.fort.last_modified_timestamp_ms / 1000;
+            let lastModifiedTimestamp = data.fort.last_modified_timestamp_ms / 1000;
             if (data.fort.active_fort_modifier !== undefined && data.fort.active_fort_modifier !== null && data.fort.active_fort_modifier.length > 0) {
                 if (data.fort.active_fort_modifier.includes(501) ||
                     data.fort.active_fort_modifier.includes(502) ||
@@ -617,7 +617,7 @@ class Pokestop {
                 INSERT INTO pokestop (id, lat, lon, name, url, enabled, lure_expire_timestamp, last_modified_timestamp, quest_type, quest_timestamp, quest_target, quest_conditions, quest_rewards, quest_template, cell_id, lure_id, pokestop_display, incident_expire_timestamp, grunt_type, sponsor_id, updated, first_seen_timestamp)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP(), UNIX_TIMESTAMP())
             `;
-            args.push(this.id);
+            args.push(this.id.toString());
         } else {
             if (oldPokestop.cellId && (this.cellId === undefined || this.cellId === null)) {
                 this.cellId = oldPokestop.cellId;

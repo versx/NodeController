@@ -109,23 +109,23 @@ class Account {
     }
     /*
     getNewAccount(mysql: MySQL?=nil, uuid: String, area: String, minLevel: Int, maxLevel: Int) throws -> Account? {
-        var newLat: Double = 0
-        var newLon: Double = 0
-        var spinLimit: Int = 0
-        var findAccount = false
-        var action: String = ""
-        var username: String = ""
-        var password: String = ""
-        var level: UInt8 = 0
-        var firstWarningTimestamp: UInt32 = 0
-        var failedTimestamp: UInt32 = 0
-        var failed: String = ""
-        var lastEncounterLat: Double = 0
-        var lastEncounterLon: Double = 0
-        var lastEncounterTime: UInt32 = 0
-        var spins: UInt16 = 0
-        var tutorial: UInt8 = 0
-        var ptcToken: String = ""
+        let newLat: Double = 0
+        let newLon: Double = 0
+        let spinLimit: Int = 0
+        let findAccount = false
+        let action: String = ""
+        let username: String = ""
+        let password: String = ""
+        let level: UInt8 = 0
+        let firstWarningTimestamp: UInt32 = 0
+        let failedTimestamp: UInt32 = 0
+        let failed: String = ""
+        let lastEncounterLat: Double = 0
+        let lastEncounterLon: Double = 0
+        let lastEncounterTime: UInt32 = 0
+        let spins: UInt16 = 0
+        let tutorial: UInt8 = 0
+        let ptcToken: String = ""
         let controller = InstanceController.global.getInstanceController(deviceUUID: uuid)
         if controller != nil {
             let newTask = controller!.getTask(uuid: uuid, username: nil, startup: true)
@@ -164,10 +164,10 @@ class Account {
         _ = results.forEachRow {
             sqlResult in
             if !findAccount {
-                var logDelay: Double = 0
-                var newCoords = CLLocationCoordinate2D(latitude: 0, longitude: 0)
-                var oldCoords = CLLocationCoordinate2D(latitude: 0, longitude: 0)
-                var lastEncounter: UInt32 = 0
+                let logDelay: Double = 0
+                let newCoords = CLLocationCoordinate2D(latitude: 0, longitude: 0)
+                let oldCoords = CLLocationCoordinate2D(latitude: 0, longitude: 0)
+                let lastEncounter: UInt32 = 0
                 let timeNow = UInt32(Date().timeIntervalSince1970)
                 
                 username = sqlResult[0] as! String

@@ -653,7 +653,7 @@ class ApiController {
             res.send("Device Not Found");
             return data;
         }
-        var instancesData = [];
+        let instancesData = [];
         instances.forEach(instance => {
             instancesData.push({ 
                 name: instance.name,
@@ -715,7 +715,7 @@ class ApiController {
             }
         }
 
-        var scatterPokemonIDs: number[] = [];
+        let scatterPokemonIDs: number[] = [];
         if (scatterPokemonIDsText.trim() === "*") {
             scatterPokemonIDs = Array.from({length: 999}, (v, k) => k + 1);
         } else {
@@ -772,7 +772,7 @@ class ApiController {
 
         let newCoords: any;
         if (type && type === InstanceType.CirclePokemon || type === InstanceType.CircleRaid || type === InstanceType.SmartCircleRaid) {
-            var coords: Coord[] = [];
+            let coords: Coord[] = [];
             let areaRows = area.split('\n');
             areaRows.forEach(areaRow => {
                 let rowSplit = areaRow.split(',');
@@ -792,9 +792,9 @@ class ApiController {
             }
             newCoords = coords
         } else if (type && type === InstanceType.AutoQuest || type === InstanceType.PokemonIV) {
-            var coordArray: Coord[][] = [];
+            let coordArray: Coord[][] = [];
             let areaRows = area.split('\n');
-            var currentIndex = 0;
+            let currentIndex = 0;
             areaRows.forEach(areaRow => {
                 let rowSplit = areaRow.split(',');
                 if (rowSplit.length === 2) {
@@ -1330,7 +1330,7 @@ class ApiController {
             data["instances"] = instancesData;
 
             let devicesData = [];
-            var oldDevicesData: string[] = [];
+            let oldDevicesData: string[] = [];
             devices.forEach(device => {
                 if (device.deviceGroup === oldDeviceGroup.name) {
                     oldDevicesData.push(device.uuid);
@@ -1359,7 +1359,7 @@ class ApiController {
         let deviceUUIDs = req.body["devices"];
         let oldDeviceUUIDs = req.body["old_devices"];
 
-        var oldDevices: string[] = [];
+        let oldDevices: string[] = [];
         let split = oldDeviceUUIDs.split(',');
         split.forEach(device => {
             let deviceName = device.replace("[", "")

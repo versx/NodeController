@@ -49,7 +49,7 @@ class Localizer {
     }
     /*
     get(value: string, replace: any): string {
-        var value = this.cachedData[value] || this.cachedDataEn[value] || value;
+        let value = this.cachedData[value] || this.cachedDataEn[value] || value;
         for repl in replace {
             value = value.replacingOccurrences(of: "%{\(repl.key)}", with: repl.value)
         }

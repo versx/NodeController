@@ -265,7 +265,7 @@ class Weather {
         }
         /*
         let s2cell = S2Cell(cellId: S2CellId(id: id))
-        var polygon =  [[Double]]()
+        let polygon =  [[Double]]()
         for i in 0...3 {
             let coord = S2LatLng(point: s2cell.getVertex(i)).coord
             polygon.append([
