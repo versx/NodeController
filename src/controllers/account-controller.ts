@@ -10,6 +10,7 @@ const ClearSpinsInterval: number = 60 * 1000;
 class AccountController {
     static instance = new AccountController();
     isSetup: boolean = false;
+    timer: NodeJS.Timeout;
 
     setup() {
         logger.info("[AccountController] Starting up...");
@@ -17,7 +18,7 @@ class AccountController {
             return;
         }
         this.isSetup = true;
-        setInterval(async () => await this.loopClearSpins(), ClearSpinsInterval);
+        this.timer = setInterval(async () => await this.loopClearSpins(), ClearSpinsInterval);
     }
     async loopClearSpins() {
         let date = moment().format("HH:mm:ss"); // REVIEW: Should be lower hh?

@@ -22,7 +22,6 @@ class Cache implements ICache {
     async load<T>(): Promise<T> {
         return null;
         //return await RedisClient.instance.hgetall(DEVICE_LIST);
-        // TODO: Load from mysql and set redis cache
     }
 }
 

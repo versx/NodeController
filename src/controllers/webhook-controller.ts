@@ -26,6 +26,7 @@ class WebhookController {
     private eggEvents: Gym[] = [];
     private raidEvents: Gym[] = [];
     private weatherEvents: Weather[] = [];
+    private timer: NodeJS.Timeout;
 
     constructor() {
         //this.init();
@@ -104,7 +105,10 @@ class WebhookController {
     }
     setup(): void {
         logger.info("[WebhookController] Starting up...");
-        setInterval(() => this.loopEvents(), WebhookRelayInterval);
+        this.timer = setInterval(() => this.loopEvents(), WebhookRelayInterval);
+    }
+    stop(): void {
+        clearInterval(this.timer);
     }
     loopEvents(): void {
         if (DbController.WebhookUrls && DbController.WebhookUrls.length > 0) {

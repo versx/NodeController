@@ -127,7 +127,6 @@ class CircleInstanceController {
         let lastLast = this.lastLastCompletedTime;
         let last = this.lastCompletedTime;
         if (lastLast && last) {
-            // TODO: TimesinceLastInterval.
             let time = last - lastLast
             if (formatted) {
                 return `Round Time: ${time}s`;

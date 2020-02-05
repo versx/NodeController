@@ -412,13 +412,13 @@ async function _handleRawData(req: Request, res: Response) {
                 }
                 break;
             default:
-                logger.error("[Raw] Invalid method provided:" + method);
+                logger.error("[Raw] Invalid method provided: " + method);
                 return;
         }
     });
 
     let targetCoord: S2.S2LatLng;
-    let inArea = false
+    let inArea: boolean = false
     if (latTarget && lonTarget) {
         targetCoord = new S2.S2LatLng(latTarget, lonTarget);
     } else {
@@ -426,7 +426,7 @@ async function _handleRawData(req: Request, res: Response) {
     }
     
     let pokemonCoords: S2.S2LatLng;
-    if (targetCoord !== null) {
+    if (targetCoord) {
         if (forts) {
             forts.forEach(fort => {
                 if (inArea === false) {
@@ -494,7 +494,7 @@ async function _handleRawData(req: Request, res: Response) {
         //"Guaranteed scan"
         data["encounters"] = 0;
         encounters.forEach(encounter => {
-            if (encounter.wild_pokemon.encounter_id === pokemonEncounterIdForEncounter){
+            if (encounter.wild_pokemon.encounter_id.toString() === pokemonEncounterIdForEncounter){
                 //We actually encountered the target.
                 data["encounters"] = 1;
             }
@@ -580,7 +580,7 @@ async function _handleRawData(req: Request, res: Response) {
                 });
             });
         });
-    })
+    });
     /*
     await digest.consumeCells(cells)
     await digest.consumeClientWeather(clientWeathers);
@@ -631,7 +631,7 @@ async function _handleControllerData(req: Request, res: Response) {
             }
             if (device instanceof Device) {
                 // Device is already registered
-                logger.debug("[Controller] Device registered");
+                logger.debug("[Controller] Device already registered");
                 res.send({
                     data: {
                         assigned: device.instanceName !== undefined && device.instanceName !== null && device.instanceName !== "",
@@ -672,11 +672,11 @@ async function _handleControllerData(req: Request, res: Response) {
                         data: task
                     });
                 } catch (err) {
-                    res.sendStatus(404);
+                    return res.sendStatus(404);
                 }
             } else {
-                logger.info("[Controller] Device", uuid, "not assigned to an instance!");
-                res.sendStatus(404);
+                logger.info("[Controller] Device " + uuid + "not assigned to an instance!");
+                return res.sendStatus(404);
             }
             break;
         case "get_startup":
@@ -688,11 +688,11 @@ async function _handleControllerData(req: Request, res: Response) {
                         data: task
                     });
                 } catch (err) {
-                    res.sendStatus(404);
+                    return res.sendStatus(404);
                 }
             } else {
-                logger.info("[Controller] Device", uuid, " failed to get startup location!");
-                res.sendStatus(404);
+                logger.info("[Controller] Device" + uuid + " failed to get startup location!");
+                return res.sendStatus(404);
             }
             break;
         case "get_account":
@@ -758,7 +758,7 @@ async function _handleControllerData(req: Request, res: Response) {
                     tutAccount.level = 1;
                 }
                 tutAccount.tutorial = 1;
-                tutAccount.save(true);
+                await tutAccount.save(true);
                 res.send('OK');
             } else {
                 if (device === undefined || device === null || 
@@ -775,7 +775,7 @@ async function _handleControllerData(req: Request, res: Response) {
                     banAccount.failed === undefined || banAccount.failed === null) {
                         banAccount.failedTimestamp = getCurrentTimestamp();
                         banAccount.failed = "banned";
-                        banAccount.save(true);
+                        await banAccount.save(true);
                         res.send('OK');
                 }
             } else {
@@ -791,7 +791,7 @@ async function _handleControllerData(req: Request, res: Response) {
             if (warnAccount instanceof Account) {
                 if (warnAccount.firstWarningTimestamp === undefined || warnAccount.firstWarningTimestamp === null) {
                     warnAccount.firstWarningTimestamp = getCurrentTimestamp();
-                    warnAccount.save(true);
+                    await warnAccount.save(true);
                     res.send('OK');
                 }
             } else {
@@ -809,7 +809,7 @@ async function _handleControllerData(req: Request, res: Response) {
                     invalidAccount.failed === undefined || invalidAccount.failed === null) {
                         invalidAccount.failedTimestamp = getCurrentTimestamp();
                         invalidAccount.failed = "invalid_credentials";
-                        invalidAccount.save(true);
+                        await invalidAccount.save(true);
                         res.send('OK');
                 }
             } else {
@@ -843,8 +843,7 @@ async function _handleControllerData(req: Request, res: Response) {
                 let device = await Device.getById(uuid);
                 if (device instanceof Device) {
                     if (device.accountUsername === null) {
-                        res.sendStatus(404);
-                        return;
+                        return res.sendStatus(404);
                     }
                     let failed = await Account.checkFail(device.accountUsername);
                     if (failed === false) {
@@ -855,15 +854,14 @@ async function _handleControllerData(req: Request, res: Response) {
                     await device.save(device.uuid);
                     res.send('OK');
                 } else {
-                    res.sendStatus(404);
-                    return;
+                    return res.sendStatus(404);
                 }
             } catch {
-                res.sendStatus(500);
+                return res.sendStatus(500);
             }
-            device.accountUsername = null;
-            device.save(device.uuid);
-            res.send('OK');
+            //device.accountUsername = null;
+            //device.save(device.uuid);
+            //res.send('OK');
             break;
         case "ptcToken": // REVIEW: Seriously? Who the hell used camelCasing :joy:?
             try {
@@ -873,18 +871,17 @@ async function _handleControllerData(req: Request, res: Response) {
                 if (device === undefined || device === null ||
                     username === undefined || username === null || username === "" ||
                     account === undefined || account === null) {
-                        res.sendStatus(404);
-                        return;
+                        return res.sendStatus(404);
                 }
                 if (account.ptcToken === undefined || 
                     account.ptcToken === null ||
                     account.ptcToken === "") {
                     account.ptcToken = ptcToken;
-                    account.save(true);
+                    await account.save(true);
                 }
                 res.send('OK');
             } catch {
-                res.sendStatus(404);
+                return res.sendStatus(404);
             }
             break;
         case "job_failed":
@@ -893,8 +890,7 @@ async function _handleControllerData(req: Request, res: Response) {
             break;
         default:
             logger.error("[Controller] Unhandled Request:", type);
-            res.sendStatus(404);
-            break;
+            return res.sendStatus(404);
     }
 }
 

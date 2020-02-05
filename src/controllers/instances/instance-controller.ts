@@ -60,7 +60,7 @@ class InstanceController implements IInstanceController {
             case InstanceType.GatherToken:
                 let coordsArray: Coord[] = [];
                 if (instance.data.area) {
-                    coordsArray = instance.data.area; //TODO: Confirm working
+                    coordsArray = instance.data.area; //REVIEW: Confirm working
                 } else {
                     let coords = instance.data.area;
                     coords.forEach((coord: any) => {

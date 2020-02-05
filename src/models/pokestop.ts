@@ -469,7 +469,7 @@ class Pokestop {
                     break;
                 case ConditionType.PokemonCategory:
                     if (info.with_pokemon_category.category_name) {
-                        infoData["category_name"] = info.with_pokemon_category.category_name; // TODO: Does with_pokemon_category_category_name exist?
+                        infoData["category_name"] = info.with_pokemon_category.category_name; // TODO: Does with_pokemon_category.category_name exist?
                     }
                     if (info.with_pokemon_category.pokemon_ids) {
                         infoData["pokemon_ids"] = info.with_pokemon_category.pokemon_ids;

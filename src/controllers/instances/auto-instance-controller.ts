@@ -31,6 +31,7 @@ class AutoInstanceController {
     private shouldExit: boolean = false;
     private bootstrapCellIds: string[] = [];
     private bootstrapTotalCount: number = 0;
+    private timer: NodeJS.Timeout;
 
     constructor(name: string, multiPolygon: turf.MultiPolygon, type: AutoInstanceType, 
         timeZoneOffset: number, minLevel: number, maxLevel: number, spinLimit: number) {
@@ -46,7 +47,7 @@ class AutoInstanceController {
         this.bootstrap();
 
         if (type === AutoInstanceType.Quest) {
-            setInterval(() => this.autoLoop(), AutoInstanceInterval);
+            this.timer = setInterval(() => this.autoLoop(), AutoInstanceInterval);
         }
     }
     async bootstrap() {
@@ -448,9 +449,7 @@ class AutoInstanceController {
     }
     stop() {
         this.shouldExit = true;
-        //if (this.questClearerQueue !== null) {
-        //    // TODO: Threading.destroyQueue(questClearerQueue!)
-        //}
+        clearInterval(this.timer);
     }
     async autoLoop() {
         if (this.shouldExit) {

@@ -16,6 +16,7 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
     private startDate: Date;
     private count: number = 0;
     private shouldExit: boolean = false;
+    private timer: NodeJS.Timeout;
     
     static raidInfoBeforeHatch: number = 120; // 2 minutes
     static ignoreTime: number = 150; // 2.5 minutes
@@ -60,7 +61,7 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
             }
         });
         
-        setInterval(() => this.raidUpdaterRun(), this.smartRaidInterval);
+        this.timer = setInterval(() => this.raidUpdaterRun(), this.smartRaidInterval);
     }
     async raidUpdaterRun() {
         if (this.shouldExit) {
@@ -82,10 +83,7 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
     }
     stop() {
         this.shouldExit = true;
-        // TODO: Stop smart raid interval
-        //if (raidUpdaterQueue !== null) {
-        //    Threading.destroyQueue(raidUpdaterQueue);
-        //}
+        clearInterval(this.timer);
     }
     getTask(uuid: string, username: string) {
         // Get gyms without raid and gyms without boss where updated ago > ignoreTime
@@ -96,7 +94,7 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
             let nowTimestamp = getCurrentTimestamp();
             if (updated === undefined || 
                 updated === null || 
-                nowTimestamp >= (/*TODO: Verify this is correct*/updated.getTime() / 1000) + CircleSmartRaidInstanceController.ignoreTime) {
+                nowTimestamp >= (/*REVIEW: Verify this is correct*/updated.getTime() / 1000) + CircleSmartRaidInstanceController.ignoreTime) {
                 value.forEach(id => {
                     let gym = this.smartRaidGyms[id];
                     if (gym.raidEndTimestamp === undefined || 
@@ -115,16 +113,17 @@ class CircleSmartRaidInstanceController extends CircleInstanceController {
 
         // Get coord to scan
         let coord: Coord;
-        // TODO: Type 'Coord' cannot be used as an index type.
         if (!(gymsNoBoss.length > 0)) {
             //gymsNoBoss.sort((lhs, rhs) => lhs[1] < rhs[1]);
+            gymsNoBoss.sort((lhs, rhs) => lhs[1].getTime() - rhs[1].getTime()); // REVIEW: Verify this is correct
             let first = gymsNoBoss.pop();
-            //this.smartRaidPointsUpdated[first[2]] = new Date().getTime();
+            this.smartRaidPointsUpdated.set(first[2],new Date());
             coord = first[2];
         } else if (!(gymsNoRaid.length > 0)) {
             //gymsNoRaid.sort((lhs, rhs) => lhs[1] < rhs[1]);
+            gymsNoRaid.sort((lhs, rhs) => lhs[1].getTime() - rhs[1].getTime()); // REVIEW: Verify this is correct
             let first = gymsNoRaid.pop();
-            //this.smartRaidPointsUpdated[first[2]] = new Date().getTime();
+            this.smartRaidPointsUpdated.set(first[2], new Date());
             coord = first[2];
         }
         
