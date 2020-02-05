@@ -11,13 +11,11 @@ import { getCurrentTimestamp, base64_decode } from '../utils/util';
 import { Digest } from '../data/digest';
 import { logger } from '../utils/logger';
 
-// TODO: Process pool for data handlers.
-
 const DefaultTargetMaxDistance: number = 250;
+const digest = new Digest();
 
 let emptyCells = [];
 let levelCache = {};
-let digest = new Digest();
 
 enum ItemId {
 	ITEM_UNKNOWN = 0,
@@ -344,7 +342,6 @@ async function _handleRawData(req: Request, res: Response) {
                     let gmo = POGOProtos.Networking.Responses.GetMapObjectsResponse.decode(base64_decode(data));
                     if (gmo) {
                         isInvalidGMO = false;
-
                         let mapCellsNew = gmo.map_cells;
                         if (mapCellsNew.length === 0) {
                             logger.debug("[Raw] Map cells is empty");

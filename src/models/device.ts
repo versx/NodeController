@@ -86,11 +86,11 @@ class Device {
                     key.uuid,
                     key.instance_name,
                     key.account_username,
-                    key.device_level,
+                    key.device_level || 0,
                     key.last_host || "",
-                    key.last_seen || "",
-                    key.last_lat || "",
-                    key.last_lon || "",
+                    key.last_seen || 0,
+                    key.last_lat || 0.0,
+                    key.last_lon || 0.0,
                     key.device_group
                 );
             });

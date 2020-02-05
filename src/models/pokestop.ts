@@ -88,7 +88,7 @@ class Pokestop {
      * @param data 
      */
     constructor(data: any) {
-        if (data.fort !== undefined) {
+        if (data.fort) {
             this.id = data.fort.id;
             this.lat = data.fort.latitude;
             this.lon = data.fort.longitude;
@@ -97,7 +97,7 @@ class Pokestop {
             }
             this.enabled = data.fort.enabled;
             let lastModifiedTimestamp = data.fort.last_modified_timestamp_ms / 1000;
-            if (data.fort.active_fort_modifier !== undefined && data.fort.active_fort_modifier !== null && data.fort.active_fort_modifier.length > 0) {
+            if (data.fort.active_fort_modifier && data.fort.active_fort_modifier.length > 0) {
                 if (data.fort.active_fort_modifier.includes(501) ||
                     data.fort.active_fort_modifier.includes(502) ||
                     data.fort.active_fort_modifier.includes(503) ||
@@ -107,18 +107,18 @@ class Pokestop {
                 }
             }
             this.lastModifiedTimestamp = lastModifiedTimestamp;
-            if (data.fort.image_url !== null) {
+            if (data.fort.image_url) {
                 this.url = data.fort.image_url;
             }
-            if (data.fort.pokestop_display !== undefined && data.fort.pokestop_display !== null) {
+            if (data.fort.pokestop_display) {
                 this.incidentExpireTimestamp = data.fort.pokestop_display.incident_expiration_ms / 1000;
-                if (data.fort.pokestop_display.character_display !== undefined && data.fort.pokestop_display.character_display !== null) {
+                if (data.fort.pokestop_display.character_display) {
                     this.pokestopDisplay = data.fort.pokestop_display.character_display.style;
                     this.gruntType = data.fort.pokestop_display.character_display.character;
                 }
-            } else if (data.fort.pokestop_displays !== undefined && data.fort.pokestop_displays.length > 0) {
+            } else if (data.fort.pokestop_displays && data.fort.pokestop_displays.length > 0) {
                 this.incidentExpireTimestamp = data.fort.pokestop_displays[0].incident_expiration_ms / 1000;
-                if (data.fort.pokestop_displays[0].character_display !== undefined && data.fort.pokestop_displays[0].character_display !== null) {
+                if (data.fort.pokestop_displays[0].character_display) {
                     this.pokestopDisplay = data.fort.pokestop_displays[0].character_display.style;
                     this.gruntType = data.fort.pokestop_displays[0].character_display.character;
                 }

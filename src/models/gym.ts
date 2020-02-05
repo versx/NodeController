@@ -46,7 +46,7 @@ class Gym {
      * @param data 
      */
     constructor(data: any) {
-        if (data.fort !== undefined) {
+        if (data.fort) {
             this.id = data.fort.id.toString();
             this.lat = data.fort.latitude;
             this.lon = data.fort.longitude;
@@ -60,7 +60,7 @@ class Gym {
             if (data.fort.sponsor !== 0) {
                 this.sponsorId = data.fort.sponsor;
             }
-            if (data.fort.image_url !== undefined) {
+            if (data.fort.image_url) {
                 this.url = data.fort.image_url;
             }
             if (data.fort.owned_by_team === 0) {
@@ -68,13 +68,13 @@ class Gym {
             } else {
                 this.totalCp = data.fort.gym_display.total_gym_cp;
             }
-            if (data.fort.raid_info !== undefined && data.fort.raid_info !== null) {
+            if (data.fort.raid_info) {
                 this.raidEndTimestamp = data.fort.raid_info.raid_end_ms / 1000;
                 this.raidSpawnTimestamp = data.fort.raid_info.raid_spawn_ms / 1000;
                 this.raidBattleTimestamp = data.fort.raid_info.raid_battle_ms / 1000;
                 this.raidLevel = data.fort.raid_info.raid_level;
                 this.raidIsExclusive = data.fort.raid_info.is_exclusive;
-                if (data.fort.raid_info.raid_pokemon !== undefined && data.fort.raid_info.raid_pokemon !== null) {
+                if (data.fort.raid_info.raid_pokemon) {
                     this.raidPokemonId = data.fort.raid_info.raid_pokemon.pokemon_id;
                     this.raidPokemonMove1 = data.fort.raid_info.raid_pokemon.move1;
                     this.raidPokemonMove2 = data.fort.raid_info.raid_pokemon.move2;

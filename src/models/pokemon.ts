@@ -56,9 +56,9 @@ class Pokemon /*extends Consumable*/ {
      */
     constructor(data: any) {
         /*super(id, lat, lon);*/
-        if (data.wild !== undefined) {
+        if (data.wild) {
             this.initWild(data);
-        } else if (data.nearby !== undefined) {
+        } else if (data.nearby) {
             this.initNearby(data);
         } else {
             this.id = data.id.toString();
