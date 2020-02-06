@@ -50,3 +50,7 @@ tsc
 ```
 node index.js
 ```
+
+Credits:
+- [versx](https://github.com/versx)
+- [RealDeviceMap](https://github.com/RealDeviceMap/RealDeviceMap)
