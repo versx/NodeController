@@ -106,7 +106,7 @@ class Pokemon /*extends Consumable*/ {
         }
         this.username = data.username;
         if (data.wild.time_till_hidden_ms > 0 && data.wild.time_till_hidden_ms <= 90000) {
-            this.expireTimestamp = Math.round((data.timestampMs + data.wild.time_till_hidden_ms) / 1000);
+            this.expireTimestamp = Math.round(data.timestampMs / 1000 + data.wild.time_till_hidden_ms);
             this.expireTimestampVerified = true;
         } else {
             this.expireTimestampVerified = false;
@@ -125,25 +125,6 @@ class Pokemon /*extends Consumable*/ {
                     this.expireTimestamp = expireTimestamp;
                     this.expireTimestampVerified = true;
                 }
-                /*
-                let despawnSecond = spawnpoint.despawnSecond;
-                if (despawnSecond && despawnSecond) {
-                    let date = moment(data.timestampMs).format('mm:ss');
-                    let split = date.split(':');
-                    let minute = parseInt(split[0]);
-                    let second = parseInt(split[1]);
-                    let secondOfHour = second + minute * 60;
-
-                    let despawnOffset;
-                    if (despawnSecond < secondOfHour) {
-                        despawnOffset = 3600 + despawnSecond - secondOfHour;
-                    } else {
-                        despawnOffset = despawnSecond - secondOfHour;
-                    }
-                    this.expireTimestamp = parseInt(moment(date).format('x')) + despawnOffset;
-                    this.expireTimestampVerified = true;
-                }
-                */
             }
         }
         this.spawnId = spawnId;
@@ -383,7 +364,7 @@ class Pokemon /*extends Consumable*/ {
      * Set default Ditto attributes.
      * @param displayPokemonId 
      */
-    setDittoAttributes(displayPokemonId: number): void {
+    private setDittoAttributes(displayPokemonId: number): void {
         let moveTransformFast: number = 242;
         let moveStruggle: number = 133;
         this.displayPokemonId = displayPokemonId;
@@ -400,7 +381,7 @@ class Pokemon /*extends Consumable*/ {
      * Check if Pokemon is Ditto disguised.
      * @param pokemon 
      */
-    static isDittoDisguisedFromPokemon(pokemon: Pokemon): boolean {
+    private static isDittoDisguisedFromPokemon(pokemon: Pokemon): boolean {
         let isDisguised = (pokemon.pokemonId == Pokemon.DittoPokemonId) || (DbController.DittoDisguises.includes(pokemon.pokemonId) || false);
         let isUnderLevelBoosted = pokemon.level > 0 && pokemon.level < Pokemon.WeatherBoostMinLevel;
         let isUnderIvStatBoosted = pokemon.level > 0 && (pokemon.atkIv < Pokemon.WeatherBoostMinIvStat || pokemon.defIv < Pokemon.WeatherBoostMinIvStat || pokemon.staIv < Pokemon.WeatherBoostMinIvStat);
@@ -416,7 +397,7 @@ class Pokemon /*extends Consumable*/ {
      * @param defIv 
      * @param staIv 
      */
-    static isDittoDisguised(pokemonId: number, level: number, weather: number, atkIv: number, defIv: number, staIv: number) {
+    private static isDittoDisguised(pokemonId: number, level: number, weather: number, atkIv: number, defIv: number, staIv: number) {
         let isDisguised = (pokemonId == Pokemon.DittoPokemonId) || (DbController.DittoDisguises.includes(pokemonId) || false);
         let isUnderLevelBoosted = level > 0 && level < Pokemon.WeatherBoostMinLevel;
         let isUnderIvStatBoosted = level > 0 && (atkIv < Pokemon.WeatherBoostMinIvStat || defIv < Pokemon.WeatherBoostMinIvStat || staIv < Pokemon.WeatherBoostMinIvStat);
@@ -428,7 +409,7 @@ class Pokemon /*extends Consumable*/ {
      * @param oldPokemon 
      * @param newPokemon 
      */
-    static shouldUpdate(oldPokemon: Pokemon, newPokemon: Pokemon): boolean {
+    private static shouldUpdate(oldPokemon: Pokemon, newPokemon: Pokemon): boolean {
         let now = getCurrentTimestamp();
         if (oldPokemon.pokemonId !== newPokemon.pokemonId && oldPokemon.pokemonId !== Pokemon.DittoPokemonId) {
             return true;
@@ -569,9 +550,6 @@ class Pokemon /*extends Consumable*/ {
         args.push(this.lat);
         args.push(this.lon);
         args.push(this.spawnId || null);
-        if (Number.isNaN(this.expireTimestamp)) {
-            logger.debug("[Pokemon] expireTimestamp is NaN!");
-        }
         args.push(this.expireTimestamp);
         if (updateIV || (oldPokemon === undefined || oldPokemon === null)) {
             args.push(this.atkIv || null);
@@ -634,22 +612,23 @@ class Pokemon /*extends Consumable*/ {
             }
         }
 
-        if (this.lat === undefined) {
+        if (this.lat === undefined && this.pokestopId) {
             if (this.pokestopId) {
                 let pokestop: Pokestop;
                 try {
                     pokestop = await Pokestop.getById(this.pokestopId);
                 } catch (err) {
+                    logger.error(err);
                 }
                 if (pokestop) {
                     this.lat = pokestop.lat;
                     this.lon = pokestop.lon;
-                    if (oldPokemon === null) {
-                        args[2] = this.lat;
-                        args[3] = this.lon;
-                    } else {
+                    if (oldPokemon) {
                         args[1] = this.lat;
                         args[2] = this.lon;
+                    } else {
+                        args[2] = this.lat;
+                        args[3] = this.lon;
                     }
                 } else {
                     return;

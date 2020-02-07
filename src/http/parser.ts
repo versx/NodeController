@@ -7,7 +7,7 @@ import { Account } from '../models/account';
 import { Device } from '../models/device';
 import { Pokemon } from '../models/pokemon';
 import { InstanceController } from '../controllers/instances/instance-controller';
-import { getCurrentTimestamp, base64_decode } from '../utils/util';
+import { getCurrentTimestamp, base64_decode, snooze } from '../utils/util';
 import { Digest } from '../data/digest';
 import { logger } from '../utils/logger';
 
@@ -561,6 +561,7 @@ async function _handleRawData(req: Request, res: Response) {
         }
     }
 
+    /*
     await digest.consumeCells(cells).then(async () => {
         await digest.consumeClientWeather(clientWeathers).then(async () => {
             await digest.consumeForts(forts).then(async () => {
@@ -578,17 +579,16 @@ async function _handleRawData(req: Request, res: Response) {
             });
         });
     });
-    /*
+    */
     await digest.consumeCells(cells)
     await digest.consumeClientWeather(clientWeathers);
+    await digest.consumeNearbyPokemon(nearbyPokemons, username);
+    await digest.consumeWildPokemon(wildPokemons, username);
     await digest.consumeForts(forts);
     await digest.consumeFortDetails(fortDetails);
     await digest.consumeGymInfos(gymInfos);
-    await digest.consumeWildPokemon(wildPokemons, username);
-    await digest.consumeNearbyPokemon(nearbyPokemons, username);
     await digest.consumeQuests(quests);
     await digest.consumeEncounters(encounters, username);
-    */
 }
 
 /**
