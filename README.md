@@ -32,7 +32,7 @@ cp config.json.example config.json
         "port": 3306, // Database port
         "username": "user", // Database username
         "password": "pass123", // Database password
-        "database": "node", // Database name
+        "database": "nodedb", // Database name
         "rootUsername": "root", // Root username
         "rootPassword": "pass123", // Root user password
         "charset": "utf8mb4", // Database character set
@@ -48,7 +48,7 @@ tsc
 ```
 5.) Run:  
 ```
-node index.js
+node dist/index.js
 ```
 
 Credits:
