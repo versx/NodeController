@@ -14,7 +14,7 @@ class RedisClient {
         this.client = redis.createClient({
             host: config.redis.host,
             port: config.redis.port,
-            password: config.redis.password
+            password: config.redis.password || undefined
         });
         this.client.on('connect', function() {
             logger.info('[Redis] Redis client connected');

@@ -777,9 +777,10 @@ class Pokemon /*extends Consumable*/ {
         let despawnSecond = spawnpoint.despawnSecond;
         if (despawnSecond) {
             let ts = timestampMs.toString();
-            let date = moment((parseInt(ts) * 1000).toString()).format('mm:ss');
-            //TODO: Fix invalid date
-            let split = date.split(':');
+            let date = moment((parseInt(ts) / 1000));
+            let dateFormat = date.format('mm:ss');
+            let dateUnix = date.format('x');
+            let split = dateFormat.split(':');
             let minute = parseInt(split[0]);
             let second = parseInt(split[1]);
             let secondOfHour = second + minute * 60;
@@ -790,11 +791,11 @@ class Pokemon /*extends Consumable*/ {
             } else {
                 despawnOffset = despawnSecond - secondOfHour;
             }
-            return parseInt(moment(date).format('x')) + despawnOffset;
+            let despawn = parseInt(dateUnix) + despawnOffset;
+            return despawn;
         }
     }
 }
-
 
 // Export the class
 export { Pokemon };
