@@ -103,7 +103,7 @@ class Pokestop {
                     data.fort.active_fort_modifier.includes(503) ||
                     data.fort.active_fort_modifier.includes(504)) {
                     this.lureExpireTimestamp = lastModifiedTimestamp + DbController.LureTime;
-                    this.lureId = data.fort.active_fort_modifier[0].item_id;
+                    this.lureId = data.fort.active_fort_modifier[0];
                 }
             }
             this.lastModifiedTimestamp = lastModifiedTimestamp;
@@ -143,7 +143,7 @@ class Pokestop {
             this.questTemplate = data.quest_template;
     
             this.cellId = data.cell_id.toString();
-            this.lureId = data.lure_id;
+            this.lureId = data.lure_id || 0;
             this.pokestopDisplay = data.pokestop_display;
             this.incidentExpireTimestamp = data.incident_expire_timestamp;
             this.gruntType = data.grunt_type;
@@ -207,7 +207,7 @@ class Pokestop {
      */
     static async getById(pokestopId: string, withDeleted: boolean = false, skipCache = false): Promise<Pokestop> {
         if (!skipCache) {
-            let cachedStop = await Cache.instance.get<Pokestop>(POKESTOP_LIST, pokestopId);
+            let cachedStop = await Cache.instance.getPokestop(pokestopId);
             if (cachedStop/*instanceof Pokestop*/) {
                 //logger.info("[Pokestop] Returning cached pokestop " + cachedStop.id);
                 return cachedStop;
@@ -602,7 +602,7 @@ class Pokestop {
         let sql: string = "";
         let args = [];
         this.updated = getCurrentTimestamp();
-        if (oldPokestop === null) {
+        if (oldPokestop === undefined || oldPokestop === null) {
             WebhookController.instance.addPokestopEvent(this);
             if (this.lureExpireTimestamp || 0 > 0) {
                 WebhookController.instance.addLureEvent(this);
@@ -637,12 +637,12 @@ class Pokestop {
                 this.questTemplate = oldPokestop.questTemplate;
             }
             if (oldPokestop.lureId && (this.lureId === undefined || this.lureId === null)) {
-                this.lureId = oldPokestop!.lureId;
+                this.lureId = oldPokestop.lureId;
             }
             if (oldPokestop.lureExpireTimestamp || 0 < this.lureExpireTimestamp || 0) {
                 WebhookController.instance.addLureEvent(this);
             }
-            if (oldPokestop!.incidentExpireTimestamp || 0 < this.incidentExpireTimestamp || 0) {
+            if (oldPokestop.incidentExpireTimestamp || 0 < this.incidentExpireTimestamp || 0) {
                 WebhookController.instance.addInvasionEvent(this);
             }
             if (updateQuest && this.questTimestamp || 0 > oldPokestop.questTimestamp || 0) {
@@ -657,18 +657,19 @@ class Pokestop {
             }
             
             sql = `
-                UPDATE pokestop
-                SET lat = ? , lon = ? , name = ? , url = ? , enabled = ? , lure_expire_timestamp = ? , last_modified_timestamp = ? , updated = UNIX_TIMESTAMP(), ${questSQL} cell_id = ?, lure_id = ?, pokestop_display = ?, incident_expire_timestamp = ?, grunt_type = ?, deleted = false, sponsor_id = ?
-                WHERE id = ?
+            UPDATE pokestop
+            SET lat = ? , lon = ? , name = ? , url = ? , enabled = ? , lure_expire_timestamp = ? , last_modified_timestamp = ? , updated = UNIX_TIMESTAMP(), ${questSQL} cell_id = ?, lure_id = ?, pokestop_display = ?, incident_expire_timestamp = ?, grunt_type = ?, deleted = false, sponsor_id = ?
+            WHERE id = ?
             `;
         }
 
+        /*
         args.push(this.lat);
         args.push(this.lon);
-        args.push(this.name);
-        args.push(this.url);
+        args.push(this.name || null);
+        args.push(this.url || null);
         args.push(this.enabled);
-        args.push(this.lureExpireTimestamp);
+        args.push(this.lureExpireTimestamp || null);
         args.push(this.lastModifiedTimestamp);
         if (updateQuest || oldPokestop === undefined || oldPokestop === null) {
             args.push(this.questType);
@@ -680,10 +681,10 @@ class Pokestop {
         }
         args.push(this.cellId);
         args.push(this.lureId || 0);
-        args.push(this.pokestopDisplay);
-        args.push(this.incidentExpireTimestamp);
-        args.push(this.gruntType);
-        args.push(this.sponsorId);
+        args.push(this.pokestopDisplay || null);
+        args.push(this.incidentExpireTimestamp || null);
+        args.push(this.gruntType || null);
+        args.push(this.sponsorId || null);
         if (oldPokestop) {
             args.push(this.id);
         }
@@ -694,6 +695,7 @@ class Pokestop {
                 logger.error("[Pokestop] Error: " + err);
                 return null;
             });
+        */
         // Cache with redis
         if (!await Cache.instance.set(POKESTOP_LIST, this.id, this)) {
             logger.error("[Pokestop] Failed to cache pokestop with redis " + this.id);

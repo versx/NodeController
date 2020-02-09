@@ -78,9 +78,9 @@ class Cell {
      * @param id 
      */
     static async getById(id: string): Promise<Cell> {
-        let cachedCell = await Cache.instance.get<Cell>(CELL_LIST, id);
+        let cachedCell = await Cache.instance.getCell(id);
         if (cachedCell/*instanceof Cell*/) {
-            logger.info("[Cell] Returning cached cell " + cachedCell.id);
+            //logger.info("[Cell] Returning cached cell " + cachedCell.id);
             return cachedCell;
         }
 
@@ -170,6 +170,7 @@ class Cell {
      * @param update 
      */
     async save(update: boolean): Promise<void> {
+        /*
         let sql = `
         INSERT INTO s2cell (id, level, center_lat, center_lon, updated)
         VALUES (?, ?, ?, ?, UNIX_TIMESTAMP())
@@ -190,6 +191,7 @@ class Cell {
                 logger.error("[Cell] Error: " + err);
                 return null;
             });
+        */
         // Cache with redis
         if (!await Cache.instance.set(CELL_LIST, this.id, this)) {
             logger.error("[Cell] Failed to cache cell with redis " + this.id);

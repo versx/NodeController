@@ -5,6 +5,7 @@ import { DbController } from '../controllers/db-controller';
 import { InstanceController } from '../controllers/instances/instance-controller';
 import { WebhookController } from '../controllers/webhook-controller';
 import { Database } from '../data/mysql';
+import { Cache, POKEMON_LIST } from '../data/cache';
 import { Pokestop } from './pokestop';
 import { Spawnpoint } from "./spawnpoint";
 import { getCurrentTimestamp } from '../utils/util';
@@ -48,7 +49,7 @@ class Pokemon /*extends Consumable*/ {
     changed: number;
     cellId: string;
     displayPokemonId: number;
-    private isDitto: boolean = false;
+    isDitto: boolean = false;
 
     /**
      * Initialize new Pokemon object.
@@ -61,7 +62,7 @@ class Pokemon /*extends Consumable*/ {
         } else if (data.nearby) {
             this.initNearby(data);
         } else {
-            this.id = data.id.toString();
+            this.id = String(data.id);//.toString();
             this.lat = data.lat;
             this.lon = data.lon;
             this.pokemonId = data.pokemon_id;
@@ -78,7 +79,7 @@ class Pokemon /*extends Consumable*/ {
             this.cp = data.cp;
             this.move1 = data.move_1;
             this.move2 = data.move_2;
-            this.size = data.height;
+            this.size = data.size; // REVIEW: height
             this.weight = data.weight;
             this.atkIv = data.atk_iv;
             this.defIv = data.def_iv;
@@ -149,7 +150,7 @@ class Pokemon /*extends Consumable*/ {
             // TODO: Fix error
             logger.error(err);
         }
-        if (pokestop !== null) {
+        if (pokestop) {
             this.pokestopId = pokestop.id;
             this.lat = pokestop.lat;
             this.lon = pokestop.lon;
@@ -224,6 +225,13 @@ class Pokemon /*extends Consumable*/ {
      * @param encounterId 
      */
     static async getById(encounterId: string): Promise<Pokemon> {
+        //if (!skipCache) {
+            let cachedPokemon = await Cache.instance.getPokemon(encounterId);
+            if (cachedPokemon/*instanceof Pokestop*/) {
+                //logger.info("[Pokestop] Returning cached pokestop " + cachedStop.id);
+                return cachedPokemon;
+            }
+        //}
         let sql = `
             SELECT id, pokemon_id, lat, lon, spawn_id, expire_timestamp, atk_iv, def_iv, sta_iv, move_1, move_2, gender, form, cp, level, weather, costume, weight, size, display_pokemon_id, pokestop_id, updated, first_seen_timestamp, changed, cell_id, expire_timestamp_verified, shiny, username
             FROM pokemon
@@ -364,7 +372,7 @@ class Pokemon /*extends Consumable*/ {
      * Set default Ditto attributes.
      * @param displayPokemonId 
      */
-    private setDittoAttributes(displayPokemonId: number): void {
+    setDittoAttributes(displayPokemonId: number): void {
         let moveTransformFast: number = 242;
         let moveStruggle: number = 133;
         this.displayPokemonId = displayPokemonId;
@@ -381,7 +389,7 @@ class Pokemon /*extends Consumable*/ {
      * Check if Pokemon is Ditto disguised.
      * @param pokemon 
      */
-    private static isDittoDisguisedFromPokemon(pokemon: Pokemon): boolean {
+    static isDittoDisguisedFromPokemon(pokemon: Pokemon): boolean {
         let isDisguised = (pokemon.pokemonId == Pokemon.DittoPokemonId) || (DbController.DittoDisguises.includes(pokemon.pokemonId) || false);
         let isUnderLevelBoosted = pokemon.level > 0 && pokemon.level < Pokemon.WeatherBoostMinLevel;
         let isUnderIvStatBoosted = pokemon.level > 0 && (pokemon.atkIv < Pokemon.WeatherBoostMinIvStat || pokemon.defIv < Pokemon.WeatherBoostMinIvStat || pokemon.staIv < Pokemon.WeatherBoostMinIvStat);
@@ -409,7 +417,7 @@ class Pokemon /*extends Consumable*/ {
      * @param oldPokemon 
      * @param newPokemon 
      */
-    private static shouldUpdate(oldPokemon: Pokemon, newPokemon: Pokemon): boolean {
+    static shouldUpdate(oldPokemon: Pokemon, newPokemon: Pokemon): boolean {
         let now = getCurrentTimestamp();
         if (oldPokemon.pokemonId !== newPokemon.pokemonId && oldPokemon.pokemonId !== Pokemon.DittoPokemonId) {
             return true;
@@ -540,9 +548,9 @@ class Pokemon /*extends Consumable*/ {
                 logger.info("[POKEMON] Pokemon " + this.id + " Ditto changed from " + oldPokemon.pokemonId + " to " + this.pokemonId);
             }
             sql = `
-                UPDATE pokemon
-                SET pokemon_id = ?, lat = ?, lon = ?, spawn_id = ?, expire_timestamp = ?, ${ivSQL} username = ?, gender = ?, form = ?, weather = ?, costume = ?, pokestop_id = ?, updated = UNIX_TIMESTAMP(), first_seen_timestamp = ?, changed = ${changedSQL}, cell_id = ?, expire_timestamp_verified = ?
-                WHERE id = ?
+            UPDATE pokemon
+            SET pokemon_id = ?, lat = ?, lon = ?, spawn_id = ?, expire_timestamp = ?, ${ivSQL} username = ?, gender = ?, form = ?, weather = ?, costume = ?, pokestop_id = ?, updated = UNIX_TIMESTAMP(), first_seen_timestamp = ?, changed = ${changedSQL}, cell_id = ?, expire_timestamp_verified = ?
+            WHERE id = ?
             `;
         }
 
@@ -552,6 +560,18 @@ class Pokemon /*extends Consumable*/ {
         args.push(this.spawnId || null);
         args.push(this.expireTimestamp);
         if (updateIV || (oldPokemon === undefined || oldPokemon === null)) {
+            args.push(this.atkIv || null);
+            args.push(this.defIv || null);
+            args.push(this.staIv || null);
+            args.push(this.move1 || null);
+            args.push(this.move2 || null);
+            args.push(this.cp || null);
+            args.push(this.level || null);
+            args.push(this.weight || null);
+            args.push(this.size || null);
+            args.push(this.shiny || null);
+            args.push(this.displayPokemonId || null);
+        } else {
             args.push(this.atkIv || null);
             args.push(this.defIv || null);
             args.push(this.staIv || null);
@@ -612,6 +632,7 @@ class Pokemon /*extends Consumable*/ {
             }
         }
 
+        /*
         if (this.lat === undefined && this.pokestopId) {
             if (this.pokestopId) {
                 let pokestop: Pokestop;
@@ -642,11 +663,12 @@ class Pokemon /*extends Consumable*/ {
         await db.query(sql, args)
             .then(x => x)
             .catch(err => {
-                logger.info("[Pokemon] SQL: " + sql);
-                logger.info("[Pokemon] Arguments: " + args);
+                //logger.info("[Pokemon] SQL: " + sql);
+                //logger.info("[Pokemon] Arguments: " + args);
                 logger.error("[Pokemon] Error: " + err);
                 return null;
             });
+        */
 
         if (oldPokemon === undefined || oldPokemon === null) {
             WebhookController.instance.addPokemonEvent(this);
@@ -654,6 +676,10 @@ class Pokemon /*extends Consumable*/ {
             if (this.atkIv) {
                 InstanceController.instance.gotIV(this);
             }
+        }
+
+        if (!await Cache.instance.set(POKEMON_LIST, this.id, this)) {
+            logger.error("[Pokemon] Failed to cache pokemon with redis " + this.id);
         }
     }
     /**

@@ -19,8 +19,9 @@ interface ICache {
     set(id: string, key: string, data: any): Promise<boolean>;
     /**
      * 
+     * @param id 
      */
-    load<T>(): Promise<T>;
+    //load<T>(id: string): Promise<T[]>;
 }
 
 export { ICache };

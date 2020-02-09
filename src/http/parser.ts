@@ -391,7 +391,7 @@ async function _handleRawData(req: Request, res: Response) {
                                     emptyCells[cell] = count + 1;
                                 }
                                 if (count === 3) {
-                                    logger.debug("[Raw] Cell" + cell + "was empty 3 times in a row. Assuming empty.");
+                                    logger.debug("[Raw] Cell " + cell + " was empty 3 times in a row. Assuming empty.");
                                     cells.push(cell);
                                 }
                             });
@@ -580,7 +580,7 @@ async function _handleRawData(req: Request, res: Response) {
         });
     });
     */
-    await digest.consumeCells(cells)
+    await digest.consumeCells(cells);
     await digest.consumeClientWeather(clientWeathers);
     await digest.consumeNearbyPokemon(nearbyPokemons, username);
     await digest.consumeWildPokemon(wildPokemons, username);

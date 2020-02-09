@@ -172,7 +172,7 @@ class Gym {
      * @param gymId 
      */
     static async getById(gymId: string, withDeleted: boolean = false) {
-        let cachedGym = await Cache.instance.get<Gym>(GYM_LIST, gymId);
+        let cachedGym = await Cache.instance.getGym(gymId);
         if (cachedGym/*instanceof Gym*/) {
             //logger.info("[Gym] Returning cached gym " + cachedGym.id);
             return cachedGym;
@@ -457,12 +457,12 @@ class Gym {
                 this.name = oldGym.name;
             }
             if (oldGym.url && (this.url === undefined || this.url === null)) {
-                this.url = oldGym!.url;
+                this.url = oldGym.url;
             }
             if (oldGym.raidIsExclusive && (this.raidIsExclusive === undefined || this.raidIsExclusive === null)) {
                 this.raidIsExclusive = oldGym.raidIsExclusive;
             }
-            if (oldGym.availableSlots !== this.availableSlots || oldGym!.teamId !== this.teamId || oldGym.inBattle !== this.inBattle) {
+            if (oldGym.availableSlots !== this.availableSlots || oldGym.teamId !== this.teamId || oldGym.inBattle !== this.inBattle) {
                 WebhookController.instance.addGymInfoEvent(this);
             }            
             if ((this.raidEndTimestamp === undefined || this.raidEndTimestamp === null) && oldGym.raidEndTimestamp) {
@@ -492,6 +492,7 @@ class Gym {
                 WHERE id = ?
             `;
         }
+        /*
         
         args.push(this.lat);
         args.push(this.lon);
@@ -528,6 +529,7 @@ class Gym {
                 logger.error("[Gym] Error: " + err);
                 return null;
             });
+        */
         // Cache with redis
         if (!await Cache.instance.set(GYM_LIST, this.id, this)) {
             logger.error("[Gym] Failed to cache gym with redis " + this.id);

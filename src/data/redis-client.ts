@@ -43,14 +43,27 @@ class RedisClient {
             });
         });
     }
+    async hgetString(id: string, key: string): Promise<string> {
+        // TODO: Check if connected.
+        return new Promise((resolve, reject) => {
+            this.client.hget(id, key, (err, reply) => {
+                if (err)
+                    return reject( err );
+                resolve(reply);
+            });
+        });
+    }
     async hset(id: string, key: string, data: any): Promise<boolean> {
         // TODO: Check if connected.
         return new Promise((resolve, reject) => {
-            let json = JSON.stringify(data, null, 2);
-            if (!this.client.hset(id, key, json)) {
-                return reject( false );
+            if (data) {
+                let json = JSON.stringify(data, null, 2);
+                if (!this.client.hset(id, key, json)) {
+                    return reject( false );
+                }
+                resolve(true);
             }
-            resolve(true);
+            resolve(false);
         });
     }
 }
